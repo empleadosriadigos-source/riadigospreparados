@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Riadigos · Clientes</title>
+<style>
+  :root{--bg:#F0EDE4;--surface:#FAFAF7;--border:#DDD8CC;--accent:#75A63D;--accent2:#68A9CC;--text:#1C2128;--muted:#6B7685;--danger:#C0392B;--cliente:#3D7A8A;--radius:8px;--shadow:0 2px 8px rgba(0,0,0,0.09);--brand:#5ECEC5;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  /* Topbar */
+  .topbar{background:var(--brand);padding:0 20px;display:flex;align-items:center;gap:10px;height:52px;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.12);overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .topbar-brand{color:#fff;font-size:15px;font-weight:700;white-space:nowrap;display:flex;align-items:center;}
+  .topbar-brand span{color:#fff;opacity:0.85;}
+  .topbar-sep{width:1px;height:24px;background:rgba(255,255,255,0.4);margin:0 4px;flex-shrink:0;}
+  .nav-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;text-decoration:none;flex-shrink:0;color:#fff;background:rgba(255,255,255,0.18);}
+  .nav-btn:hover{opacity:0.8;}
+  .topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+  .user-chip{font-size:12px;color:#fff;opacity:0.85;white-space:nowrap;}
+  .btn-logout{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);color:#fff;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;}
+  .btn-logout:hover{background:rgba(255,255,255,0.3);}
+  /* Tabs */
+  .wrap{padding:20px;max-width:1300px;margin:0 auto;}
+  .tabs{display:flex;gap:6px;margin-bottom:18px;border-bottom:2px solid var(--border);}
+  .tab-btn{padding:10px 20px;border:none;background:none;font-size:14px;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;}
+  .tab-btn.active{color:var(--brand);border-bottom-color:var(--brand);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+  /* Toolbar / search / table - reused styles */
+  .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+  .search-wrap{flex:1;min-width:220px;}
+  .search-wrap input{width:100%;padding:9px 14px;border:1px solid var(--border);border-radius:6px;font-size:14px;background:var(--surface);color:var(--text);outline:none;}
+  .search-wrap input:focus{border-color:var(--brand);}
+  .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  thead{background:#EDEAE0;}
+  th{padding:10px 14px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;}
+  tbody tr{cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.1s;}
+  tbody tr:last-child{border-bottom:none;}
+  tbody tr:hover{background:#EAE7DC;}
+  td{padding:10px 14px;vertical-align:top;}
+  .td-nombre{font-weight:700;color:var(--cliente);}
+  .td-muted{color:var(--muted);font-size:12px;}
+  .pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
+  .pill-si{background:#D1FAE5;color:#065F46;}
+  .pill-no{background:#E5E7EB;color:#374151;}
+  #statusClientes,#statusOS{text-align:center;padding:40px;font-size:14px;color:var(--muted);}
+  .spinner{display:inline-block;width:16px;height:16px;border:2px solid #ccc;border-top-color:var(--brand);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  /* Buttons */
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;min-height:38px;}
+  .btn:hover:not(:disabled){opacity:0.85;}
+  .btn:disabled{opacity:0.5;cursor:not-allowed;}
+  .btn-primary{background:var(--brand);color:#fff;}
+  .btn-secondary{background:var(--accent2);color:#fff;}
+  .btn-danger{background:var(--danger);color:#fff;}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
+  .btn-sm{padding:5px 10px;font-size:12px;min-height:30px;}
+  /* Copy buttons */
+  .copy-row{display:flex;align-items:center;gap:8px;}
+  .btn-copy{background:none;border:1px solid var(--border);color:var(--muted);border-radius:5px;padding:4px 9px;font-size:11px;cursor:pointer;white-space:nowrap;}
+  .btn-copy:hover{border-color:var(--brand);color:var(--brand);}
+  .btn-copy.copiado{color:#fff;background:var(--accent);border-color:var(--accent);}
+  /* Field groups (forms) */
+  .field-group{margin-bottom:14px;}
+  .field-group label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px;}
+  .field-group input,.field-group select,.field-group textarea{width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:6px;font-size:14px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;}
+  .field-group input:focus,.field-group select:focus,.field-group textarea:focus{border-color:var(--brand);background:#fff;}
+  .field-group textarea{resize:vertical;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media(max-width:600px){.field-row{grid-template-columns:1fr;}}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);}
+  .toggle-row:last-child{border-bottom:none;}
+  .toggle-row label{font-size:13px;font-weight:600;}
+  .switch{position:relative;display:inline-block;width:42px;height:24px;flex-shrink:0;}
+  .switch input{opacity:0;width:0;height:0;}
+  .switch-slider{position:absolute;cursor:pointer;inset:0;background:#ccc;border-radius:24px;transition:0.2s;}
+  .switch-slider:before{content:"";position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:0.2s;}
+  .switch input:checked + .switch-slider{background:var(--brand);}
+  .switch input:checked + .switch-slider:before{transform:translateX(18px);}
+  .radio-group{display:flex;gap:16px;}
+  .radio-opt{display:flex;align-items:center;gap:6px;font-size:13px;}
+  /* Modal */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center;padding:16px;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,0.2);width:100%;max-width:780px;max-height:92vh;overflow-y:auto;}
+  .modal-sm{max-width:420px;}
+  .modal-header{padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:2;}
+  .modal-header h2{font-size:17px;font-weight:700;}
+  .modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);}
+  .modal-body{padding:20px;}
+  .modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;position:sticky;bottom:0;background:var(--surface);}
+  .ficha-section{border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;}
+  .ficha-section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--brand);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
+  .sub-item{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .sub-item:last-child{border-bottom:none;}
+  .sub-item-info{flex:1;font-size:13px;line-height:1.5;}
+  .sub-item-info b{color:var(--text);}
+  .sub-item-info .muted{color:var(--muted);font-size:12px;}
+  .sub-item-actions{display:flex;gap:4px;flex-shrink:0;}
+  .icon-btn{background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;border-radius:4px;}
+  .icon-btn:hover{color:var(--text);background:var(--bg);}
+  .icon-btn.danger:hover{color:var(--danger);}
+  .empty-msg{font-size:12px;color:var(--muted);padding:8px 0;}
+  .link-familiar{color:var(--cliente);font-weight:700;cursor:pointer;text-decoration:underline;}
+  .ss-wrap{position:relative;}
+  .ss-dropdown{display:none;position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.15);z-index:500;max-height:200px;overflow-y:auto;min-width:200px;}
+  .ss-dropdown.open{display:block;}
+  .ss-option{padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);}
+  .ss-option:last-child{border-bottom:none;}
+  .ss-option:hover{background:var(--brand);color:#fff;}
+  .ss-empty{padding:8px 12px;font-size:13px;color:var(--muted);}
+  .mini-form{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);}
+  @media(max-width:600px){.mini-form{grid-template-columns:1fr;}}
+  .mini-form .full{grid-column:1/-1;}
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:11px 24px;border-radius:8px;font-size:14px;font-weight:500;color:#fff;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;white-space:nowrap;}
+  #toast.show{opacity:1;}
+  #toast.ok{background:var(--accent);}
+  #toast.err{background:var(--danger);}
+  /* Login */
+  .login-overlay{position:fixed;inset:0;background:#fff;display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;}
+  .login-card{text-align:center;max-width:360px;width:100%;}
+  .login-logo-img{height:70px;margin-bottom:18px;}
+  .login-title{font-size:20px;font-weight:800;color:var(--brand);margin-bottom:28px;}
+  .btn-google{display:inline-flex;align-items:center;gap:10px;justify-content:center;width:100%;padding:12px 16px;border:none;border-radius:6px;background:var(--brand);color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:opacity 0.15s;}
+  .btn-google:hover{opacity:0.88;}
+  @media (max-width: 640px) {
+    html{font-size:14px;}
+    .nav-btn,.btn,.btn-logout{min-height:44px;}
+    .modal{width:100%;height:100%;max-width:100%;max-height:100%;border-radius:0;}
+    table{min-width:560px;}
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <img class="login-logo-img" src="https://cdn.batitienda.com/baticloud/images/header_asset_aa4503ac710d4fbc870bb62b1236829f_638438133950724818_0_m.png">
+    <div class="login-title">Sistema de Gestión</div>
+    <button class="btn-google" id="btnGoogleLogin">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#fff" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#fff" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#fff" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#fff" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+      Entrar con Google
+    </button>
+  </div>
+</div>
+
+<div id="appRoot" style="display:none;">
+
+<div class="topbar">
+  <div class="topbar-brand"><img src="https://cdn.batitienda.com/baticloud/images/header_asset_aa4503ac710d4fbc870bb62b1236829f_638438133950724818_0_m.png" height="28" style="margin-right:8px;vertical-align:middle;filter:brightness(0) invert(1);">Riadigos <span>·</span> Clientes</div>
+  <div class="topbar-sep"></div>
+  <a class="nav-btn" href="index.html">Volver al inicio</a>
+  <div class="topbar-right">
+    <span class="user-chip" id="userNombre"></span>
+    <button class="btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab-btn active" id="tabBtnClientes" onclick="cambiarTab('clientes')">CLIENTES</button>
+    <button class="tab-btn" id="tabBtnOS" onclick="cambiarTab('os')">OBRAS SOCIALES</button>
+  </div>
+
+  <!-- ===== TAB CLIENTES ===== -->
+  <div class="tab-panel active" id="panelClientes">
+    <div class="toolbar">
+      <div class="search-wrap"><input type="text" id="buscadorClientes" placeholder="Buscar por nombre, DNI, teléfono u obra social…" oninput="filtrarClientes()"/></div>
+      <button class="btn btn-primary" onclick="abrirNuevoCliente()">+ Nuevo cliente</button>
+    </div>
+    <div id="statusClientes"><span class="spinner"></span> Cargando…</div>
+    <div class="table-wrap" id="tablaClientesWrap" style="display:none;">
+      <table>
+        <thead><tr><th>Nombre</th><th>DNI</th><th>Teléfono</th><th>Obra social</th><th>Tarjeta Zetti</th></tr></thead>
+        <tbody id="tbodyClientes"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== TAB OBRAS SOCIALES ===== -->
+  <div class="tab-panel" id="panelOS">
+    <div class="toolbar">
+      <div class="search-wrap"><input type="text" id="buscadorOS" placeholder="Buscar por nombre…" oninput="filtrarOS()"/></div>
+      <button class="btn btn-primary" onclick="abrirNuevaOS()">+ Nueva obra social</button>
+    </div>
+    <div id="statusOS"><span class="spinner"></span> Cargando…</div>
+    <div class="table-wrap" id="tablaOSWrap" style="display:none;">
+      <table>
+        <thead><tr><th>Nombre</th><th>Teléfono</th><th>Admite genéricos</th><th>Declaración dispensa</th></tr></thead>
+        <tbody id="tbodyOS"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: datos básicos cliente (nuevo / editar) -->
+<div class="modal-overlay" id="modalClienteBasico">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h2 id="tituloClienteBasico">Nuevo cliente</h2><button class="modal-close" onclick="cerrarModal('modalClienteBasico')">✕</button></div>
+    <div class="modal-body">
+      <div class="field-group"><label>Nombre <span style="color:var(--danger)">*</span></label><input type="text" id="cbNombre"/></div>
+      <div class="field-row">
+        <div class="field-group"><label>DNI</label><input type="text" id="cbDni"/></div>
+        <div class="field-group"><label>Teléfono</label><input type="text" id="cbTelefono"/></div>
+      </div>
+      <div class="field-group"><label>Tarjeta Zetti</label><input type="text" id="cbZetti"/></div>
+      <div class="field-group"><label>Observaciones</label><textarea id="cbObs" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalClienteBasico')">Cancelar</button>
+      <button class="btn btn-primary" id="btnGuardarClienteBasico" onclick="guardarClienteBasico()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Ficha de cliente -->
+<div class="modal-overlay" id="modalFichaCliente">
+  <div class="modal">
+    <div class="modal-header"><h2 id="fichaClienteTitulo">Cliente</h2><button class="modal-close" onclick="cerrarModal('modalFichaCliente')">✕</button></div>
+    <div class="modal-body" id="fichaClienteBody">
+      <!-- Datos básicos -->
+      <div class="ficha-section">
+        <div class="ficha-section-title">Datos básicos</div>
+        <div id="fbDatosBasicos"></div>
+      </div>
+      <!-- Obras sociales -->
+      <div class="ficha-section">
+        <div class="ficha-section-title">Obras sociales<button class="btn btn-sm btn-ghost" onclick="mostrarFormOS_Cliente()">+ Agregar</button></div>
+        <div id="fbObrasSociales"></div>
+        <div class="mini-form" id="formAgregarOS" style="display:none;">
+          <div class="field-group ss-wrap full">
+            <label>Obra social</label>
+            <input type="text" id="osBuscarInput" placeholder="Buscar obra social…" oninput="filtrarSSObraSocial()" onfocus="abrirSSObraSocial()" autocomplete="off"/>
+            <div class="ss-dropdown" id="ssObraSocial"></div>
+            <input type="hidden" id="osSeleccionadaId"/>
+          </div>
+          <div class="field-group"><label>Plan</label><select id="osPlanSelect"><option value="">— Sin plan —</option></select></div>
+          <div class="field-group"><label>Nro afiliado</label><input type="text" id="osNroAfiliado"/></div>
+          <div class="field-group"><label>Coseguro</label><input type="text" id="osCoseguro"/></div>
+          <div class="full" style="display:flex;gap:8px;justify-content:flex-end;">
+            <button class="btn btn-ghost btn-sm" onclick="ocultarFormOS_Cliente()">Cancelar</button>
+            <button class="btn btn-primary btn-sm" id="btnGuardarOSCliente" onclick="guardarOSCliente()">Guardar</button>
+          </div>
+        </div>
+      </div>
+      <!-- Medicamentos -->
+      <div class="ficha-section">
+        <div class="ficha-section-title">Medicamentos habituales<button class="btn btn-sm btn-ghost" onclick="mostrarFormMedicamento()">+ Agregar</button></div>
+        <div id="fbMedicamentos"></div>
+        <div class="mini-form" id="formAgregarMed" style="display:none;">
+          <div class="field-group"><label>Nombre <span style="color:var(--danger)">*</span></label><input type="text" id="medNombre"/></div>
+          <div class="field-group"><label>Marca</label><input type="text" id="medMarca"/></div>
+          <div class="field-group"><label>Miligramos</label><input type="text" id="medMg"/></div>
+          <div class="field-group"><label>Cantidad</label><input type="text" id="medCantidad"/></div>
+          <div class="full" style="display:flex;gap:8px;justify-content:flex-end;">
+            <button class="btn btn-ghost btn-sm" onclick="ocultarFormMedicamento()">Cancelar</button>
+            <button class="btn btn-primary btn-sm" id="btnGuardarMed" onclick="guardarMedicamento()">Guardar</button>
+          </div>
+        </div>
+      </div>
+      <!-- Relaciones -->
+      <div class="ficha-section">
+        <div class="ficha-section-title">Relaciones familiares<button class="btn btn-sm btn-ghost" onclick="mostrarFormRelacion()">+ Agregar</button></div>
+        <div id="fbRelaciones"></div>
+        <div class="mini-form" id="formAgregarRel" style="display:none;">
+          <div class="field-group ss-wrap full">
+            <label>Familiar</label>
+            <input type="text" id="relBuscarInput" placeholder="Buscar cliente…" oninput="filtrarSSRelacion()" onfocus="abrirSSRelacion()" autocomplete="off"/>
+            <div class="ss-dropdown" id="ssRelacion"></div>
+            <input type="hidden" id="relSeleccionadoId"/>
+          </div>
+          <div class="field-group full"><label>Descripción (ej: "Hijo de", "Pareja de")</label><input type="text" id="relDescripcion"/></div>
+          <div class="full" style="display:flex;gap:8px;justify-content:flex-end;">
+            <button class="btn btn-ghost btn-sm" onclick="ocultarFormRelacion()">Cancelar</button>
+            <button class="btn btn-primary btn-sm" id="btnGuardarRel" onclick="guardarRelacion()">Guardar</button>
+          </div>
+        </div>
+      </div>
+      <!-- Productos favoritos -->
+      <div class="ficha-section">
+        <div class="ficha-section-title">Productos favoritos<button class="btn btn-sm btn-ghost" onclick="mostrarFormProducto()">+ Agregar</button></div>
+        <div id="fbProductos"></div>
+        <div class="mini-form" id="formAgregarProd" style="display:none;">
+          <div class="field-group"><label>Nombre <span style="color:var(--danger)">*</span></label><input type="text" id="prodNombre"/></div>
+          <div class="field-group"><label>Código de barras</label><input type="text" id="prodCodigo" placeholder="Escanear o tipear…" onkeydown="if(event.key==='Enter'){event.preventDefault();guardarProducto();}"/></div>
+          <div class="full" style="display:flex;gap:8px;justify-content:flex-end;">
+            <button class="btn btn-ghost btn-sm" onclick="ocultarFormProducto()">Cancelar</button>
+            <button class="btn btn-primary btn-sm" id="btnGuardarProd" onclick="guardarProducto()">Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" onclick="confirmarEliminarCliente()">Eliminar cliente</button>
+      <button class="btn btn-secondary" onclick="abrirEditarClienteBasico()">Editar datos básicos</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: confirmar eliminar cliente -->
+<div class="modal-overlay" id="modalBorrarCliente">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h2>Eliminar cliente</h2><button class="modal-close" onclick="cerrarModal('modalBorrarCliente')">✕</button></div>
+    <div class="modal-body"><p style="font-size:14px;">¿Eliminar a <strong id="borrarClienteNombre"></strong>? Se eliminará toda su información asociada (obras sociales, medicamentos, relaciones, productos). No se puede deshacer.</p></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalBorrarCliente')">Cancelar</button>
+      <button class="btn btn-danger" id="btnConfirmarBorrarCliente" onclick="confirmarBorrarClienteFinal()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: datos básicos obra social (nueva / editar) -->
+<div class="modal-overlay" id="modalOSBasico">
+  <div class="modal">
+    <div class="modal-header"><h2 id="tituloOSBasico">Nueva obra social</h2><button class="modal-close" onclick="cerrarModal('modalOSBasico')">✕</button></div>
+    <div class="modal-body">
+      <div class="field-group"><label>Nombre <span style="color:var(--danger)">*</span></label><input type="text" id="osbNombre"/></div>
+      <div class="field-row">
+        <div class="field-group"><label>Teléfono</label><input type="text" id="osbTelefono"/></div>
+        <div class="field-group"><label>Email</label><input type="text" id="osbEmail"/></div>
+      </div>
+      <div class="field-group"><label>Web</label><input type="text" id="osbWeb" placeholder="https://…"/></div>
+
+      <div class="ficha-section">
+        <div class="ficha-section-title">Validación de recetas</div>
+        <div class="toggle-row"><label>Admite genéricos</label><label class="switch"><input type="checkbox" id="osbAdmiteGenericos"/><span class="switch-slider"></span></label></div>
+        <div class="toggle-row"><label>Genérico en receta</label><label class="switch"><input type="checkbox" id="osbGenericoReceta"/><span class="switch-slider"></span></label></div>
+        <div class="toggle-row">
+          <label>Identificación del afiliado</label>
+          <div class="radio-group">
+            <label class="radio-opt"><input type="radio" name="osbIdent" value="dni" id="osbIdentDni"> DNI</label>
+            <label class="radio-opt"><input type="radio" name="osbIdent" value="afiliado" id="osbIdentAfiliado" checked> Nro afiliado</label>
+          </div>
+        </div>
+        <div class="toggle-row"><label>Se puede modificar afiliado</label><label class="switch"><input type="checkbox" id="osbModificarAfiliado"/><span class="switch-slider"></span></label></div>
+        <div class="field-group" style="margin-top:10px;"><label>Dígitos a quitar</label><input type="text" id="osbDigitosQuitar"/></div>
+        <div class="toggle-row"><label>Declaración de dispensa</label><label class="switch"><input type="checkbox" id="osbDeclaracion" onchange="document.getElementById('osbDeclaracionDetalleWrap').style.display=this.checked?'block':'none'"/><span class="switch-slider"></span></label></div>
+        <div class="field-group" id="osbDeclaracionDetalleWrap" style="display:none;margin-top:10px;"><label>Detalle de declaración de dispensa</label><textarea id="osbDeclaracionDetalle" rows="2"></textarea></div>
+      </div>
+
+      <div class="field-group"><label>Mañas y particularidades</label><textarea id="osbParticularidades" rows="3"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalOSBasico')">Cancelar</button>
+      <button class="btn btn-primary" id="btnGuardarOSBasico" onclick="guardarOSBasico()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Ficha de obra social -->
+<div class="modal-overlay" id="modalFichaOS">
+  <div class="modal">
+    <div class="modal-header"><h2 id="fichaOSTitulo">Obra social</h2><button class="modal-close" onclick="cerrarModal('modalFichaOS')">✕</button></div>
+    <div class="modal-body">
+      <div class="ficha-section">
+        <div class="ficha-section-title">Datos básicos</div>
+        <div id="fosDatosBasicos"></div>
+      </div>
+      <div class="ficha-section">
+        <div class="ficha-section-title">Validación de recetas</div>
+        <div id="fosValidacion"></div>
+      </div>
+      <div class="ficha-section">
+        <div class="ficha-section-title">Mañas y particularidades</div>
+        <div id="fosParticularidades" style="font-size:13px;white-space:pre-wrap;"></div>
+      </div>
+      <div class="ficha-section">
+        <div class="ficha-section-title">Planes<button class="btn btn-sm btn-ghost" onclick="mostrarFormPlan()">+ Agregar plan</button></div>
+        <div id="fosPlanes"></div>
+        <div class="mini-form" id="formAgregarPlan" style="display:none;">
+          <div class="field-group"><label>Nombre <span style="color:var(--danger)">*</span></label><input type="text" id="planNombre"/></div>
+          <div class="field-group"><label>Notas</label><input type="text" id="planNotas"/></div>
+          <div class="full" style="display:flex;gap:8px;justify-content:flex-end;">
+            <button class="btn btn-ghost btn-sm" onclick="ocultarFormPlan()">Cancelar</button>
+            <button class="btn btn-primary btn-sm" id="btnGuardarPlan" onclick="guardarPlan()">Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" onclick="confirmarEliminarOS()">Eliminar obra social</button>
+      <button class="btn btn-secondary" onclick="abrirEditarOSBasico()">Editar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: confirmar eliminar OS -->
+<div class="modal-overlay" id="modalBorrarOS">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h2>Eliminar obra social</h2><button class="modal-close" onclick="cerrarModal('modalBorrarOS')">✕</button></div>
+    <div class="modal-body"><p style="font-size:14px;" id="borrarOSMensaje"></p></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalBorrarOS')">Cancelar</button>
+      <button class="btn btn-danger" id="btnConfirmarBorrarOS" onclick="confirmarBorrarOSFinal()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+</div><!-- /appRoot -->
+
+<script>
+  const SB_URL = 'https://zmxkazlpliapedsgbzhb.supabase.co/rest/v1';
+  const SB_URL_BASE = 'https://zmxkazlpliapedsgbzhb.supabase.co';
+  const SB_KEY = 'sb_publishable_7iSVOhG4YHUC9rFegjdJ4A_1GL4DTlV';
+
+  // ── Autenticación (Supabase Auth + Google OAuth) ────────────────────────
+  const sbAuth = supabase.createClient(SB_URL_BASE, SB_KEY);
+  let SB_TOKEN = null;
+  function getAuthHeaders(extra){
+    return Object.assign({'apikey':SB_KEY,'Authorization':'Bearer '+(SB_TOKEN||SB_KEY)}, extra||{});
+  }
+  async function iniciarSesionGoogle(){
+    await sbAuth.auth.signInWithOAuth({provider:'google',options:{redirectTo:'https://empleadosriadigos-source.github.io/riadigospreparados/index.html'}});
+  }
+  async function cerrarSesion(){ await sbAuth.auth.signOut(); location.reload(); }
+  function mostrarLogin(){ document.getElementById('loginOverlay').style.display='flex'; document.getElementById('appRoot').style.display='none'; }
+  function mostrarApp(session){
+    document.getElementById('loginOverlay').style.display='none';
+    document.getElementById('appRoot').style.display='';
+    const u=session.user;
+    const nameEl=document.getElementById('userNombre');
+    if(nameEl) nameEl.textContent=u.user_metadata?.full_name||u.email||'';
+    if(typeof initApp==='function') initApp();
+  }
+  async function chequearSesion(){
+    const {data:{session}}=await sbAuth.auth.getSession();
+    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { mostrarLogin(); }
+  }
+  sbAuth.auth.onAuthStateChange((_event,session)=>{
+    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { SB_TOKEN=null; mostrarLogin(); }
+  });
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btnGoogleLogin').addEventListener('click', iniciarSesionGoogle);
+    chequearSesion();
+  });
+
+  // ── Estado ───────────────────────────────────────────────────────────────
+  let clientes = [], obrasSociales = [], planes = [];
+  let clienteActual = null, osActual = null;
+  let tabActual = 'clientes';
+
+  function initApp(){
+    cargarClientes();
+    cargarObrasSociales();
+  }
+
+  function cambiarTab(t){
+    tabActual = t;
+    document.getElementById('tabBtnClientes').classList.toggle('active', t==='clientes');
+    document.getElementById('tabBtnOS').classList.toggle('active', t==='os');
+    document.getElementById('panelClientes').classList.toggle('active', t==='clientes');
+    document.getElementById('panelOS').classList.toggle('active', t==='os');
+  }
+
+  // ── Supabase API helpers ───────────────────────────────────────────────
+  async function sbGet(path){
+    const resp=await fetch(`${SB_URL}/${path}`,{headers:getAuthHeaders()});
+    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
+    return resp.json();
+  }
+  async function sbPost(table,body){
+    const resp=await fetch(`${SB_URL}/${table}`,{method:'POST',headers:getAuthHeaders({'Content-Type':'application/json','Prefer':'return=representation'}),body:JSON.stringify(body)});
+    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
+    return resp.json();
+  }
+  async function sbPatch(table,id,body){
+    const resp=await fetch(`${SB_URL}/${table}?id=eq.${id}`,{method:'PATCH',headers:getAuthHeaders({'Content-Type':'application/json','Prefer':'return=representation'}),body:JSON.stringify(body)});
+    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
+    return resp.json();
+  }
+  async function sbDelete(path){
+    const resp=await fetch(`${SB_URL}/${path}`,{method:'DELETE',headers:getAuthHeaders()});
+    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
+  }
+
+  // ── Carga CLIENTES ────────────────────────────────────────────────────
+  async function cargarClientes(){
+    document.getElementById('statusClientes').innerHTML='<span class="spinner"></span> Cargando…';
+    document.getElementById('tablaClientesWrap').style.display='none';
+    try{
+      const [clis, osCli] = await Promise.all([
+        sbGet('clientes?select=id,nombre,dni,telefono,tarjeta_zetti,observaciones&order=nombre.asc'),
+        sbGet('cliente_obras_sociales?select=cliente_id,obra_social_id,obras_sociales(nombre)'),
+      ]);
+      const osMap = {};
+      osCli.forEach(r=>{ if(!osMap[r.cliente_id]) osMap[r.cliente_id]=[]; osMap[r.cliente_id].push(r.obras_sociales?.nombre).filter(Boolean); });
+      clientes = clis.map(c=>({...c, obras_nombres:(osMap[c.id]||[]).filter(Boolean)}));
+      document.getElementById('statusClientes').innerHTML='';
+      filtrarClientes();
+    }catch(err){ document.getElementById('statusClientes').innerHTML='Error: '+err.message; }
+  }
+
+  function filtrarClientes(){
+    const q=document.getElementById('buscadorClientes').value.toLowerCase().trim();
+    const res = clientes.filter(c=>{
+      if(!q) return true;
+      const campos=[c.nombre||'',c.dni||'',c.telefono||'', ...(c.obras_nombres||[])];
+      return campos.some(v=>v.toLowerCase().includes(q));
+    });
+    renderTablaClientes(res);
+  }
+
+  function renderTablaClientes(lista){
+    const tbody=document.getElementById('tbodyClientes'); tbody.innerHTML='';
+    if(!lista.length){ document.getElementById('statusClientes').innerHTML='No se encontraron clientes.'; document.getElementById('tablaClientesWrap').style.display='none'; return; }
+    document.getElementById('statusClientes').innerHTML=''; document.getElementById('tablaClientesWrap').style.display='block';
+    lista.forEach(c=>{
+      const tr=document.createElement('tr');
+      tr.onclick=()=>abrirFichaCliente(c.id);
+      tr.innerHTML=`<td class="td-nombre">${escHtml(c.nombre)}</td><td class="td-muted">${escHtml(c.dni||'—')}</td><td class="td-muted">${escHtml(c.telefono||'—')}</td><td class="td-muted">${escHtml((c.obras_nombres||[]).join(', ')||'—')}</td><td class="td-muted">${escHtml(c.tarjeta_zetti||'—')}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ── Nuevo / editar datos básicos cliente ──────────────────────────────
+  function abrirNuevoCliente(){
+    clienteActual=null;
+    document.getElementById('tituloClienteBasico').textContent='Nuevo cliente';
+    ['cbNombre','cbDni','cbTelefono','cbZetti','cbObs'].forEach(id=>document.getElementById(id).value='');
+    abrirModal('modalClienteBasico');
+  }
+  function abrirEditarClienteBasico(){
+    if(!clienteActual) return;
+    document.getElementById('tituloClienteBasico').textContent='Editar cliente';
+    document.getElementById('cbNombre').value=clienteActual.nombre||'';
+    document.getElementById('cbDni').value=clienteActual.dni||'';
+    document.getElementById('cbTelefono').value=clienteActual.telefono||'';
+    document.getElementById('cbZetti').value=clienteActual.tarjeta_zetti||'';
+    document.getElementById('cbObs').value=clienteActual.observaciones||'';
+    abrirModal('modalClienteBasico');
+  }
+  async function guardarClienteBasico(){
+    const nombre=document.getElementById('cbNombre').value.trim();
+    if(!nombre){ mostrarToast('El nombre es obligatorio','err'); return; }
+    const btn=document.getElementById('btnGuardarClienteBasico'); btn.disabled=true; btn.textContent='Guardando…';
+    const body=limpiar({
+      nombre,
+      dni:document.getElementById('cbDni').value||null,
+      telefono:document.getElementById('cbTelefono').value||null,
+      tarjeta_zetti:document.getElementById('cbZetti').value||null,
+      observaciones:document.getElementById('cbObs').value||null,
+    });
+    try{
+      if(clienteActual){
+        await sbPatch('clientes',clienteActual.id,body);
+        mostrarToast('✓ Cliente actualizado','ok');
+        cerrarModal('modalClienteBasico');
+        await cargarClientes();
+        await abrirFichaCliente(clienteActual.id);
+      }else{
+        const nuevo=await sbPost('clientes',body);
+        mostrarToast('✓ Cliente creado','ok');
+        cerrarModal('modalClienteBasico');
+        await cargarClientes();
+        await abrirFichaCliente(nuevo[0].id);
+      }
+    }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+    btn.disabled=false; btn.textContent='Guardar';
+  }
+
+  // ── Ficha de cliente ───────────────────────────────────────────────────
+  async function abrirFichaCliente(id){
+    try{
+      const [cli, osRows, meds, rels, prods] = await Promise.all([
+        sbGet(`clientes?id=eq.${id}&select=*`),
+        sbGet(`cliente_obras_sociales?cliente_id=eq.${id}&select=*,obras_sociales(nombre),planes_os(nombre)`),
+        sbGet(`cliente_medicamentos?cliente_id=eq.${id}&order=nombre.asc`),
+        sbGet(`cliente_relaciones?cliente_id=eq.${id}&select=*,cliente_relacionado:clientes!cliente_relaciones_cliente_relacionado_id_fkey(id,nombre)`),
+        sbGet(`cliente_productos?cliente_id=eq.${id}&order=nombre.asc`),
+      ]);
+      clienteActual = cli[0];
+      if(!clienteActual){ mostrarToast('Cliente no encontrado','err'); return; }
+      document.getElementById('fichaClienteTitulo').textContent = clienteActual.nombre;
+      renderDatosBasicosCliente();
+      renderObrasSocialesCliente(osRows);
+      renderMedicamentos(meds);
+      renderRelaciones(rels);
+      renderProductos(prods);
+      ocultarFormOS_Cliente(); ocultarFormMedicamento(); ocultarFormRelacion(); ocultarFormProducto();
+      abrirModal('modalFichaCliente');
+    }catch(err){ mostrarToast('Error al abrir ficha: '+err.message,'err'); }
+  }
+
+  function renderDatosBasicosCliente(){
+    const c=clienteActual;
+    document.getElementById('fbDatosBasicos').innerHTML=`
+      <div class="sub-item-info" style="margin-bottom:8px;"><b>${escHtml(c.nombre)}</b></div>
+      ${c.dni?`<div class="copy-row" style="margin-bottom:8px;"><span class="muted" style="font-size:13px;">DNI: ${escHtml(c.dni)}</span>${btnCopiarHtml(c.dni)}</div>`:''}
+      ${c.telefono?`<div class="copy-row" style="margin-bottom:8px;"><span class="muted" style="font-size:13px;">Tel: ${escHtml(c.telefono)}</span>${btnCopiarHtml(c.telefono)}</div>`:''}
+      ${c.tarjeta_zetti?`<div class="copy-row" style="margin-bottom:8px;"><span class="muted" style="font-size:13px;">Tarjeta Zetti: ${escHtml(c.tarjeta_zetti)}</span>${btnCopiarHtml(c.tarjeta_zetti)}</div>`:''}
+      ${c.observaciones?`<div class="muted" style="font-size:13px;margin-top:6px;">${escHtml(c.observaciones)}</div>`:''}
+    `;
+    activarBotonesCopiar(document.getElementById('fbDatosBasicos'));
+  }
+
+  function renderObrasSocialesCliente(rows){
+    const cont=document.getElementById('fbObrasSociales');
+    if(!rows.length){ cont.innerHTML='<div class="empty-msg">Sin obras sociales registradas.</div>'; return; }
+    cont.innerHTML = rows.map(r=>`
+      <div class="sub-item" data-id="${r.id}">
+        <div class="sub-item-info">
+          <b>${escHtml(r.obras_sociales?.nombre||'—')}</b>${r.planes_os?.nombre?' · '+escHtml(r.planes_os.nombre):''}<br>
+          ${r.nro_afiliado?`<span class="copy-row">Afiliado: ${escHtml(r.nro_afiliado)} ${btnCopiarHtml(r.nro_afiliado)}</span>`:''}
+          ${r.coseguro?`<div class="muted">Coseguro: ${escHtml(r.coseguro)}</div>`:''}
+        </div>
+        <div class="sub-item-actions">
+          <button class="icon-btn" onclick="borrarOSCliente('${r.id}')" title="Eliminar">${svgTrash()}</button>
+        </div>
+      </div>`).join('');
+    activarBotonesCopiar(cont);
+  }
+
+  function renderMedicamentos(rows){
+    const cont=document.getElementById('fbMedicamentos');
+    if(!rows.length){ cont.innerHTML='<div class="empty-msg">Sin medicamentos habituales.</div>'; return; }
+    cont.innerHTML = rows.map(m=>`
+      <div class="sub-item" data-id="${m.id}">
+        <div class="sub-item-info"><b>${escHtml(m.nombre)}</b>${m.marca?' · '+escHtml(m.marca):''}<br><span class="muted">${[m.miligramos,m.cantidad].filter(Boolean).map(escHtml).join(' · ')}</span></div>
+        <div class="sub-item-actions"><button class="icon-btn" onclick="borrarMedicamento('${m.id}')" title="Eliminar">${svgTrash()}</button></div>
+      </div>`).join('');
+  }
+
+  function renderRelaciones(rows){
+    const cont=document.getElementById('fbRelaciones');
+    if(!rows.length){ cont.innerHTML='<div class="empty-msg">Sin relaciones familiares.</div>'; return; }
+    cont.innerHTML = rows.map(r=>`
+      <div class="sub-item" data-id="${r.id}">
+        <div class="sub-item-info">${escHtml(r.descripcion||'Relacionado con')} <span class="link-familiar" onclick="cerrarModal('modalFichaCliente');setTimeout(()=>abrirFichaCliente('${r.cliente_relacionado?.id}'),150)">${escHtml(r.cliente_relacionado?.nombre||'—')}</span></div>
+        <div class="sub-item-actions"><button class="icon-btn" onclick="borrarRelacion('${r.id}')" title="Eliminar">${svgTrash()}</button></div>
+      </div>`).join('');
+  }
+
+  function renderProductos(rows){
+    const cont=document.getElementById('fbProductos');
+    if(!rows.length){ cont.innerHTML='<div class="empty-msg">Sin productos favoritos.</div>'; return; }
+    cont.innerHTML = rows.map(p=>`
+      <div class="sub-item" data-id="${p.id}">
+        <div class="sub-item-info"><b>${escHtml(p.nombre)}</b>${p.codigo_barras?`<div class="copy-row">Cód: ${escHtml(p.codigo_barras)} ${btnCopiarHtml(p.codigo_barras)}</div>`:''}</div>
+        <div class="sub-item-actions"><button class="icon-btn" onclick="borrarProducto('${p.id}')" title="Eliminar">${svgTrash()}</button></div>
+      </div>`).join('');
+    activarBotonesCopiar(cont);
+  }
+
+  // ── Obras sociales del cliente: agregar ───────────────────────────────
+  function mostrarFormOS_Cliente(){
+    document.getElementById('formAgregarOS').style.display='grid';
+    document.getElementById('osBuscarInput').value=''; document.getElementById('osSeleccionadaId').value='';
+    document.getElementById('osNroAfiliado').value=''; document.getElementById('osCoseguro').value='';
+    poblarSelectPlanes('');
+  }
+  function ocultarFormOS_Cliente(){ document.getElementById('formAgregarOS').style.display='none'; }
+  function filtrarSSObraSocial(){ const inp=document.getElementById('osBuscarInput'); renderSSObraSocial(obrasSociales.filter(o=>o.nombre.toLowerCase().includes(inp.value.toLowerCase()))); }
+  function abrirSSObraSocial(){ const inp=document.getElementById('osBuscarInput'); renderSSObraSocial(obrasSociales.filter(o=>o.nombre.toLowerCase().includes(inp.value.toLowerCase()))); }
+  function renderSSObraSocial(lista){
+    const dd=document.getElementById('ssObraSocial'); const input=document.getElementById('osBuscarInput');
+    dd.innerHTML='';
+    if(!lista.length){ dd.innerHTML='<div class="ss-empty">Sin resultados</div>'; }
+    lista.forEach(o=>{ const d=document.createElement('div'); d.className='ss-option'; d.textContent=o.nombre;
+      d.onmousedown=e=>{ e.preventDefault(); input.value=o.nombre; document.getElementById('osSeleccionadaId').value=o.id; poblarSelectPlanes(o.id); dd.classList.remove('open'); };
+      dd.appendChild(d); });
+    posicionarDD(input,dd); dd.classList.add('open');
+  }
+  function poblarSelectPlanes(osId){
+    const sel=document.getElementById('osPlanSelect'); sel.innerHTML='<option value="">— Sin plan —</option>';
+    planes.filter(p=>p.obra_social_id===osId).forEach(p=>{ const opt=document.createElement('option'); opt.value=p.id; opt.textContent=p.nombre; sel.appendChild(opt); });
+  }
+  async function guardarOSCliente(){
+    const osId=document.getElementById('osSeleccionadaId').value;
+    if(!osId){ mostrarToast('Seleccioná una obra social','err'); return; }
+    const btn=document.getElementById('btnGuardarOSCliente'); btn.disabled=true;
+    try{
+      await sbPost('cliente_obras_sociales', limpiar({
+        cliente_id:clienteActual.id, obra_social_id:osId,
+        plan_id:document.getElementById('osPlanSelect').value||null,
+        nro_afiliado:document.getElementById('osNroAfiliado').value||null,
+        coseguro:document.getElementById('osCoseguro').value||null,
+      }));
+      mostrarToast('✓ Obra social agregada','ok');
+      ocultarFormOS_Cliente();
+      await abrirFichaCliente(clienteActual.id);
+      await cargarClientes();
+    }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+    btn.disabled=false;
+  }
+  async function borrarOSCliente(id){
+    try{ await sbDelete(`cliente_obras_sociales?id=eq.${id}`); mostrarToast('✓ Eliminado','ok'); await abrirFichaCliente(clienteActual.id); await cargarClientes(); }
+    catch(err){ mostrarToast('Error: '+err.message,'err'); }
+  }
+
+  // ── Medicamentos: agregar / borrar ─────────────────────────────────────
+  function mostrarFormMedicamento(){ document.getElementById('formAgregarMed').style.display='grid'; ['medNombre','medMarca','medMg','medCantidad'].forEach(id=>document.getElementById(id).value=''); }
+  function ocultarFormMedicamento(){ document.getElementById('formAgregarMed').style.display='none'; }
+  async function guardarMedicamento(){
+    const nombre=document.getElementById('medNombre').value.trim();
+    if(!nombre){ mostrarToast('El nombre es obligatorio','err'); return; }
+    const btn=document.getElementById('btnGuardarMed'); btn.disabled=true;
+    try{
+      await sbPost('cliente_medicamentos', limpiar({
+        cliente_id:clienteActual.id, nombre,
+        marca:document.getElementById('medMarca').value||null,
+        miligramos:document.getElementById('medMg').value||null,
+        cantidad:document.getElementById('medCantidad').value||null,
+      }));
+      mostrarToast('✓ Medicamento agregado','ok'); ocultarFormMedicamento();
+      await abrirFichaCliente(clienteActual.id);
+    }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+    btn.disabled=false;
+  }
+  async function borrarMedicamento(id){
+    try{ await sbDelete(`cliente_medicamentos?id=eq.${id}`); mostrarToast('✓ Eliminado','ok'); await abrirFichaCliente(clienteActual.id); }
+    catch(err){ mostrarToast('Error: '+err.message,'err'); }
+  }
+
+  // ── Relaciones: agregar / borrar ───────────────────────────────────────
+  function mostrarFormRelacion(){ document.getElementById('formAgregarRel').style.display='grid'; document.getElementById('relBuscarInput').value=''; document.getElementById('relSeleccionadoId').value=''; document.getElementById('relDescripcion').value=''; }
+  function ocultarFormRelacion(){ document.getElementById('formAgregarRel').style.display='none'; }
+  function filtrarSSRelacion(){ const inp=document.getElementById('relBuscarInput'); renderSSRelacion(clientes.filter(c=>c.id!==clienteActual.id && c.nombre.toLowerCase().includes(inp.value.toLowerCase()))); }
+  function abrirSSRelacion(){ const inp=document.getElementById('relBuscarInput'); renderSSRelacion(clientes.filter(c=>c.id!==clienteActual.id && c.nombre.toLowerCase().includes(inp.value.toLowerCase()))); }
+  function renderSSRelacion(lista){
+    const dd=document.getElementById('ssRelacion'); const input=document.getElementById('relBuscarInput');
+    dd.innerHTML='';
+    if(!lista.length){ dd.innerHTML='<div class="ss-empty">Sin resultados</div>'; }
+    lista.slice(0,50).forEach(c=>{ const d=document.createElement('div'); d.className='ss-option'; d.textContent=c.nombre;
+      d.onmousedown=e=>{ e.preventDefault(); input.value=c.nombre; document.getElementById('relSeleccionadoId').value=c.id; dd.classList.remove('open'); };
+      dd.appendChild(d); });
+    posicionarDD(input,dd); dd.classList.add('open');
+  }
+  async function guardarRelacion(){
+    const relId=document.getElementById('relSeleccionadoId').value;
+    if(!relId){ mostrarToast('Seleccioná un cliente','err'); return; }
+    const btn=document.getElementById('btnGuardarRel'); btn.disabled=true;
+    try{
+      await sbPost('cliente_relaciones', limpiar({
+        cliente_id:clienteActual.id, cliente_relacionado_id:relId,
+        descripcion:document.getElementById('relDescripcion').value||null,
+      }));
+      mostrarToast('✓ Relación agregada','ok'); ocultarFormRelacion();
+      await abrirFichaCliente(clienteActual.id);
+    }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+    btn.disabled=false;
+  }
+  async function borrarRelacion(id){
+    try{ await sbDelete(`cliente_relaciones?id=eq.${id}`); mostrarToast('✓ Eliminado','ok'); await abrirFichaCliente(clienteActual.id); }
+    catch(err){ mostrarToast('Error: '+err.message,'err'); }
+  }
+
+  // ── Productos: agregar / borrar ────────────────────────────────────────
+  function mostrarFormProducto(){ document.getElementById('formAgregarProd').style.display='grid'; document.getElementById('prodNombre').value=''; document.getElementById('prodCodigo').value=''; document.getElementById('prodCodigo').focus(); }
+  function ocultarFormProducto(){ document.getElementById('formAgregarProd').style.display='none'; }
+  async function guardarProducto(){
+    const nombre=document.getElementById('prodNombre').value.trim();
+    if(!nombre){ mostrarToast('El nombre es obligatorio','err'); return; }
+    const btn=document.getElementById('btnGuardarProd'); btn.disabled=true;
+    try{
+      await sbPost('cliente_productos', limpiar({
+        cliente_id:clienteActual.id, nombre,
+        codigo_barras:document.getElementById('prodCodigo').value||null,
+      }));
+      mostrarToast('✓ Producto agregado','ok'); ocultarFormProducto();
+      await abrirFichaCliente(clienteActual.id);
+    }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+    btn.disabled=false;
+  }
+  async function borrarProducto(id){
+    try{ await sbDelete(`cliente_productos?id=eq.${id}`); mostrarToast('✓ Eliminado','ok'); await abrirFichaCliente(clienteActual.id); }
+    catch(err){ mostrarToast('Error: '+err.message,'err'); }
+  }
+
+  // ── Eliminar cliente ───────────────────────────────────────────────────
+  function confirmarEliminarCliente(){
+    document.getElementById('borrarClienteNombre').textContent=clienteActual.nombre;
+    abrirModal('modalBorrarCliente');
+  }
+  async function confirmarBorrarClienteFinal(){
+    const btn=document.getElementById('btnConfirmarBorrarCliente'); btn.disabled=true;
+    try{
+      await sbDelete(`clientes?id=eq.${clienteActual.id}`);
+      mostrarToast('✓ Cliente eliminado','ok');
+      cerrarModal('modalBorrarCliente'); cerrarModal('modalFichaCliente');
+      await cargarClientes();
+    }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+    btn.disabled=false;
+  }
+
+  // ── Carga OBRAS SOCIALES ───────────────────────────────────────────────
+  async function cargarObrasSociales(){
+    document.getElementById('statusOS').innerHTML='<span class="spinner"></span> Cargando…';
+    document.getElementById('tablaOSWrap').style.display='none';
+    try{
+      const [os, pls] = await Promise.all([
+        sbGet('obras_sociales?select=*&order=nombre.asc'),
+        sbGet('planes_os?select=*&order=nombre.asc'),
+      ]);
+      obrasSociales = os; planes = pls;
+      document.getElementById('statusOS').innerHTML='';
+      filtrarOS();
+    }catch(err){ document.getElementById('statusOS').innerHTML='Error: '+err.message; }
+  }
+
+  function filtrarOS(){
+    const q=document.getElementById('buscadorOS').value.toLowerCase().trim();
+    const res=obrasSociales.filter(o=>!q || o.nombre.toLowerCase().includes(q));
+    renderTablaOS(res);
+  }
+
+  function renderTablaOS(lista){
+    const tbody=document.getElementById('tbodyOS'); tbody.innerHTML='';
+    if(!lista.length){ document.getElementById('statusOS').innerHTML='No se encontraron obras sociales.'; document.getElementById('tablaOSWrap').style.display='none'; return; }
+    document.getElementById('statusOS').innerHTML=''; document.getElementById('tablaOSWrap').style.display='block';
+    lista.forEach(o=>{
+      const tr=document.createElement('tr');
+      tr.onclick=()=>abrirFichaOS(o.id);
+      tr.innerHTML=`<td class="td-nombre">${escHtml(o.nombre)}</td><td class="td-muted">${escHtml(o.telefono||'—')}</td><td>${pillBool(o.admite_genericos)}</td><td>${pillBool(o.declaracion_dispensa)}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+  function pillBool(v){ return v? '<span class="pill pill-si">Sí</span>' : '<span class="pill pill-no">No</span>'; }
+
+  // ── Nueva / editar obra social ──────────────────────────────────────────
+  function abrirNuevaOS(){
+    osActual=null;
+    document.getElementById('tituloOSBasico').textContent='Nueva obra social';
+    ['osbNombre','osbTelefono','osbEmail','osbWeb','osbDigitosQuitar','osbDeclaracionDetalle','osbParticularidades'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('osbAdmiteGenericos').checked=false;
+    document.getElementById('osbGenericoReceta').checked=false;
+    document.getElementById('osbModificarAfiliado').checked=false;
+    document.getElementById('osbDeclaracion').checked=false;
+    document.getElementById('osbDeclaracionDetalleWrap').style.display='none';
+    document.getElementById('osbIdentAfiliado').checked=true;
+    abrirModal('modalOSBasico');
+  }
+  function abrirEditarOSBasico(){
+    if(!osActual) return;
+    document.getElementById('tituloOSBasico').textContent='Editar obra social';
+    document.getElementById('osbNombre').value=osActual.nombre||'';
+    document.getElementById('osbTelefono').value=osActual.telefono||'';
+    document.getElementById('osbEmail').value=osActual.email||'';
+    document.getElementById('osbWeb').value=osActual.web||'';
+    document.getElementById('osbAdmiteGenericos').checked=!!osActual.admite_genericos;
+    document.getElementById('osbGenericoReceta').checked=!!osActual.generico_en_receta;
+    document.getElementById('osbModificarAfiliado').checked=!!osActual.se_puede_modificar_afiliado;
+    document.getElementById('osbDigitosQuitar').value=osActual.digitos_a_quitar||'';
+    document.getElementById('osbDeclaracion').checked=!!osActual.declaracion_dispensa;
+    document.getElementById('osbDeclaracionDetalleWrap').style.display=osActual.declaracion_dispensa?'block':'none';
+    document.getElementById('osbDeclaracionDetalle').value=osActual.declaracion_dispensa_detalle||'';
+    document.getElementById('osbParticularidades').value=osActual.particularidades||'';
+    document.getElementById(osActual.usar_dni?'osbIdentDni':'osbIdentAfiliado').checked=true;
+    abrirModal('modalOSBasico');
+    cerrarModal('modalFichaOS');
+  }
+  async function guardarOSBasico(){
+    const nombre=document.getElementById('osbNombre').value.trim();
+    if(!nombre){ mostrarToast('El nombre es obligatorio','err'); return; }
+    const usaDni = document.getElementById('osbIdentDni').checked;
+    const btn=document.getElementById('btnGuardarOSBasico'); btn.disabled=true;
+    const body=limpiar({
+      nombre,
+      telefono:document.getElementById('osbTelefono').value||null,
+      email:document.getElementById('osbEmail').value||null,
+      web:document.getElementById('osbWeb').value||null,
+      admite_genericos:document.getElementById('osbAdmiteGenericos').checked,
+      generico_en_receta:document.getElementById('osbGenericoReceta').checked,
+      usar_dni:usaDni,
+      usar_nro_afiliado:!usaDni,
+      se_puede_modificar_afiliado:document.getElementById('osbModificarAfiliado').checked,
+      digitos_a_quitar:document.getElementById('osbDigitosQuitar').value||null,
+      declaracion_dispensa:document.getElementById('osbDeclaracion').checked,
+      declaracion_dispensa_detalle:document.getElementById('osbDeclaracionDetalle').value||null,
+      particularidades:document.getElementById('osbParticularidades').value||null,
+    });
+    try{
+      if(osActual){
+        await sbPatch('obras_sociales',osActual.id,body);
+        mostrarToast('✓ Obra social actualizada','ok');
+        cerrarModal('modalOSBasico');
+        await cargarObrasSociales();
+        await abrirFichaOS(osActual.id);
+      }else{
+        const nuevo=await sbPost('obras_sociales',body);
+        mostrarToast('✓ Obra social creada','ok');
+        cerrarModal('modalOSBasico');
+        await cargarObrasSociales();
+        await abrirFichaOS(nuevo[0].id);
+      }
+    }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+    btn.disabled=false;
+  }
+
+  // ── Ficha de obra social ────────────────────────────────────────────────
+  async function abrirFichaOS(id){
+    try{
+      const os = obrasSociales.find(o=>o.id===id) || (await sbGet(`obras_sociales?id=eq.${id}&select=*`))[0];
+      osActual = os;
+      document.getElementById('fichaOSTitulo').textContent = os.nombre;
+      document.getElementById('fosDatosBasicos').innerHTML = `
+        ${os.telefono?`<div class="copy-row" style="margin-bottom:8px;"><span style="font-size:13px;">Tel: ${escHtml(os.telefono)}</span>${btnCopiarHtml(os.telefono)}</div>`:''}
+        ${os.email?`<div class="copy-row" style="margin-bottom:8px;"><span style="font-size:13px;">Email: ${escHtml(os.email)}</span>${btnCopiarHtml(os.email)}</div>`:''}
+        ${os.web?`<div style="margin-bottom:8px;font-size:13px;">Web: <a href="${escHtml(os.web)}" target="_blank" style="color:var(--brand);">${escHtml(os.web)}</a></div>`:''}
+        ${(!os.telefono&&!os.email&&!os.web)?'<div class="empty-msg">Sin datos de contacto.</div>':''}
+      `;
+      activarBotonesCopiar(document.getElementById('fosDatosBasicos'));
+      document.getElementById('fosValidacion').innerHTML = `
+        <div class="sub-item"><span>Admite genéricos</span><b>${os.admite_genericos?'Sí':'No'}</b></div>
+        <div class="sub-item"><span>Genérico en receta</span><b>${os.generico_en_receta?'Sí':'No'}</b></div>
+        <div class="sub-item"><span>Identificación</span><b>${os.usar_dni?'DNI':'Nro afiliado'}</b></div>
+        <div class="sub-item"><span>Se puede modificar afiliado</span><b>${os.se_puede_modificar_afiliado?'Sí':'No'}</b></div>
+        ${os.digitos_a_quitar?`<div class="sub-item"><span>Dígitos a quitar</span><b>${escHtml(os.digitos_a_quitar)}</b></div>`:''}
+        <div class="sub-item"><span>Declaración de dispensa</span><b>${os.declaracion_dispensa?'Sí':'No'}</b></div>
+        ${os.declaracion_dispensa&&os.declaracion_dispensa_detalle?`<div class="muted" style="font-size:12px;padding:6px 0;">${escHtml(os.declaracion_dispensa_detalle)}</div>`:''}
+      `;
+      document.getElementById('fosParticularidades').textContent = os.particularidades || 'Sin notas.';
+      const planesOS = planes.filter(p=>p.obra_social_id===id);
+      renderPlanesOS(planesOS);
+      ocultarFormPlan();
+      abrirModal('modalFichaOS');
+    }catch(err){ mostrarToast('Error al abrir ficha: '+err.message,'err'); }
+  }
+
+  function renderPlanesOS(lista){
+    const cont=document.getElementById('fosPlanes');
+    if(!lista.length){ cont.innerHTML='<div class="empty-msg">Sin planes registrados.</div>'; return; }
+    cont.innerHTML = lista.map(p=>`
+      <div class="sub-item" data-id="${p.id}">
+        <div class="sub-item-info"><b>${escHtml(p.nombre)}</b>${p.notas?'<div class="muted">'+escHtml(p.notas)+'</div>':''}</div>
+        <div class="sub-item-actions"><button class="icon-btn" onclick="borrarPlan('${p.id}')" title="Eliminar">${svgTrash()}</button></div>
+      </div>`).join('');
+  }
+  function mostrarFormPlan(){ document.getElementById('formAgregarPlan').style.display='grid'; document.getElementById('planNombre').value=''; document.getElementById('planNotas').value=''; }
+  function ocultarFormPlan(){ document.getElementById('formAgregarPlan').style.display='none'; }
+  async function guardarPlan(){
+    const nombre=document.getElementById('planNombre').value.trim();
+    if(!nombre){ mostrarToast('El nombre es obligatorio','err'); return; }
+    const btn=document.getElementById('btnGuardarPlan'); btn.disabled=true;
+    try{
+      await sbPost('planes_os', limpiar({ obra_social_id:osActual.id, nombre, notas:document.getElementById('planNotas').value||null }));
+      mostrarToast('✓ Plan agregado','ok'); ocultarFormPlan();
+      await cargarObrasSociales();
+      await abrirFichaOS(osActual.id);
+    }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+    btn.disabled=false;
+  }
+  async function borrarPlan(id){
+    try{ await sbDelete(`planes_os?id=eq.${id}`); mostrarToast('✓ Eliminado','ok'); await cargarObrasSociales(); await abrirFichaOS(osActual.id); }
+    catch(err){ mostrarToast('Error: '+err.message,'err'); }
+  }
+
+  // ── Eliminar obra social ───────────────────────────────────────────────
+  async function confirmarEliminarOS(){
+    try{
+      const usos = await sbGet(`cliente_obras_sociales?obra_social_id=eq.${osActual.id}&select=id`);
+      const n = usos.length;
+      document.getElementById('borrarOSMensaje').textContent = n>0
+        ? `${osActual.nombre} está asociada a ${n} cliente${n!==1?'s':''}. Si la eliminás, se quitará esa asociación de sus fichas. ¿Continuar?`
+        : `¿Eliminar ${osActual.nombre}? No se puede deshacer.`;
+      abrirModal('modalBorrarOS');
+    }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+  }
+  async function confirmarBorrarOSFinal(){
+    const btn=document.getElementById('btnConfirmarBorrarOS'); btn.disabled=true;
+    try{
+      await sbDelete(`obras_sociales?id=eq.${osActual.id}`);
+      mostrarToast('✓ Obra social eliminada','ok');
+      cerrarModal('modalBorrarOS'); cerrarModal('modalFichaOS');
+      await cargarObrasSociales();
+    }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+    btn.disabled=false;
+  }
+
+  // ── Copiar al portapapeles ──────────────────────────────────────────────
+  function btnCopiarHtml(texto){ return `<button class="btn-copy" data-copy="${escHtml(texto)}">Copiar</button>`; }
+  function activarBotonesCopiar(root){
+    root.querySelectorAll('.btn-copy').forEach(btn=>{
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const texto = btn.getAttribute('data-copy');
+        navigator.clipboard.writeText(texto).then(()=>{
+          const orig = btn.textContent;
+          btn.textContent = '¡Copiado!'; btn.classList.add('copiado');
+          setTimeout(()=>{ btn.textContent = orig; btn.classList.remove('copiado'); }, 1500);
+        });
+      };
+    });
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────
+  function svgTrash(){ return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`; }
+  function limpiar(obj){ const r={}; for(const[k,v] of Object.entries(obj)) if(v!==null&&v!==undefined) r[k]=v; return r; }
+  function abrirModal(id){ document.getElementById(id).classList.add('open'); }
+  function cerrarModal(id){ document.getElementById(id).classList.remove('open'); }
+  function escHtml(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function mostrarToast(msg,tipo=''){ const t=document.getElementById('toast'); t.textContent=msg; t.className='show '+tipo; setTimeout(()=>{t.className='';},3000); }
+  function posicionarDD(input,dd){
+    const rect=input.getBoundingClientRect(); const abajo=window.innerHeight-rect.bottom;
+    dd.style.width=rect.width+'px'; dd.style.left=rect.left+'px';
+    if(abajo<208 && rect.top>208){ dd.style.top=''; dd.style.bottom=(window.innerHeight-rect.top+2)+'px'; }
+    else { dd.style.bottom=''; dd.style.top=(rect.bottom+2)+'px'; }
+  }
+  document.addEventListener('click', e => { if(!e.target.closest('.ss-wrap')) document.querySelectorAll('.ss-dropdown').forEach(d=>d.classList.remove('open')); });
+</script>
+</body>
+</html>

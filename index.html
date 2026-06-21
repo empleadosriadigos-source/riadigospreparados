@@ -25,7 +25,7 @@
     .topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0;}
     #btnActualizar{background:none;border:1px solid #555;color:#ccc;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;}
     #btnActualizar:hover{background:#444;}
-    .drop-zone{position:fixed;top:10px;right:16px;z-index:60;width:120px;height:34px;background:#3a3a3a;border:2px dashed #666;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:6px;color:#aaa;font-size:12px;font-weight:600;transition:background 0.2s,border-color 0.2s,color 0.2s;cursor:default;user-select:none;}
+    .drop-zone{position:fixed;top:60px;right:16px;z-index:60;width:120px;height:34px;background:#3a3a3a;border:2px dashed #666;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:6px;color:#aaa;font-size:12px;font-weight:600;transition:background 0.2s,border-color 0.2s,color 0.2s;cursor:default;user-select:none;}
     .drop-zone.drag-active{background:#1A5C3A;border-color:var(--accent);color:#fff;}
     .drop-zone.drag-over{background:var(--accent);border-color:#fff;color:#fff;transform:scale(1.05);}
     .kanban-wrap{padding:20px;}
@@ -128,6 +128,14 @@
     .user-chip{font-size:12px;color:#ccc;white-space:nowrap;}
     .btn-logout{background:none;border:1px solid #555;color:#ccc;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;}
     .btn-logout:hover{background:#444;}
+    @media (max-width: 640px) {
+      html{font-size:14px;}
+      .topbar{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+      .nav-btn,.btn,#btnActualizar,.btn-logout{min-height:44px;}
+      .modal{width:100%;height:100%;max-width:100%;max-height:100%;border-radius:0;}
+      .field-row{grid-template-columns:1fr!important;}
+      .comp-editor-header,.comp-row{grid-template-columns:1fr 70px 80px 28px;}
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -153,7 +161,7 @@
 </div>
 
 <div class="topbar">
-  <div class="topbar-brand">Riadigos <span>·</span> Preparados</div>
+  <div class="topbar-brand"><img src="https://cdn.batitienda.com/baticloud/images/header_asset_aa4503ac710d4fbc870bb62b1236829f_638438133950724818_0_m.png" height="28" style="margin-right:8px;vertical-align:middle;filter:brightness(0) invert(1);">Riadigos <span>·</span> Preparados</div>
   <div class="topbar-sep"></div>
   <button class="nav-btn nav-btn-green" onclick="abrirModalPreparado()">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -175,6 +183,10 @@
   <a class="nav-btn nav-btn-dark" href="etiquetas.html">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
     Etiquetas
+  </a>
+  <a class="nav-btn nav-btn-dark" href="clientes.html">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    Clientes
   </a>
   <div class="topbar-right">
     <span class="user-chip" id="userNombre"></span>
