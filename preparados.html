@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Riadigos · Preparados anteriores</title>
+  <style>
+    :root{--bg:#F0EDE4;--surface:#FAFAF7;--border:#DDD8CC;--accent:#75A63D;--accent2:#68A9CC;--text:#1C2128;--muted:#6B7685;--danger:#C0392B;--cliente:#3D7A8A;--radius:8px;--shadow:0 2px 8px rgba(0,0,0,0.09);}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+    .topbar{background:#2C2C2C;padding:0 20px;display:flex;align-items:center;gap:10px;height:52px;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.18);overflow-x:auto;}
+    .topbar-brand{color:#fff;font-size:15px;font-weight:700;white-space:nowrap;}.topbar-brand span{color:var(--accent);}
+    .topbar-sep{width:1px;height:24px;background:#444;margin:0 4px;flex-shrink:0;}
+    .nav-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;text-decoration:none;color:#fff;}
+    .nav-btn:hover{opacity:0.85;}.nav-btn-dark{background:#444;}
+    .topbar-right{margin-left:auto;}.btn-act{background:none;border:1px solid #555;color:#ccc;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;}
+    .btn-act:hover{background:#444;}
+    .wrap{padding:20px;max-width:1400px;margin:0 auto;}
+    .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+    .search-wrap{flex:1;min-width:240px;}
+    .search-wrap input{width:100%;padding:9px 14px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);outline:none;}
+    .search-wrap input:focus{border-color:var(--accent2);}
+    select{padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);outline:none;cursor:pointer;}
+    .count{font-size:12px;color:var(--muted);}
+    .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow-x:auto;}
+    table{width:100%;border-collapse:collapse;font-size:13px;}
+    thead{background:#EDEAE0;}
+    th{padding:10px 14px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;}
+    th:hover{color:var(--text);}
+    th .sort-arrow{margin-left:4px;opacity:0.4;font-style:normal;}
+    th.sort-asc .sort-arrow,th.sort-desc .sort-arrow{opacity:1;color:var(--accent);}
+    tbody tr{cursor:pointer;}
+    tbody tr{border-bottom:1px solid var(--border);transition:background 0.1s;}
+    tbody tr:last-child{border-bottom:none;}
+    tbody tr:hover{background:#EAE7DC;}
+    td{padding:10px 14px;vertical-align:top;}
+    .td-cupon{font-weight:800;font-size:15px;white-space:nowrap;}
+    .td-cliente{color:var(--cliente);font-weight:700;}
+    .td-muted{color:var(--muted);font-size:12px;}
+    .td-precio{font-weight:700;color:var(--accent);white-space:nowrap;}
+    .pill-estado{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
+    .pill-asignar{background:#FEF3C7;color:#92400E;}.pill-lab{background:#DBEAFE;color:#1E40AF;}.pill-retirar{background:#D1FAE5;color:#065F46;}.pill-entregado{background:#E5E7EB;color:#374151;}
+    .pill-forma{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;background:#B2D9C8;color:#1A5C3A;white-space:nowrap;}
+    .comp-list{display:flex;flex-direction:column;gap:2px;}
+    .comp-item{font-size:12px;}.comp-item span{color:var(--muted);}
+    .row-actions{display:flex;gap:4px;}
+    .act-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;}
+    .act-btn:hover{opacity:0.8;}
+    .act-btn-edit{background:#E8F4FB;color:var(--accent2);border:1px solid #C0DFF0;}
+    .act-btn-repeat{background:#EAF4EF;color:var(--accent);border:1px solid #B2D9C8;}
+    .act-btn-recover{background:#FEF3C7;color:#92400E;border:1px solid #F0D980;}
+    .act-btn-delete{background:#FDECEA;color:var(--danger);border:1px solid #F5C6C2;}
+    #status{text-align:center;padding:40px;font-size:14px;color:var(--muted);}
+    #status.error{color:var(--danger);font-weight:600;}
+    .spinner{display:inline-block;width:16px;height:16px;border:2px solid #ccc;border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center;padding:16px;}
+    .modal-overlay.open{display:flex;}
+    .modal{background:var(--surface);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,0.2);width:100%;max-width:700px;max-height:92vh;overflow-y:auto;}
+    .modal-sm{max-width:420px;}
+    .modal-header{padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:2;}
+    .modal-header h2{font-size:16px;font-weight:700;}
+    .modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted);}
+    .modal-body{padding:20px;}.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--surface);}
+    .field-group{margin-bottom:14px;}
+    .field-group label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px;}
+    .field-group input,.field-group select,.field-group textarea{width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;}
+    .field-group input:focus,.field-group select:focus,.field-group textarea:focus{border-color:var(--accent2);background:#fff;}
+    .field-group textarea{resize:vertical;}
+    .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    @media(max-width:500px){.field-row{grid-template-columns:1fr;}}
+    .ss-wrap{position:relative;}
+    .ss-dropdown{display:none;position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.15);z-index:500;max-height:200px;overflow-y:auto;min-width:200px;}
+    .ss-dropdown.open{display:block;}
+    .ss-option{padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);}
+    .ss-option:last-child{border-bottom:none;}.ss-option:hover{background:var(--accent2);color:#fff;}
+    .ss-action{padding:8px 12px;cursor:pointer;font-size:13px;color:var(--accent);font-weight:600;border-top:1px solid var(--border);background:#F0FAF0;}
+    .ss-action:hover{background:var(--accent);color:#fff;}.ss-empty{padding:8px 12px;font-size:13px;color:var(--muted);}
+    .sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px;margin-top:4px;}
+    .comp-editor{border:1px solid var(--border);border-radius:6px;overflow:visible;margin-bottom:8px;}
+    .comp-editor-header{display:grid;grid-template-columns:1fr 90px 100px 32px;gap:6px;padding:7px 10px;background:#EDEAE0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);border-bottom:1px solid var(--border);border-radius:6px 6px 0 0;}
+    .comp-row{display:grid;grid-template-columns:1fr 90px 100px 32px;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);align-items:center;}
+    .comp-row:last-child{border-bottom:none;}
+    .comp-row input,.comp-row select{padding:5px 8px;font-size:12px;border:1px solid var(--border);border-radius:5px;background:var(--bg);outline:none;width:100%;}
+    .btn-del-comp{background:none;border:none;color:var(--danger);cursor:pointer;font-size:18px;line-height:1;padding:2px;}
+    .unidad-hint{font-size:11px;color:var(--accent2);margin-top:3px;}
+    .btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;}
+    .btn:hover:not(:disabled){opacity:0.85;}.btn:disabled{opacity:0.5;cursor:not-allowed;}
+    .btn-primary{background:var(--accent);color:#fff;}.btn-danger{background:var(--danger);color:#fff;}.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}.btn-sm{padding:5px 10px;font-size:12px;}
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:11px 24px;border-radius:8px;font-size:14px;font-weight:500;color:#fff;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;white-space:nowrap;}
+    #toast.show{opacity:1;}.#toast.ok{background:var(--accent);}.#toast.err{background:var(--danger);}
+    #toast.ok{background:var(--accent);}#toast.err{background:var(--danger);}
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-brand">Riadigos <span>·</span> Preparados anteriores</div>
+  <div class="topbar-sep"></div>
+  <a class="nav-btn nav-btn-dark" href="index.html">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Volver al inicio
+  </a>
+  <div class="topbar-right"><button class="btn-act" onclick="cargarTodo()">↺ Actualizar</button></div>
+</div>
+
+<div class="wrap">
+  <div class="toolbar">
+    <div class="search-wrap"><input type="text" id="buscador" placeholder="Buscar por cliente, cupón, droga, forma, fecha…" oninput="filtrar()"/></div>
+    <select id="filtroEstado" onchange="filtrar()">
+      <option value="Entregado">Entregado</option>
+      <option value="">Todos los estados</option>
+      <option value="Asignar precio">Asignar precio</option>
+      <option value="En laboratorio">En laboratorio</option>
+      <option value="Para retirar">Para retirar</option>
+    </select>
+    <span class="count" id="countBadge"></span>
+  </div>
+  <div id="status"></div>
+  <div class="table-wrap" id="tablaWrap" style="display:none;">
+    <table>
+      <thead><tr>
+        <th onclick="ordenarPor('nro_cupon')">Cupón<i class="sort-arrow">↕</i></th>
+        <th onclick="ordenarPor('cliente_nombre')">Cliente<i class="sort-arrow">↕</i></th>
+        <th>Teléfono</th>
+        <th onclick="ordenarPor('fecha_recepcion')">Fecha<i class="sort-arrow">↕</i></th>
+        <th onclick="ordenarPor('estado')">Estado<i class="sort-arrow">↕</i></th>
+        <th>Componentes</th>
+        <th onclick="ordenarPor('forma_farmaceutica')">Forma<i class="sort-arrow">↕</i></th>
+        <th onclick="ordenarPor('cantidad_total')">Cantidad<i class="sort-arrow">↕</i></th>
+        <th onclick="ordenarPor('precio_venta')">Precio<i class="sort-arrow">↕</i></th>
+        <th>Observaciones</th>
+        <th></th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal Editar -->
+<div class="modal-overlay" id="modalEditar">
+  <div class="modal">
+    <div class="modal-header"><h2 id="editarTitulo">Editar preparado</h2><button class="modal-close" onclick="cerrarModal('modalEditar')">✕</button></div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field-group"><label>Nro Cupón</label><input type="number" id="eCupon"/></div>
+        <div class="field-group"><label>Nro Receta</label><input type="number" id="eReceta"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field-group"><label>Cliente</label><div class="ss-wrap"><input type="text" id="eClienteInput" placeholder="Buscar cliente…" oninput="filtrarSSCliente()" onfocus="abrirSSCliente()" autocomplete="off"/><div class="ss-dropdown" id="ssCliente"></div><input type="hidden" id="eClienteId"/></div></div>
+        <div class="field-group"><label>Fecha de recepción</label><input type="date" id="eFecha"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field-group"><label>Forma farmacéutica</label><select id="eForma" style="width:100%" onchange="onFormaChange()"><option value="">— Sin especificar —</option></select></div>
+        <div class="field-group"><label>Estado</label><select id="eEstado" style="width:100%"></select></div>
+      </div>
+      <div class="field-row">
+        <div class="field-group"><label>Cantidad total</label><input type="number" id="eCantTotal" step="any"/><div class="unidad-hint" id="eUnidadHint"></div></div>
+        <div class="field-group"><label>Unidad</label><select id="eUnidad" style="width:100%"><option value="">— Sin especificar —</option></select></div>
+      </div>
+      <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="ePrecio" step="any"/></div>
+      <div class="field-group"><label>Observaciones</label><textarea id="eObs" rows="2"></textarea></div>
+      <div class="sec-title">Componentes</div>
+      <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div>Unidad</div><div></div></div><div id="compRowsEditar"></div></div>
+      <button class="btn btn-ghost btn-sm" onclick="agregarCompRow('compRowsEditar')">+ Agregar componente</button>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal('modalEditar')">Cancelar</button><button class="btn btn-primary" id="btnGuardarEditar" onclick="guardarEdicion()">Guardar cambios</button></div>
+  </div>
+</div>
+
+<!-- Modal Repetir -->
+<div class="modal-overlay" id="modalRepetir">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h2>Repetir preparado</h2><button class="modal-close" onclick="cerrarModal('modalRepetir')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Se copiará con fecha de hoy. Completá los datos nuevos:</p>
+      <div class="field-group"><label>Nro Cupón nuevo <span style="color:var(--danger)">*</span></label><input type="number" id="rCupon"/></div>
+      <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="rPrecio"/></div>
+      <div class="field-group"><label>Observaciones</label><textarea id="rObs" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal('modalRepetir')">Cancelar</button><button class="btn btn-primary" id="btnRepetirConfirm" onclick="confirmarRepetir()">↺ Crear preparado</button></div>
+  </div>
+</div>
+
+<!-- Modal Droga -->
+<div class="modal-overlay" id="modalDroga">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h2>Nueva droga</h2><button class="modal-close" onclick="cerrarModal('modalDroga')">✕</button></div>
+    <div class="modal-body"><p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Revisá el nombre antes de crear.</p><div class="field-group"><label>Nombre <span style="color:var(--danger)">*</span></label><input type="text" id="dNombre"/></div></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal('modalDroga')">Cancelar</button><button class="btn btn-primary" id="btnGuardarDroga" onclick="guardarDroga()">Crear droga</button></div>
+  </div>
+</div>
+
+<!-- Modal Borrar -->
+<div class="modal-overlay" id="modalBorrar">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h2>Eliminar preparado</h2><button class="modal-close" onclick="cerrarModal('modalBorrar')">✕</button></div>
+    <div class="modal-body"><p style="font-size:14px;margin-bottom:6px;">¿Eliminar el cupón <strong id="borrarCupon"></strong>?</p><p style="font-size:12px;color:var(--muted);">Se eliminarán también todos los componentes. No se puede deshacer.</p></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal('modalBorrar')">Cancelar</button><button class="btn btn-danger" id="btnConfirmarBorrar" onclick="confirmarBorrar()">Eliminar</button></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const SB_URL = 'https://zmxkazlpliapedsgbzhb.supabase.co/rest/v1';
+  const SB_KEY = 'sb_publishable_7iSVOhG4YHUC9rFegjdJ4A_1GL4DTlV';
+  const SB_HEADERS = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
+
+  const ESTADOS   = ['Asignar precio','En laboratorio','Para retirar','Entregado'];
+  const FORMAS    = ['Solución','Loción','Crema','Ungüento','Gel','Cápsula','Sello','Supositorio','Óvulo','Suspensión','Jarabe','Gotas','Polvo','Comprimido','Parche','Colirio'];
+  const UNIDADES  = ['ml','g','gr','mg','unidades','UI'];
+  const UNID_COMP = ['ml','g','gr','mg','%','mcg','UI','c.s.p'];
+  const FORMA_UNIDAD = {'Solución':'ml','Loción':'ml','Crema':'g','Ungüento':'g','Gel':'g','Cápsula':'unidades','Sello':'unidades','Suspensión':'ml','Jarabe':'ml','Gotas':'ml','Polvo':'g','Supositorio':'unidades','Óvulo':'unidades','Comprimido':'unidades','Parche':'unidades','Colirio':'ml'};
+
+  let todos=[], drogas=[], clientes=[], prepActual=null, cbDrogaIdx=null;
+
+  window.addEventListener('DOMContentLoaded',()=>{
+    poblarSelect('eForma',FORMAS,true);
+    poblarSelect('eEstado',ESTADOS,false);
+    poblarSelect('eUnidad',UNIDADES,true);
+    cargarTodo();
+  });
+  document.addEventListener('click',e=>{if(!e.target.closest('.ss-wrap'))cerrarTodasSS();});
+
+  async function cargarTodo(){
+    setStatus('<span class="spinner"></span> Cargando…');
+    document.getElementById('tablaWrap').style.display='none';
+    try{
+      const [preps,comps,drs,clis]=await Promise.all([
+        sbGet('preparados_completos?order=fecha_recepcion.desc'),
+        sbGet('componentes_con_droga'),
+        sbGet('drogas?order=nombre.asc'),
+        sbGet('clientes?order=nombre.asc&select=id,nombre,telefono'),
+      ]);
+      drogas=drs; clientes=clis;
+      const compMap={};
+      comps.forEach(c=>{if(!compMap[c.preparado_id])compMap[c.preparado_id]=[];compMap[c.preparado_id].push(c);});
+      todos=preps.map(p=>({...p,componentes:compMap[p.id]||[]}));
+      setStatus('');filtrar();
+    }catch(err){setStatus('Error al cargar: '+err.message,true);}
+  }
+
+  function filtrar(){
+    const q=document.getElementById('buscador').value.toLowerCase().trim();
+    const estado=document.getElementById('filtroEstado').value;
+    const res=todos.filter(p=>{
+      if(estado&&p.estado!==estado) return false;
+      if(!q) return true;
+      const campos=[String(p.nro_cupon??''),String(p.nro_receta??''),p.cliente_nombre||'',p.cliente_telefono||'',fmtFecha(p.fecha_recepcion),p.estado||'',p.forma_farmaceutica||'',String(p.cantidad_total??''),p.unidad||'',String(p.precio_venta??''),p.observaciones||'',...p.componentes.map(c=>c.droga_nombre||'')];
+      return campos.some(v=>v.toLowerCase().includes(q));
+    });
+    renderTabla(aplicarOrden(res));
+  }
+
+  function pillEstado(estado){
+    const cls={'Asignar precio':'pill-asignar','En laboratorio':'pill-lab','Para retirar':'pill-retirar','Entregado':'pill-entregado'}[estado]||'pill-entregado';
+    return `<span class="pill-estado ${cls}">${escHtml(estado??'—')}</span>`;
+  }
+
+  function renderTabla(preparados){
+    const tbody=document.getElementById('tbody');tbody.innerHTML='';
+    document.getElementById('countBadge').textContent=`${preparados.length} preparado${preparados.length!==1?'s':''}`;
+    if(!preparados.length){setStatus('No se encontraron preparados.');document.getElementById('tablaWrap').style.display='none';return;}
+    setStatus('');document.getElementById('tablaWrap').style.display='block';
+    // Marcar columna activa
+    document.querySelectorAll('thead th').forEach(th => th.classList.remove('sort-asc','sort-desc'));
+    const colMap2 = ['nro_cupon','cliente_nombre',null,'fecha_recepcion','estado',null,'forma_farmaceutica','cantidad_total','precio_venta'];
+    const ths2 = document.querySelectorAll('thead th');
+    colMap2.forEach((c,i) => { if(c === sortCol && ths2[i]){ ths2[i].classList.add(sortDir==='asc'?'sort-asc':'sort-desc'); const a=ths2[i].querySelector('.sort-arrow');if(a)a.textContent=sortDir==='asc'?'↑':'↓'; } });
+    preparados.forEach(p=>{
+      const tr=document.createElement('tr');
+      const esEntregado=p.estado==='Entregado';
+      const compHtml=p.componentes.length?`<div class="comp-list">${p.componentes.map(c=>`<div class="comp-item">${escHtml(c.droga_nombre||'')} <span>· ${c.cantidad||''} ${c.unidad||''}</span></div>`).join('')}</div>`:'<span style="color:var(--muted)">—</span>';
+      const precio=p.precio_venta?`$${Number(p.precio_venta).toLocaleString('es-AR',{minimumFractionDigits:2})}`:'—';
+      const formaHtml=p.forma_farmaceutica?`<span class="pill-forma">${escHtml(p.forma_farmaceutica)}</span>`:'—';
+      const cantHtml=p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:'—';
+      const svgE=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+      const svgR=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`;
+      const svgRec=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 19 9 24"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>`;
+      const svgD=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+      tr.innerHTML=`
+        <td class="td-cupon">#${p.nro_cupon??'—'}</td>
+        <td class="td-cliente">${escHtml(p.cliente_nombre||'—')}</td>
+        <td class="td-muted">${escHtml(p.cliente_telefono||'—')}</td>
+        <td class="td-muted">${fmtFecha(p.fecha_recepcion)}</td>
+        <td>${pillEstado(p.estado)}</td>
+        <td>${compHtml}</td>
+        <td>${formaHtml}</td>
+        <td class="td-muted">${cantHtml}</td>
+        <td class="td-precio">${precio}</td>
+        <td class="td-muted" style="max-width:140px;font-size:12px;">${escHtml(p.observaciones||'—')}</td>
+        <td><div class="row-actions">
+          <button class="act-btn act-btn-edit" onclick="event.stopPropagation();abrirEditar('${p.id}')">${svgE} Editar</button>
+          <button class="act-btn act-btn-repeat" onclick="event.stopPropagation();abrirRepetir('${p.id}')">${svgR} Repetir</button>
+          ${esEntregado?`<button class="act-btn act-btn-recover" onclick="event.stopPropagation();recuperar('${p.id}')">${svgRec} Recuperar</button>`:''}
+          <button class="act-btn act-btn-delete" onclick="event.stopPropagation();abrirBorrar('${p.id}')">${svgD} Eliminar</button>
+        </div></td>`;
+      tr.addEventListener('click', () => abrirEditar(p.id));
+      tbody.appendChild(tr);
+    });
+  }
+
+  let sortCol = 'fecha_recepcion';
+  let sortDir = 'desc';
+
+  function ordenarPor(col){
+    if(sortCol === col){ sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }
+    else { sortCol = col; sortDir = col === 'fecha_recepcion' ? 'desc' : 'asc'; }
+    // Actualizar flechas
+    document.querySelectorAll('th').forEach(th => {
+      th.classList.remove('sort-asc','sort-desc');
+      const arrow = th.querySelector('.sort-arrow');
+      if(arrow) arrow.textContent = '↕';
+    });
+    const ths = document.querySelectorAll('thead th');
+    const colMap = ['nro_cupon','cliente_nombre',null,'fecha_recepcion','estado',null,'forma_farmaceutica','cantidad_total','precio_venta'];
+    colMap.forEach((c,i) => {
+      if(c === col && ths[i]){
+        ths[i].classList.add(sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+        const arrow = ths[i].querySelector('.sort-arrow');
+        if(arrow) arrow.textContent = sortDir === 'asc' ? '↑' : '↓';
+      }
+    });
+    filtrar();
+  }
+
+  function aplicarOrden(arr){
+    return [...arr].sort((a,b) => {
+      let va = a[sortCol] ?? '';
+      let vb = b[sortCol] ?? '';
+      if(sortCol === 'nro_cupon' || sortCol === 'cantidad_total' || sortCol === 'precio_venta'){
+        va = parseFloat(va) || 0; vb = parseFloat(vb) || 0;
+        return sortDir === 'asc' ? va - vb : vb - va;
+      }
+      va = String(va).toLowerCase(); vb = String(vb).toLowerCase();
+      return sortDir === 'asc' ? va.localeCompare(vb,'es') : vb.localeCompare(va,'es');
+    });
+  }
+
+  async function recuperar(id){
+    const p=todos.find(x=>x.id===id);if(!p)return;
+    try{await sbPatch('preparados',id,{estado:'Para retirar'});p.estado='Para retirar';mostrarToast('✓ Recuperado → Para retirar','ok');filtrar();}
+    catch(err){mostrarToast('Error: '+err.message,'err');}
+  }
+
+  function abrirEditar(id){
+    prepActual=todos.find(x=>x.id===id);if(!prepActual)return;
+    const p=prepActual;
+    document.getElementById('editarTitulo').textContent=`Editar cupón #${p.nro_cupon??''}`;
+    document.getElementById('eCupon').value=p.nro_cupon??'';
+    document.getElementById('eReceta').value=p.nro_receta??'';
+    document.getElementById('eFecha').value=p.fecha_recepcion??'';
+    document.getElementById('eEstado').value=p.estado??'';
+    document.getElementById('eForma').value=p.forma_farmaceutica??'';
+    document.getElementById('eCantTotal').value=p.cantidad_total??'';
+    document.getElementById('eUnidad').value=p.unidad??'';
+    document.getElementById('ePrecio').value=p.precio_venta??'';
+    document.getElementById('eObs').value=p.observaciones??'';
+    document.getElementById('eUnidadHint').textContent='';
+    document.getElementById('eClienteInput').value=p.cliente_nombre??'';
+    document.getElementById('eClienteId').value=p.cliente_id??'';
+    const cont=document.getElementById('compRowsEditar');cont.innerHTML='';
+    p.componentes.forEach(c=>agregarCompRow('compRowsEditar',c.id,c.droga_nombre||'',c.droga_id,c.cantidad??'',c.unidad??''));
+    abrirModal('modalEditar');
+  }
+
+  async function guardarEdicion(){
+    const btn=document.getElementById('btnGuardarEditar');btn.disabled=true;btn.textContent='Guardando…';
+    try{
+      const cliId=document.getElementById('eClienteId').value;
+      await sbPatch('preparados',prepActual.id,limpiar({nro_cupon:parseInt(document.getElementById('eCupon').value)||null,nro_receta:parseInt(document.getElementById('eReceta').value)||null,cliente_id:cliId||null,fecha_recepcion:document.getElementById('eFecha').value||null,estado:document.getElementById('eEstado').value||null,forma_farmaceutica:document.getElementById('eForma').value||null,cantidad_total:parseFloat(document.getElementById('eCantTotal').value)||null,unidad:document.getElementById('eUnidad').value||null,precio_venta:parseFloat(document.getElementById('ePrecio').value)||null,observaciones:document.getElementById('eObs').value||null}));
+      const rows=document.querySelectorAll('#compRowsEditar .comp-row');
+      const viejosIds=prepActual.componentes.map(c=>c.id);const nuevosIds=[];
+      for(const row of rows){
+        const recId=row.dataset.recid||'';const drugId=row.querySelector('.comp-drug-id').value;const cant=parseFloat(row.querySelector('.comp-cant').value)||null;const unid=row.querySelector('.comp-unid').value||null;
+        if(!drugId) continue;
+        const cf=limpiar({droga_id:drugId,cantidad:cant,unidad:unid});
+        if(recId){await sbPatch('componentes',recId,cf);nuevosIds.push(recId);}
+        else{const n=await sbPost('componentes',{...cf,preparado_id:prepActual.id});nuevosIds.push(n[0].id);}
+      }
+      for(const id of viejosIds.filter(id=>!nuevosIds.includes(id))){await sbDelete('componentes?id=eq.'+id);}
+      mostrarToast('✓ Guardado','ok');cerrarModal('modalEditar');await cargarTodo();
+    }catch(err){mostrarToast('Error: '+err.message,'err');}
+    btn.disabled=false;btn.textContent='Guardar cambios';
+  }
+
+  function abrirRepetir(id){prepActual=todos.find(x=>x.id===id);if(!prepActual)return;document.getElementById('rCupon').value='';document.getElementById('rPrecio').value='';document.getElementById('rObs').value=prepActual.observaciones??'';abrirModal('modalRepetir');}
+
+  async function confirmarRepetir(){
+    const cupon=parseInt(document.getElementById('rCupon').value);if(!cupon){mostrarToast('El Nro Cupón es obligatorio','err');return;}
+    const btn=document.getElementById('btnRepetirConfirm');btn.disabled=true;btn.textContent='Creando…';
+    try{
+      const p=prepActual;const hoy=new Date().toISOString().slice(0,10);
+      const nuevo=await sbPost('preparados',limpiar({nro_cupon:cupon,cliente_id:p.cliente_id,fecha_recepcion:hoy,estado:'Asignar precio',forma_farmaceutica:p.forma_farmaceutica,cantidad_total:p.cantidad_total,unidad:p.unidad,precio_venta:parseFloat(document.getElementById('rPrecio').value)||null,observaciones:document.getElementById('rObs').value||null}));
+      const prepId=nuevo[0].id;
+      for(const c of p.componentes){await sbPost('componentes',limpiar({preparado_id:prepId,droga_id:c.droga_id,cantidad:c.cantidad,unidad:c.unidad}));}
+      mostrarToast('✓ Preparado creado','ok');cerrarModal('modalRepetir');await cargarTodo();
+    }catch(err){mostrarToast('Error: '+err.message,'err');}
+    btn.disabled=false;btn.textContent='↺ Crear preparado';
+  }
+
+  function abrirBorrar(id){prepActual=todos.find(x=>x.id===id);if(!prepActual)return;document.getElementById('borrarCupon').textContent=`#${prepActual.nro_cupon??''}`;abrirModal('modalBorrar');}
+
+  async function confirmarBorrar(){
+    const btn=document.getElementById('btnConfirmarBorrar');btn.disabled=true;btn.textContent='Eliminando…';
+    try{await sbDelete('componentes?preparado_id=eq.'+prepActual.id);await sbDelete('preparados?id=eq.'+prepActual.id);todos=todos.filter(x=>x.id!==prepActual.id);mostrarToast('✓ Eliminado','ok');cerrarModal('modalBorrar');filtrar();}
+    catch(err){mostrarToast('Error: '+err.message,'err');}
+    btn.disabled=false;btn.textContent='Eliminar';
+  }
+
+  async function guardarDroga(){
+    const nombre=document.getElementById('dNombre').value.trim();if(!nombre){mostrarToast('El nombre es obligatorio','err');return;}
+    const btn=document.getElementById('btnGuardarDroga');btn.disabled=true;btn.textContent='Creando…';
+    try{
+      const nuevo=await sbPost('drogas',{nombre});drogas.push({id:nuevo[0].id,nombre});drogas.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+      if(cbDrogaIdx!==null){const inp=document.querySelector(`.ss-input[data-idx="${cbDrogaIdx}"]`);const hid=document.querySelector(`.comp-drug-id[data-idx="${cbDrogaIdx}"]`);if(inp)inp.value=nombre;if(hid)hid.value=nuevo[0].id;cbDrogaIdx=null;}
+      mostrarToast('✓ Droga creada','ok');cerrarModal('modalDroga');document.getElementById('dNombre').value='';
+    }catch(err){mostrarToast('Error: '+err.message,'err');}
+    btn.disabled=false;btn.textContent='Crear droga';
+  }
+
+  function onFormaChange(){const forma=document.getElementById('eForma').value;const uni={'Solución':'ml','Loción':'ml','Crema':'g','Ungüento':'g','Gel':'g','Cápsula':'unidades','Sello':'unidades','Suspensión':'ml','Jarabe':'ml','Gotas':'ml','Polvo':'g','Supositorio':'unidades','Óvulo':'unidades','Comprimido':'unidades','Parche':'unidades','Colirio':'ml'}[forma]||'';const sel=document.getElementById('eUnidad');const hint=document.getElementById('eUnidadHint');if(uni&&sel&&!sel.value)sel.value=uni;if(hint)hint.textContent=uni?`Sugerida: ${uni}`:''; }
+
+  function agregarCompRow(contId,recId='',dNom='',dId='',cant='',unid=''){
+    const cont=document.getElementById(contId);const idx=Date.now()+Math.random();const div=document.createElement('div');div.className='comp-row';div.dataset.recid=recId;
+    const unidOpts=['<option value="">—</option>',...UNID_COMP.map(o=>`<option value="${o}" ${o===unid?'selected':''}>${o}</option>`)].join('');
+    div.innerHTML=`<div class="ss-wrap"><input type="text" class="ss-input" data-idx="${idx}" placeholder="Buscar droga…" value="${escHtml(dNom)}" oninput="filtrarSSComp(this)" onfocus="abrirSSComp(this)" autocomplete="off"/><div class="ss-dropdown" id="ssComp_${idx}"></div><input type="hidden" class="comp-drug-id" data-idx="${idx}" value="${dId}"/></div><input type="number" class="comp-cant" value="${cant}" placeholder="Cant." step="any"/><select class="comp-unid">${unidOpts}</select><button class="btn-del-comp" onclick="this.closest('.comp-row').remove()">×</button>`;
+    cont.appendChild(div);
+  }
+
+  function filtrarSSCliente(){const input=document.getElementById('eClienteInput');const dd=document.getElementById('ssCliente');renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),input.value);posicionarDD(input,dd);dd.classList.add('open');}
+  function abrirSSCliente(){const input=document.getElementById('eClienteInput');const dd=document.getElementById('ssCliente');renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),input.value);posicionarDD(input,dd);dd.classList.add('open');}
+  function renderSSCliente(dd,fil,texto){dd.innerHTML='';fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById('eClienteInput').value=c.nombre;document.getElementById('eClienteId').value=c.id;dd.classList.remove('open');};dd.appendChild(d);});if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}}
+  function filtrarSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
+  function abrirSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
+  function renderSSComp(dd,fil,idx,texto){dd.innerHTML='';fil.forEach(d=>{const div=document.createElement('div');div.className='ss-option';div.textContent=d.nombre;div.onmousedown=e=>{e.preventDefault();const inp=document.querySelector(`.ss-input[data-idx="${idx}"]`);const hid=document.querySelector(`.comp-drug-id[data-idx="${idx}"]`);if(inp)inp.value=d.nombre;if(hid)hid.value=d.id;dd.classList.remove('open');};dd.appendChild(div);});if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}const act=document.createElement('div');act.className='ss-action';act.textContent='＋ Crear droga nueva';act.onmousedown=e=>{e.preventDefault();dd.classList.remove('open');cbDrogaIdx=idx;document.getElementById('dNombre').value=texto;abrirModal('modalDroga');};dd.appendChild(act);}
+  function posicionarDD(input,dd){const rect=input.getBoundingClientRect();const abajo=window.innerHeight-rect.bottom;dd.style.width=rect.width+'px';dd.style.left=rect.left+'px';if(abajo<208&&rect.top>208){dd.style.top='';dd.style.bottom=(window.innerHeight-rect.top+2)+'px';}else{dd.style.bottom='';dd.style.top=(rect.bottom+2)+'px';}}
+  function cerrarTodasSS(){document.querySelectorAll('.ss-dropdown').forEach(d=>d.classList.remove('open'));}
+
+  async function sbGet(path){const resp=await fetch(`${SB_URL}/${path}`,{headers:SB_HEADERS});if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}return resp.json();}
+  async function sbPost(table,body){const resp=await fetch(`${SB_URL}/${table}`,{method:'POST',headers:SB_HEADERS,body:JSON.stringify(body)});if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}return resp.json();}
+  async function sbPatch(table,id,body){const resp=await fetch(`${SB_URL}/${table}?id=eq.${id}`,{method:'PATCH',headers:SB_HEADERS,body:JSON.stringify(body)});if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}return resp.json();}
+  async function sbDelete(path){const resp=await fetch(`${SB_URL}/${path}`,{method:'DELETE',headers:SB_HEADERS});if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}}
+
+  function poblarSelect(id,opts,conBlanco){const sel=document.getElementById(id);if(!sel)return;const val=sel.value;sel.innerHTML='';if(conBlanco)sel.innerHTML='<option value="">— Sin especificar —</option>';opts.forEach(o=>{const opt=document.createElement('option');opt.value=o;opt.textContent=o;sel.appendChild(opt);});if(val)sel.value=val;}
+  function limpiar(obj){const r={};for(const[k,v]of Object.entries(obj))if(v!==null&&v!==undefined)r[k]=v;return r;}
+  function abrirModal(id){document.getElementById(id).classList.add('open');}
+  function cerrarModal(id){document.getElementById(id).classList.remove('open');}
+  function fmtFecha(iso){if(!iso)return '—';const[y,m,d]=iso.slice(0,10).split('-');return `${d}/${m}/${y}`;}
+  function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function setStatus(html,esError=false){const el=document.getElementById('status');el.innerHTML=html;el.className=esError?'error':'';}
+  function mostrarToast(msg,tipo=''){const t=document.getElementById('toast');t.textContent=msg;t.className='show '+tipo;setTimeout(()=>{t.className='';},3500);}
+</script>
+</body>
+</html>

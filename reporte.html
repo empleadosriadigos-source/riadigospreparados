@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Riadigos · Reporte de drogas</title>
+  <style>
+    :root{--bg:#F0EDE4;--surface:#FAFAF7;--border:#DDD8CC;--accent:#75A63D;--accent2:#68A9CC;--text:#1C2128;--muted:#6B7685;--danger:#C0392B;--radius:8px;--shadow:0 2px 8px rgba(0,0,0,0.09);}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+    .topbar{background:#2C2C2C;padding:0 20px;display:flex;align-items:center;gap:10px;height:52px;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.18);}
+    .topbar-brand{color:#fff;font-size:15px;font-weight:700;white-space:nowrap;}.topbar-brand span{color:var(--accent);}
+    .topbar-sep{width:1px;height:24px;background:#444;margin:0 4px;}
+    .nav-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;text-decoration:none;color:#fff;}
+    .nav-btn:hover{opacity:0.85;}.nav-btn-dark{background:#444;}
+    .wrap{padding:24px 20px;max-width:800px;margin:0 auto;}
+    .filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:20px;}
+    .filter-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px;}
+    .filter-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end;}
+    @media(max-width:500px){.filter-row{grid-template-columns:1fr;}}
+    label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px;}
+    input[type="date"]{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);outline:none;}
+    input[type="date"]:focus{border-color:var(--accent2);background:#fff;}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 20px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;}
+    .btn:hover:not(:disabled){opacity:0.85;}.btn:disabled{opacity:0.5;cursor:not-allowed;}
+    .btn-primary{background:var(--accent);color:#fff;width:100%;justify-content:center;padding:11px;font-size:14px;margin-top:4px;}
+    .btn-excel{background:#1D6F42;color:#fff;}
+    #status{font-size:13px;color:var(--muted);min-height:20px;margin-top:10px;text-align:center;}
+    #status.error{color:var(--danger);font-weight:600;}
+    .spinner{display:inline-block;width:15px;height:15px;border:2px solid #ccc;border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    #resultado{display:none;}
+    .result-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px;}
+    .result-header h2{font-size:16px;font-weight:700;}
+    .result-periodo{font-size:13px;color:var(--muted);margin-top:2px;}
+    .badge{display:inline-block;background:#EAF4EF;color:var(--accent);border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;margin-left:8px;}
+    .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+    table{width:100%;border-collapse:collapse;font-size:13px;}
+    thead{background:#EDEAE0;}
+    th{padding:10px 16px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);border-bottom:1px solid var(--border);}
+    th.num,td.num{text-align:right;}
+    tbody tr{border-bottom:1px solid var(--border);transition:background 0.1s;}
+    tbody tr:last-child{border-bottom:none;}
+    tbody tr:hover{background:#EAE7DC;}
+    td{padding:10px 16px;}
+    td.num{font-variant-numeric:tabular-nums;font-weight:600;color:var(--accent);}
+    .td-num-small{font-size:11px;color:var(--muted);}
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-brand">Riadigos <span>·</span> Reporte de drogas</div>
+  <div class="topbar-sep"></div>
+  <a class="nav-btn nav-btn-dark" href="index.html">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Volver al inicio
+  </a>
+</div>
+
+<div class="wrap">
+  <div class="filter-card">
+    <div class="filter-title">Período de consulta</div>
+    <div class="filter-row">
+      <div><label for="fechaDesde">Desde</label><input type="date" id="fechaDesde"/></div>
+      <div><label for="fechaHasta">Hasta</label><input type="date" id="fechaHasta"/></div>
+    </div>
+    <button class="btn btn-primary" id="btnGenerar" onclick="generarReporte()" style="margin-top:14px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      Generar reporte
+    </button>
+    <div id="status"></div>
+  </div>
+
+  <div id="resultado">
+    <div class="result-header">
+      <div>
+        <h2>Consumo por droga <span class="badge" id="badgeTotal"></span></h2>
+        <div class="result-periodo" id="labelPeriodo"></div>
+      </div>
+      <button class="btn btn-excel" onclick="descargarExcel()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Descargar Excel
+      </button>
+    </div>
+    <div class="table-wrap" style="margin-bottom:16px;">
+      <table>
+        <thead><tr><th>#</th><th>Droga</th><th class="num">Total consumido (g)</th></tr></thead>
+        <tbody id="tbodyGramos"></tbody>
+      </table>
+    </div>
+    <div id="seccionUI" style="display:none;">
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--muted);">En Unidades Internacionales (UI)</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Droga</th><th class="num">Total consumido (UI)</th></tr></thead>
+          <tbody id="tbodyUI"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SB_URL = 'https://zmxkazlpliapedsgbzhb.supabase.co/rest/v1';
+  const SB_KEY = 'sb_publishable_7iSVOhG4YHUC9rFegjdJ4A_1GL4DTlV';
+  const SB_HEADERS = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
+
+  let _datos=[];
+
+  window.addEventListener('DOMContentLoaded',()=>{
+    const hoy=new Date();const ini=new Date(hoy.getFullYear(),hoy.getMonth(),1);
+    document.getElementById('fechaDesde').value=fmt(ini);
+    document.getElementById('fechaHasta').value=fmt(hoy);
+  });
+
+  function fmt(d){return d.toISOString().slice(0,10);}
+
+  async function generarReporte(){
+    const desde=document.getElementById('fechaDesde').value;
+    const hasta=document.getElementById('fechaHasta').value;
+    const btn=document.getElementById('btnGenerar');
+    if(!desde||!hasta){setStatus('Seleccioná ambas fechas.',true);return;}
+    if(desde>hasta){setStatus('La fecha "Desde" no puede ser mayor que "Hasta".',true);return;}
+    btn.disabled=true;document.getElementById('resultado').style.display='none';
+    setStatus('<span class="spinner"></span> Consultando…');
+    try{
+      // Traer IDs de preparados en el período
+      const prepsResp=await fetch(`${SB_URL}/preparados?select=id&fecha_recepcion=gte.${desde}&fecha_recepcion=lte.${hasta}`,{headers:SB_HEADERS});
+      const preps=await prepsResp.json();
+      if(!preps.length){setStatus('No hay preparados en ese período.');btn.disabled=false;return;}
+      const ids=preps.map(p=>p.id).join(',');
+
+      // Traer componentes con cantidad_gramos y cantidad_ui ya calculados por la vista
+      const compsResp=await fetch(`${SB_URL}/componentes_con_droga?select=droga_nombre,cantidad,unidad,cantidad_gramos,cantidad_ui&preparado_id=in.(${ids})`,{headers:SB_HEADERS});
+      const comps=await compsResp.json();
+      if(!comps.length){setStatus('No hay componentes en ese período.');btn.disabled=false;return;}
+
+      // Agrupar por droga
+      const mapaG={}, mapaUI={};
+      comps.forEach(c=>{
+        const nom=c.droga_nombre||'Sin nombre';
+        if(c.cantidad_ui!=null && c.cantidad_ui>0){
+          mapaUI[nom]=(mapaUI[nom]||0)+parseFloat(c.cantidad_ui);
+        } else if(c.cantidad_gramos!=null && c.cantidad_gramos>0){
+          mapaG[nom]=(mapaG[nom]||0)+parseFloat(c.cantidad_gramos);
+        }
+      });
+
+      const totalesG=Object.entries(mapaG).map(([nombre,total])=>({nombre,total})).sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+      const totalesUI=Object.entries(mapaUI).map(([nombre,total])=>({nombre,total})).sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+
+      if(!totalesG.length&&!totalesUI.length){setStatus('No hay consumo en ese período.');btn.disabled=false;return;}
+
+      renderTabla(totalesG,totalesUI,desde,hasta);setStatus('');
+    }catch(err){setStatus('Error: '+err.message,true);}
+    btn.disabled=false;
+  }
+
+  async function getPrepadosIds(desde,hasta){
+    const resp=await fetch(`${SB_URL}/preparados?select=id&fecha_recepcion=gte.${desde}&fecha_recepcion=lte.${hasta}`,{headers:SB_HEADERS});
+    const data=await resp.json();
+    if(!data.length) return '00000000-0000-0000-0000-000000000000';
+    return data.map(p=>p.id).join(',');
+  }
+
+  function renderTabla(totalesG,totalesUI,desde,hasta){
+    _datos={gramos:totalesG,ui:totalesUI};
+    const tbodyG=document.getElementById('tbodyGramos');tbodyG.innerHTML='';
+    totalesG.forEach((row,i)=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td class="td-num-small">${i+1}</td><td>${escHtml(row.nombre)}</td><td class="num">${row.total.toLocaleString('es-AR',{minimumFractionDigits:4,maximumFractionDigits:4})}</td>`;
+      tbodyG.appendChild(tr);
+    });
+    const secUI=document.getElementById('seccionUI');
+    if(totalesUI.length){
+      const tbodyUI=document.getElementById('tbodyUI');tbodyUI.innerHTML='';
+      totalesUI.forEach((row,i)=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td class="td-num-small">${i+1}</td><td>${escHtml(row.nombre)}</td><td class="num">${row.total.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>`;
+        tbodyUI.appendChild(tr);
+      });
+      secUI.style.display='block';
+    } else {
+      secUI.style.display='none';
+    }
+    const total=totalesG.length+totalesUI.length;
+    document.getElementById('badgeTotal').textContent=`${total} droga${total!==1?'s':''}`;
+    document.getElementById('labelPeriodo').textContent=`Del ${fmtDisplay(desde)} al ${fmtDisplay(hasta)}`;
+    document.getElementById('resultado').style.display='block';
+    document.getElementById('resultado').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+
+  function descargarExcel(){
+    if(!_datos) return;
+    const desde=document.getElementById('fechaDesde').value;const hasta=document.getElementById('fechaHasta').value;
+    const filas=[
+      ['Reporte de consumo de drogas'],
+      [`Período: ${fmtDisplay(desde)} al ${fmtDisplay(hasta)}`],
+      [],
+      ['Droga','Total consumido (g)'],
+      ..._datos.gramos.map(r=>[r.nombre,r.total.toFixed(4).replace('.',',')]),
+    ];
+    if(_datos.ui.length){
+      filas.push([]);
+      filas.push(['Droga','Total consumido (UI)']);
+      _datos.ui.forEach(r=>filas.push([r.nombre,r.total.toFixed(2).replace('.',',')]));
+    }
+    const csv='\uFEFF'+filas.map(f=>f.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(';')).join('\r\n');
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`reporte_drogas_${desde}_${hasta}.csv`;a.click();URL.revokeObjectURL(url);
+  }
+
+  function fmtDisplay(iso){const[y,m,d]=iso.split('-');return `${d}/${m}/${y}`;}
+  function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function setStatus(html,esError=false){const el=document.getElementById('status');el.innerHTML=html;el.className=esError?'error':'';}
+</script>
+</body>
+</html>

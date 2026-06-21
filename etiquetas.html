@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Riadigos · Etiquetas</title>
+  <style>
+    :root{--bg:#F0EDE4;--surface:#FAFAF7;--border:#DDD8CC;--accent:#75A63D;--accent2:#68A9CC;--text:#1C2128;--muted:#6B7685;--danger:#C0392B;--radius:8px;--shadow:0 2px 8px rgba(0,0,0,0.09);}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+    .topbar{background:#2C2C2C;padding:0 20px;display:flex;align-items:center;gap:10px;height:52px;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.18);overflow-x:auto;}
+    .topbar-brand{color:#fff;font-size:15px;font-weight:700;white-space:nowrap;}.topbar-brand span{color:var(--accent);}
+    .topbar-sep{width:1px;height:24px;background:#444;margin:0 4px;flex-shrink:0;}
+    .nav-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;text-decoration:none;color:#fff;}
+    .nav-btn:hover{opacity:0.85;}.nav-btn-dark{background:#444;}
+    .topbar-right{margin-left:auto;}.btn-act{background:none;border:1px solid #555;color:#ccc;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;}
+    .btn-act:hover{background:#444;}
+    .wrap{padding:20px;max-width:1100px;margin:0 auto;}
+    .steps{display:flex;gap:8px;margin-bottom:20px;align-items:center;}
+    .step{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--muted);}
+    .step.active{color:var(--accent);}
+    .step-num{width:24px;height:24px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+    .step.active .step-num{background:var(--accent);color:#fff;}
+    .step-arrow{color:var(--border);}
+    .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+    .search-wrap{flex:1;min-width:200px;}
+    .search-wrap input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);outline:none;}
+    .search-wrap input:focus{border-color:var(--accent2);}
+    select{padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);outline:none;cursor:pointer;}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;}
+    .btn:hover:not(:disabled){opacity:0.85;}.btn:disabled{opacity:0.5;cursor:not-allowed;}
+    .btn-primary{background:var(--accent);color:#fff;}.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
+    .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow-x:auto;margin-bottom:16px;}
+    table{width:100%;border-collapse:collapse;font-size:13px;}
+    thead{background:#EDEAE0;}
+    th{padding:10px 14px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;}
+    tbody tr{border-bottom:1px solid var(--border);transition:background 0.1s;cursor:pointer;}
+    tbody tr:last-child{border-bottom:none;}
+    tbody tr:hover{background:#EAE7DC;}
+    tbody tr.selected{background:#EAF4EF;}
+    td{padding:10px 14px;vertical-align:top;}
+    .td-cupon{font-weight:800;font-size:15px;}.td-cliente{color:var(--cliente,#3D7A8A);font-weight:700;}.td-muted{color:var(--muted);font-size:12px;}
+    .pill-forma{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;background:#B2D9C8;color:#1A5C3A;}
+    .comp-mini{font-size:11px;color:var(--muted);}
+    input[type="checkbox"]{width:16px;height:16px;cursor:pointer;accent-color:var(--accent);}
+    .count-sel{font-size:13px;color:var(--muted);}.count-sel strong{color:var(--accent);}
+    #paso2{display:none;}
+    .config-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;margin-bottom:10px;}
+    .config-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+    .config-cupon{font-size:16px;font-weight:800;}.config-cliente{font-size:13px;color:var(--cliente,#3D7A8A);font-weight:600;}
+    .config-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    @media(max-width:500px){.config-row{grid-template-columns:1fr;}}
+    .field-group{}
+    .field-group label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px;}
+    .field-group select,.field-group input{width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);outline:none;}
+    .field-group select:focus,.field-group input:focus{border-color:var(--accent2);}
+    #status{text-align:center;padding:40px;font-size:14px;color:var(--muted);}
+    #status.error{color:var(--danger);font-weight:600;}
+    .spinner{display:inline-block;width:16px;height:16px;border:2px solid #ccc;border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:11px 24px;border-radius:8px;font-size:14px;font-weight:500;color:#fff;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;}
+    #toast.show{opacity:1;}#toast.ok{background:var(--accent);}#toast.err{background:var(--danger);}
+    .bottom-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:8px;}
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-brand">Riadigos <span>·</span> Etiquetas</div>
+  <div class="topbar-sep"></div>
+  <a class="nav-btn nav-btn-dark" href="index.html">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Volver al inicio
+  </a>
+  <div class="topbar-right"><button class="btn-act" onclick="cargarTodo()">↺ Actualizar</button></div>
+</div>
+
+<div class="wrap">
+  <div class="steps">
+    <div class="step active" id="stepTag1"><div class="step-num">1</div>Seleccionar preparados</div>
+    <div class="step-arrow">›</div>
+    <div class="step" id="stepTag2"><div class="step-num">2</div>Configurar etiquetas</div>
+    <div class="step-arrow">›</div>
+    <div class="step" id="stepTag3"><div class="step-num">3</div>Descargar Word</div>
+  </div>
+
+  <div id="paso1">
+    <div class="toolbar">
+      <div class="search-wrap"><input type="text" id="buscador" placeholder="Buscar por cliente, cupón o droga…" oninput="filtrar()"/></div>
+      <select id="filtroEstado" onchange="filtrar()">
+        <option value="En laboratorio">En laboratorio</option>
+        <option value="">Todos los estados</option>
+        <option value="Asignar precio">Asignar precio</option>
+        <option value="Para retirar">Para retirar</option>
+        <option value="Entregado">Entregado</option>
+      </select>
+    </div>
+    <div id="status"></div>
+    <div class="table-wrap" id="tablaWrap" style="display:none;">
+      <table>
+        <thead><tr><th><input type="checkbox" id="chkTodos" onchange="toggleTodos(this)"/></th><th>Cupón</th><th>Cliente</th><th>Fecha</th><th>Forma</th><th>Componentes</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="bottom-bar">
+      <span class="count-sel" id="countSel">0 seleccionados</span>
+      <button class="btn btn-primary" id="btnSiguiente" onclick="irPaso2()" disabled>Siguiente →</button>
+    </div>
+  </div>
+
+  <div id="paso2">
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Configurá uso y vencimiento para cada preparado seleccionado.</p>
+    <div id="configCards"></div>
+    <div class="bottom-bar">
+      <button class="btn btn-ghost" onclick="irPaso1()">← Volver</button>
+      <button class="btn btn-primary" id="btnGenerar" onclick="generarDoc()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Descargar Word
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const SB_URL = 'https://zmxkazlpliapedsgbzhb.supabase.co/rest/v1';
+  const SB_KEY = 'sb_publishable_7iSVOhG4YHUC9rFegjdJ4A_1GL4DTlV';
+  const SB_HEADERS = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
+
+  let todos=[], seleccion=new Set();
+
+  window.addEventListener('DOMContentLoaded', cargarTodo);
+
+  async function cargarTodo(){
+    setStatus('<span class="spinner"></span> Cargando preparados…');
+    document.getElementById('tablaWrap').style.display='none';
+    todos=[];seleccion.clear();actualizarContador();
+    try{
+      const [preps,comps]=await Promise.all([
+        sbGet('preparados_completos?order=fecha_recepcion.desc'),
+        sbGet('componentes_con_droga'),
+      ]);
+      const compMap={};comps.forEach(c=>{if(!compMap[c.preparado_id])compMap[c.preparado_id]=[];compMap[c.preparado_id].push(c);});
+      todos=preps.map(p=>({...p,componentes:compMap[p.id]||[]}));
+      setStatus('');filtrar();
+    }catch(err){setStatus('Error al cargar: '+err.message,true);}
+  }
+
+  function filtrar(){
+    const q=document.getElementById('buscador').value.toLowerCase().trim();
+    const estado=document.getElementById('filtroEstado').value;
+    const res=todos.filter(p=>{
+      if(estado&&p.estado!==estado) return false;
+      if(!q) return true;
+      const campos=[String(p.nro_cupon??''),p.cliente_nombre||'',p.forma_farmaceutica||'',...p.componentes.map(c=>c.droga_nombre||'')];
+      return campos.some(v=>v.toLowerCase().includes(q));
+    });
+    renderTabla(res);
+  }
+
+  function renderTabla(preparados){
+    const tbody=document.getElementById('tbody');tbody.innerHTML='';
+    if(!preparados.length){setStatus('No se encontraron preparados.');document.getElementById('tablaWrap').style.display='none';return;}
+    setStatus('');document.getElementById('tablaWrap').style.display='block';
+    preparados.forEach(p=>{
+      const tr=document.createElement('tr');if(seleccion.has(p.id))tr.classList.add('selected');
+      const compMini=p.componentes.map(c=>c.droga_nombre||'').join(', ');
+      tr.innerHTML=`<td><input type="checkbox" data-id="${p.id}" ${seleccion.has(p.id)?'checked':''} onchange="toggleCheck('${p.id}',this)" onclick="event.stopPropagation()"/></td><td class="td-cupon">#${p.nro_cupon??'—'}</td><td class="td-cliente">${escHtml(p.cliente_nombre||'—')}</td><td class="td-muted">${fmtFecha(p.fecha_recepcion)}</td><td>${p.forma_farmaceutica?`<span class="pill-forma">${escHtml(p.forma_farmaceutica)}</span>`:'—'}</td><td class="comp-mini">${escHtml(compMini)||'—'}</td>`;
+      tr.onclick=()=>{const chk=tr.querySelector('input[type=checkbox]');chk.checked=!chk.checked;toggleCheck(p.id,chk);};
+      tbody.appendChild(tr);
+    });
+  }
+
+  function toggleCheck(id,chk){if(chk.checked)seleccion.add(id);else seleccion.delete(id);const tr=chk.closest('tr');if(tr)tr.classList.toggle('selected',chk.checked);actualizarContador();}
+  function toggleTodos(chkMaster){document.querySelectorAll('#tbody input[type=checkbox]').forEach(chk=>{chk.checked=chkMaster.checked;toggleCheck(chk.dataset.id,chk);});}
+  function actualizarContador(){const n=seleccion.size;document.getElementById('countSel').innerHTML=`<strong>${n}</strong> seleccionado${n!==1?'s':''}`;document.getElementById('btnSiguiente').disabled=n===0;}
+
+  function irPaso2(){
+    const sel=todos.filter(p=>seleccion.has(p.id));
+    const cont=document.getElementById('configCards');cont.innerHTML='';
+    sel.forEach(p=>{
+      const div=document.createElement('div');div.className='config-card';div.dataset.id=p.id;
+      div.innerHTML=`<div class="config-card-header"><div><div class="config-cupon">#${p.nro_cupon??'—'} · ${escHtml(p.cliente_nombre||'')}</div><div class="config-cliente">${p.forma_farmaceutica??''} ${p.cantidad_total!=null?p.cantidad_total+' '+(p.unidad??''):''}${p.nro_receta?' · Receta: '+p.nro_receta:''}</div></div></div><div class="config-row"><div class="field-group"><label>Uso</label><select class="cfg-uso"><option value="USO INTERNO">USO INTERNO</option><option value="USO EXTERNO">USO EXTERNO</option></select></div><div class="field-group"><label>Vencimiento <span style="color:#C0392B">*</span></label><input type="text" class="cfg-vto" placeholder="MM/AA" maxlength="5" oninput="fmtVto(this)" onkeydown="vtoKeyDown(event,this)"/></div></div>`;
+      cont.appendChild(div);
+    });
+    document.getElementById('paso1').style.display='none';document.getElementById('paso2').style.display='block';setStep(2);
+  }
+  function irPaso1(){document.getElementById('paso2').style.display='none';document.getElementById('paso1').style.display='block';setStep(1);}
+  function setStep(n){[1,2,3].forEach(i=>document.getElementById(`stepTag${i}`).classList.toggle('active',i===n));}
+
+  // Formato automático MM/AA
+  function fmtVto(input){
+    let v=input.value.replace(/\D/g,'');
+    if(v.length>4) v=v.slice(0,4);
+    if(v.length>2) v=v.slice(0,2)+'/'+v.slice(2);
+    input.value=v;
+  }
+  function vtoKeyDown(e,input){
+    // No borrar la barra automáticamente
+    if(e.key==='Backspace'){
+      const v=input.value;
+      if(v.endsWith('/')){e.preventDefault();input.value=v.slice(0,-1);}
+    }
+  }
+
+  function generarDoc(){
+    const btn=document.getElementById('btnGenerar');btn.disabled=true;btn.textContent='Generando…';
+    try{
+      const cards=document.querySelectorAll('#configCards .config-card');
+      let etiquetas=[];
+      let vtoFaltante=false;
+      cards.forEach(card=>{
+        const vto=card.querySelector('.cfg-vto').value.trim();
+        if(!vto||vto.length<5){vtoFaltante=true;card.querySelector('.cfg-vto').style.borderColor='#C0392B';}
+        else card.querySelector('.cfg-vto').style.borderColor='';
+      });
+      if(vtoFaltante){mostrarToast('Completá el vencimiento de todos los preparados','err');btn.disabled=false;btn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar Word`;return;}
+      cards.forEach(card=>{
+        const id=card.dataset.id;const p=todos.find(x=>x.id===id);if(!p)return;
+        const f=p;const uso=card.querySelector('.cfg-uso').value;const vto=card.querySelector('.cfg-vto').value.trim()||'—';
+        const rec=f.nro_receta?`RECETA: ${f.nro_receta}`:'';
+        const compLines=p.componentes.map(c=>{
+          const nom=c.droga_nombre||'';const cant=c.cantidad??'';const uni=c.unidad||'';
+          if(uni==='c.s.p'){const ct=f.cantidad_total!=null?f.cantidad_total:'';const ut=f.unidad||'';return {nom,cantStr:`c.s.p ${ct} ${ut}`.trim()};}
+          return {nom,cantStr:cant!==''?String(cant)+(uni?' '+uni:''):''};
+        });
+        const forma=f.forma_farmaceutica?f.forma_farmaceutica.toUpperCase():'';
+        const cantDisp=f.cantidad_total!=null?String(f.cantidad_total):'';const uniDisp=f.unidad||'';
+        const formaLinea=`FORMA: ${forma}${cantDisp||uniDisp?' X '+cantDisp+' '+uniDisp:''}`.trim();
+        const dtLine=rec?`D.T: JULIA RIADIGOS MP:22859. ${rec}`:'D.T: JULIA RIADIGOS MP:22859.';
+        etiquetas.push({uso,vto,dtLine,compLines,formaLinea});
+      });
+
+      const fs='7pt', ff='Arial, sans-serif', bdr='1px solid #222';
+      const cell = `font-family:${ff};font-size:${fs};padding:1pt 3pt;`;
+      const gris = `background:#CCCCCC;`;
+
+      function htmlEtiqueta(et) {
+        let dtBase = et.dtLine;
+        let recNum = '';
+        if(et.dtLine.includes('RECETA:')) {
+          const partes = et.dtLine.split('RECETA:');
+          dtBase = partes[0].trim();
+          recNum = partes[1].trim();
+        }
+
+        const compRows = et.compLines.map(c => `
+          <tr>
+            <td style="${cell}border:${bdr};width:70%;">${escHtml(c.nom)}</td>
+            <td style="${cell}border:${bdr};width:30%;text-align:right;">${escHtml(c.cantStr)}</td>
+          </tr>`).join('');
+
+        const filaUsoVto = recNum
+          ? `<tr>
+              <td style="${cell}border:${bdr};font-weight:bold;font-size:6pt;">${escHtml(et.uso)}<br>Receta: ${escHtml(recNum)}</td>
+              <td style="font-family:${ff};font-size:9pt;font-weight:bold;border:${bdr};text-align:right;padding:1pt 3pt;">VTO: ${escHtml(et.vto)}</td>
+            </tr>`
+          : `<tr>
+              <td style="${cell}border:${bdr};font-weight:bold;font-size:6pt;">${escHtml(et.uso)}</td>
+              <td style="font-family:${ff};font-size:9pt;font-weight:bold;border:${bdr};text-align:right;padding:1pt 3pt;">VTO: ${escHtml(et.vto)}</td>
+            </tr>`;
+
+        return `
+          <table style="width:100%;border-collapse:collapse;font-family:${ff};font-size:${fs};">
+            <tr>
+              <td colspan="2" style="${cell}${gris}text-align:center;border:${bdr};padding:2pt 3pt;">
+                <b style="font-size:8pt;">FARMACIA JULIA RIADIGOS</b><br>
+                SAN MARTIN 2455 (MDP) TEL(0223) 3124250<br>
+                ${escHtml(dtBase)}
+              </td>
+            </tr>
+            ${filaUsoVto}
+            ${compRows}
+            <tr>
+              <td colspan="2" style="${cell}${gris}font-weight:bold;border:${bdr};">${escHtml(et.formaLinea)}</td>
+            </tr>
+          </table>`;
+      }
+
+      let filasHTML='';
+      for(let i=0;i<etiquetas.length;i+=3){
+        const grupo=etiquetas.slice(i,i+3);
+        const celdas=grupo.map(et=>`<td style="width:33.3%;vertical-align:top;padding:2pt 3pt;">${htmlEtiqueta(et)}</td>`).join('');
+        const vacias=Array(3-grupo.length).fill('<td style="width:33.3%;padding:2pt 3pt;border:none;"></td>').join('');
+        filasHTML+=`<tr>${celdas}${vacias}</tr>`;
+      }
+
+      const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"/><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]--><style>@page{size:A4 portrait;margin:0.8cm;}body{font-family:Arial,sans-serif;font-size:7.5pt;margin:0;padding:0;}table{border-collapse:collapse;}</style></head><body><table style="width:100%;border-collapse:collapse;">${filasHTML}</table></body></html>`;
+
+      const blob=new Blob(['\ufeff'+html],{type:'application/msword;charset=utf-8'});
+      const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`etiquetas_${new Date().toISOString().slice(0,10)}.doc`;a.click();URL.revokeObjectURL(url);
+      mostrarToast('✓ Archivo descargado','ok');setStep(3);
+    }catch(err){mostrarToast('Error al generar: '+err.message,'err');console.error(err);}
+    btn.disabled=false;btn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar Word`;
+  }
+
+  async function sbGet(path){const resp=await fetch(`${SB_URL}/${path}`,{headers:SB_HEADERS});if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}return resp.json();}
+
+  function fmtFecha(iso){if(!iso)return '—';const[y,m,d]=iso.slice(0,10).split('-');return `${d}/${m}/${y}`;}
+  function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function setStatus(html,esError=false){const el=document.getElementById('status');el.innerHTML=html;el.className=esError?'error':'';}
+  function mostrarToast(msg,tipo=''){const t=document.getElementById('toast');t.textContent=msg;t.className='show '+tipo;setTimeout(()=>{t.className='';},3500);}
+</script>
+</body>
+</html>
