@@ -45,9 +45,35 @@
     td{padding:10px 16px;}
     td.num{font-variant-numeric:tabular-nums;font-weight:600;color:var(--accent);}
     .td-num-small{font-size:11px;color:var(--muted);}
+    .login-overlay{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;}
+    .login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,0.15);padding:40px 36px;max-width:360px;width:100%;text-align:center;}
+    .login-logo{font-size:20px;font-weight:800;color:var(--text);margin-bottom:4px;}
+    .login-logo span{color:var(--accent);}
+    .login-sub{font-size:13px;color:var(--muted);margin-bottom:28px;}
+    .btn-google{display:inline-flex;align-items:center;gap:10px;justify-content:center;width:100%;padding:11px 16px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;transition:box-shadow 0.15s,border-color 0.15s;}
+    .btn-google:hover{box-shadow:0 2px 8px rgba(0,0,0,0.12);border-color:#bbb;}
+    .user-chip{font-size:12px;color:#ccc;white-space:nowrap;}
+    .btn-logout{background:none;border:1px solid #555;color:#ccc;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;}
+    .btn-logout:hover{background:#444;}
+    .topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="login-logo">Riadigos <span>·</span> Reporte de drogas</div>
+    <p class="login-sub">Iniciá sesión para continuar</p>
+    <button class="btn-google" id="btnGoogleLogin">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+      Entrar con Google
+    </button>
+  </div>
+</div>
+
+<div id="appRoot" style="display:none;">
+
 <div class="topbar">
   <div class="topbar-brand">Riadigos <span>·</span> Reporte de drogas</div>
   <div class="topbar-sep"></div>
@@ -55,6 +81,10 @@
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
     Volver al inicio
   </a>
+  <div class="topbar-right">
+    <span class="user-chip" id="userNombre"></span>
+    <button class="btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
+  </div>
 </div>
 
 <div class="wrap">
@@ -100,18 +130,51 @@
   </div>
 </div>
 
+</div><!-- /appRoot -->
+
 <script>
   const SB_URL = 'https://zmxkazlpliapedsgbzhb.supabase.co/rest/v1';
+  const SB_URL_BASE = 'https://zmxkazlpliapedsgbzhb.supabase.co';
   const SB_KEY = 'sb_publishable_7iSVOhG4YHUC9rFegjdJ4A_1GL4DTlV';
-  const SB_HEADERS = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
+
+  // ── Autenticación (Supabase Auth + Google OAuth) ────────────────────────
+  const sbAuth = supabase.createClient(SB_URL_BASE, SB_KEY);
+  let SB_TOKEN = null;
+  function getAuthHeaders(extra){
+    return Object.assign({'apikey':SB_KEY,'Authorization':'Bearer '+(SB_TOKEN||SB_KEY)}, extra||{});
+  }
+  async function iniciarSesionGoogle(){
+    await sbAuth.auth.signInWithOAuth({provider:'google',options:{redirectTo:'https://empleadosriadigos-source.github.io/riadigospreparados/index.html'}});
+  }
+  async function cerrarSesion(){ await sbAuth.auth.signOut(); location.reload(); }
+  function mostrarLogin(){ document.getElementById('loginOverlay').style.display='flex'; document.getElementById('appRoot').style.display='none'; }
+  function mostrarApp(session){
+    document.getElementById('loginOverlay').style.display='none';
+    document.getElementById('appRoot').style.display='';
+    const u=session.user;
+    const nameEl=document.getElementById('userNombre');
+    if(nameEl) nameEl.textContent=u.user_metadata?.full_name||u.email||'';
+    if(typeof initApp==='function') initApp();
+  }
+  async function chequearSesion(){
+    const {data:{session}}=await sbAuth.auth.getSession();
+    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { mostrarLogin(); }
+  }
+  sbAuth.auth.onAuthStateChange((_event,session)=>{
+    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { SB_TOKEN=null; mostrarLogin(); }
+  });
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btnGoogleLogin').addEventListener('click', iniciarSesionGoogle);
+    chequearSesion();
+  });
 
   let _datos=[];
 
-  window.addEventListener('DOMContentLoaded',()=>{
+  function initApp(){
     const hoy=new Date();const ini=new Date(hoy.getFullYear(),hoy.getMonth(),1);
     document.getElementById('fechaDesde').value=fmt(ini);
     document.getElementById('fechaHasta').value=fmt(hoy);
-  });
+  }
 
   function fmt(d){return d.toISOString().slice(0,10);}
 
@@ -125,13 +188,13 @@
     setStatus('<span class="spinner"></span> Consultando…');
     try{
       // Traer IDs de preparados en el período
-      const prepsResp=await fetch(`${SB_URL}/preparados?select=id&fecha_recepcion=gte.${desde}&fecha_recepcion=lte.${hasta}`,{headers:SB_HEADERS});
+      const prepsResp=await fetch(`${SB_URL}/preparados?select=id&fecha_recepcion=gte.${desde}&fecha_recepcion=lte.${hasta}`,{headers:getAuthHeaders()});
       const preps=await prepsResp.json();
       if(!preps.length){setStatus('No hay preparados en ese período.');btn.disabled=false;return;}
       const ids=preps.map(p=>p.id).join(',');
 
       // Traer componentes con cantidad_gramos y cantidad_ui ya calculados por la vista
-      const compsResp=await fetch(`${SB_URL}/componentes_con_droga?select=droga_nombre,cantidad,unidad,cantidad_gramos,cantidad_ui&preparado_id=in.(${ids})`,{headers:SB_HEADERS});
+      const compsResp=await fetch(`${SB_URL}/componentes_con_droga?select=droga_nombre,cantidad,unidad,cantidad_gramos,cantidad_ui&preparado_id=in.(${ids})`,{headers:getAuthHeaders()});
       const comps=await compsResp.json();
       if(!comps.length){setStatus('No hay componentes en ese período.');btn.disabled=false;return;}
 
@@ -157,7 +220,7 @@
   }
 
   async function getPrepadosIds(desde,hasta){
-    const resp=await fetch(`${SB_URL}/preparados?select=id&fecha_recepcion=gte.${desde}&fecha_recepcion=lte.${hasta}`,{headers:SB_HEADERS});
+    const resp=await fetch(`${SB_URL}/preparados?select=id&fecha_recepcion=gte.${desde}&fecha_recepcion=lte.${hasta}`,{headers:getAuthHeaders()});
     const data=await resp.json();
     if(!data.length) return '00000000-0000-0000-0000-000000000000';
     return data.map(p=>p.id).join(',');

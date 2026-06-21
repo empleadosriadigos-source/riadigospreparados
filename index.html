@@ -118,9 +118,33 @@
     #toast.show{opacity:1;}
     #toast.ok{background:var(--accent);}
     #toast.err{background:var(--danger);}
+    .login-overlay{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;}
+    .login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,0.15);padding:40px 36px;max-width:360px;width:100%;text-align:center;}
+    .login-logo{font-size:20px;font-weight:800;color:var(--text);margin-bottom:4px;}
+    .login-logo span{color:var(--accent);}
+    .login-sub{font-size:13px;color:var(--muted);margin-bottom:28px;}
+    .btn-google{display:inline-flex;align-items:center;gap:10px;justify-content:center;width:100%;padding:11px 16px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;transition:box-shadow 0.15s,border-color 0.15s;}
+    .btn-google:hover{box-shadow:0 2px 8px rgba(0,0,0,0.12);border-color:#bbb;}
+    .user-chip{font-size:12px;color:#ccc;white-space:nowrap;}
+    .btn-logout{background:none;border:1px solid #555;color:#ccc;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;}
+    .btn-logout:hover{background:#444;}
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="login-logo">Riadigos <span>·</span> Preparados</div>
+    <p class="login-sub">Iniciá sesión para continuar</p>
+    <button class="btn-google" id="btnGoogleLogin">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+      Entrar con Google
+    </button>
+  </div>
+</div>
+
+<div id="appRoot" style="display:none;">
 
 <div class="drop-zone" id="dropZone"
   ondragover="dropZoneOver(event)" ondragleave="dropZoneLeave(event)" ondrop="dropZoneDrop(event)">
@@ -153,6 +177,8 @@
     Etiquetas
   </a>
   <div class="topbar-right">
+    <span class="user-chip" id="userNombre"></span>
+    <button class="btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
     <button id="btnActualizar" onclick="cargarTodo()">↺ Actualizar</button>
   </div>
 </div>
@@ -343,11 +369,46 @@
 
 <div id="toast"></div>
 
+</div><!-- /appRoot -->
+
 <script>
   // ── CREDENCIALES ───────────────────────────────────────────────────────
   const SB_URL = 'https://zmxkazlpliapedsgbzhb.supabase.co/rest/v1';
+  const SB_URL_BASE = 'https://zmxkazlpliapedsgbzhb.supabase.co';
   const SB_KEY = 'sb_publishable_7iSVOhG4YHUC9rFegjdJ4A_1GL4DTlV';
   // ──────────────────────────────────────────────────────────────────────
+
+  // ── Autenticación (Supabase Auth + Google OAuth) ────────────────────────
+  const sbAuth = supabase.createClient(SB_URL_BASE, SB_KEY);
+  let SB_TOKEN = null;
+
+  function getAuthHeaders(extra){
+    return Object.assign({'apikey':SB_KEY,'Authorization':'Bearer '+(SB_TOKEN||SB_KEY)}, extra||{});
+  }
+  async function iniciarSesionGoogle(){
+    await sbAuth.auth.signInWithOAuth({provider:'google',options:{redirectTo:'https://empleadosriadigos-source.github.io/riadigospreparados/index.html'}});
+  }
+  async function cerrarSesion(){ await sbAuth.auth.signOut(); location.reload(); }
+  function mostrarLogin(){ document.getElementById('loginOverlay').style.display='flex'; document.getElementById('appRoot').style.display='none'; }
+  function mostrarApp(session){
+    document.getElementById('loginOverlay').style.display='none';
+    document.getElementById('appRoot').style.display='';
+    const u=session.user;
+    const nameEl=document.getElementById('userNombre');
+    if(nameEl) nameEl.textContent=u.user_metadata?.full_name||u.email||'';
+    if(typeof initApp==='function') initApp();
+  }
+  async function chequearSesion(){
+    const {data:{session}}=await sbAuth.auth.getSession();
+    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { mostrarLogin(); }
+  }
+  sbAuth.auth.onAuthStateChange((_event,session)=>{
+    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { SB_TOKEN=null; mostrarLogin(); }
+  });
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btnGoogleLogin').addEventListener('click', iniciarSesionGoogle);
+    chequearSesion();
+  });
 
   const ESTADOS   = ['Asignar precio','En laboratorio','Para retirar','Entregado'];
   const FORMAS    = ['Solución','Loción','Crema','Ungüento','Gel','Cápsula','Sello','Supositorio','Óvulo','Suspensión','Jarabe','Gotas','Polvo','Comprimido','Parche','Colirio'];
@@ -362,7 +423,7 @@
   let dragId = null, prepActual = null, cbDrogaIdx = null, clienteCB = null;
 
   // ── Init ───────────────────────────────────────────────────────────────
-  window.addEventListener('DOMContentLoaded', () => {
+  function initApp() {
     const hoy = new Date().toISOString().slice(0,10);
     document.getElementById('pFecha').value     = hoy;
     document.getElementById('cFechaAlta').value = hoy;
@@ -374,7 +435,7 @@
     poblarSelect('eEstado', ESTADOS, false);
     document.getElementById('pEstado').value = 'Asignar precio';
     cargarTodo();
-  });
+  }
   document.addEventListener('click', e => { if(!e.target.closest('.ss-wrap')) cerrarTodasSS(); });
 
   // ── Carga ──────────────────────────────────────────────────────────────
@@ -741,25 +802,23 @@
   function cerrarTodasSS(){document.querySelectorAll('.ss-dropdown').forEach(d=>d.classList.remove('open'));}
 
   // ── Supabase API ───────────────────────────────────────────────────────
-  const SB_HEADERS = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
-
   async function sbGet(path){
-    const resp=await fetch(`${SB_URL}/${path}`,{headers:SB_HEADERS});
+    const resp=await fetch(`${SB_URL}/${path}`,{headers:getAuthHeaders()});
     if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
     return resp.json();
   }
   async function sbPost(table,body){
-    const resp=await fetch(`${SB_URL}/${table}`,{method:'POST',headers:SB_HEADERS,body:JSON.stringify(body)});
+    const resp=await fetch(`${SB_URL}/${table}`,{method:'POST',headers:getAuthHeaders({'Content-Type':'application/json','Prefer':'return=representation'}),body:JSON.stringify(body)});
     if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
     return resp.json();
   }
   async function sbPatch(table,id,body){
-    const resp=await fetch(`${SB_URL}/${table}?id=eq.${id}`,{method:'PATCH',headers:SB_HEADERS,body:JSON.stringify(body)});
+    const resp=await fetch(`${SB_URL}/${table}?id=eq.${id}`,{method:'PATCH',headers:getAuthHeaders({'Content-Type':'application/json','Prefer':'return=representation'}),body:JSON.stringify(body)});
     if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
     return resp.json();
   }
   async function sbDelete(path){
-    const resp=await fetch(`${SB_URL}/${path}`,{method:'DELETE',headers:SB_HEADERS});
+    const resp=await fetch(`${SB_URL}/${path}`,{method:'DELETE',headers:getAuthHeaders()});
     if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
   }
 
