@@ -139,6 +139,7 @@
     Clientes
   </a>
   <div class="topbar-right">
+    <button class="btn-act" onclick="abrirModalFusionar()" title="Herramienta temporal para corregir clientes duplicados">🔧 Fusionar clientes</button>
     <span class="user-chip" id="userNombre"></span>
     <button class="btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
     <button class="btn-act" onclick="cargarTodo()">↺ Actualizar</button>
@@ -238,6 +239,36 @@
     <div class="modal-header"><h2>Eliminar preparado</h2><button class="modal-close" onclick="cerrarModal('modalBorrar')">✕</button></div>
     <div class="modal-body"><p style="font-size:14px;margin-bottom:6px;">¿Eliminar el cupón <strong id="borrarCupon"></strong>?</p><p style="font-size:12px;color:var(--muted);">Se eliminarán también todos los componentes. No se puede deshacer.</p></div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal('modalBorrar')">Cancelar</button><button class="btn btn-danger" id="btnConfirmarBorrar" onclick="confirmarBorrar()">Eliminar</button></div>
+  </div>
+</div>
+
+<!-- Modal Fusionar clientes (herramienta temporal) -->
+<div class="modal-overlay" id="modalFusionar">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h2>🔧 Fusionar clientes</h2><button class="modal-close" onclick="cerrarModal('modalFusionar')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Herramienta temporal para corregir clientes duplicados: mueve todos los preparados de un cliente hacia otro y, si querés, elimina al de origen. Ej: "Alicia Bonano" (mal) → "Bonomo Alicia" (bien).</p>
+      <div class="field-group ss-wrap">
+        <label>Cliente de origen (el que está mal / duplicado)</label>
+        <input type="text" id="fusOrigenInput" placeholder="Buscar cliente…" oninput="filtrarSSFusion('origen')" onfocus="abrirSSFusion('origen')" autocomplete="off"/>
+        <div class="ss-dropdown" id="ssFusOrigen"></div>
+        <input type="hidden" id="fusOrigenId"/>
+      </div>
+      <div class="field-group ss-wrap">
+        <label>Cliente de destino (el correcto)</label>
+        <input type="text" id="fusDestinoInput" placeholder="Buscar cliente…" oninput="filtrarSSFusion('destino')" onfocus="abrirSSFusion('destino')" autocomplete="off"/>
+        <div class="ss-dropdown" id="ssFusDestino"></div>
+        <input type="hidden" id="fusDestinoId"/>
+      </div>
+      <div id="fusPreview" style="font-size:13px;color:var(--muted);margin:10px 0;min-height:18px;"></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-top:6px;cursor:pointer;">
+        <input type="checkbox" id="fusEliminarOrigen" checked/> Eliminar cliente de origen al terminar
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalFusionar')">Cancelar</button>
+      <button class="btn btn-primary" id="btnFusionar" onclick="ejecutarFusion()" disabled>Fusionar</button>
+    </div>
   </div>
 </div>
 
@@ -511,6 +542,76 @@
   function renderSSComp(dd,fil,idx,texto){dd.innerHTML='';fil.forEach(d=>{const div=document.createElement('div');div.className='ss-option';div.textContent=d.nombre;div.onmousedown=e=>{e.preventDefault();const inp=document.querySelector(`.ss-input[data-idx="${idx}"]`);const hid=document.querySelector(`.comp-drug-id[data-idx="${idx}"]`);if(inp)inp.value=d.nombre;if(hid)hid.value=d.id;dd.classList.remove('open');};dd.appendChild(div);});if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}const act=document.createElement('div');act.className='ss-action';act.textContent='＋ Crear droga nueva';act.onmousedown=e=>{e.preventDefault();dd.classList.remove('open');cbDrogaIdx=idx;document.getElementById('dNombre').value=texto;abrirModal('modalDroga');};dd.appendChild(act);}
   function posicionarDD(input,dd){const rect=input.getBoundingClientRect();const abajo=window.innerHeight-rect.bottom;dd.style.width=rect.width+'px';dd.style.left=rect.left+'px';if(abajo<208&&rect.top>208){dd.style.top='';dd.style.bottom=(window.innerHeight-rect.top+2)+'px';}else{dd.style.bottom='';dd.style.top=(rect.bottom+2)+'px';}}
   function cerrarTodasSS(){document.querySelectorAll('.ss-dropdown').forEach(d=>d.classList.remove('open'));}
+
+  // ── Herramienta temporal: fusionar clientes duplicados ──────────────────
+  let fusOrigen=null, fusDestino=null;
+  function abrirModalFusionar(){
+    document.getElementById('fusOrigenInput').value=''; document.getElementById('fusOrigenId').value='';
+    document.getElementById('fusDestinoInput').value=''; document.getElementById('fusDestinoId').value='';
+    document.getElementById('fusPreview').textContent='';
+    document.getElementById('fusEliminarOrigen').checked=true;
+    document.getElementById('btnFusionar').disabled=true;
+    fusOrigen=null; fusDestino=null;
+    abrirModal('modalFusionar');
+  }
+  function filtrarSSFusion(cual){
+    const input=document.getElementById(cual==='origen'?'fusOrigenInput':'fusDestinoInput');
+    const dd=document.getElementById(cual==='origen'?'ssFusOrigen':'ssFusDestino');
+    renderSSFusion(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),cual);
+    posicionarDD(input,dd); dd.classList.add('open');
+  }
+  function abrirSSFusion(cual){ filtrarSSFusion(cual); }
+  function renderSSFusion(dd,lista,cual){
+    dd.innerHTML='';
+    if(!lista.length){ dd.innerHTML='<div class="ss-empty">Sin resultados</div>'; return; }
+    lista.slice(0,50).forEach(c=>{
+      const div=document.createElement('div'); div.className='ss-option'; div.textContent=c.nombre;
+      div.onmousedown=e=>{
+        e.preventDefault();
+        if(cual==='origen'){ document.getElementById('fusOrigenInput').value=c.nombre; document.getElementById('fusOrigenId').value=c.id; fusOrigen=c; }
+        else { document.getElementById('fusDestinoInput').value=c.nombre; document.getElementById('fusDestinoId').value=c.id; fusDestino=c; }
+        dd.classList.remove('open');
+        actualizarPreviewFusion();
+      };
+      dd.appendChild(div);
+    });
+  }
+  async function actualizarPreviewFusion(){
+    const origenId=document.getElementById('fusOrigenId').value;
+    const destinoId=document.getElementById('fusDestinoId').value;
+    const btn=document.getElementById('btnFusionar');
+    const prev=document.getElementById('fusPreview');
+    if(!origenId || !destinoId){ prev.textContent=''; btn.disabled=true; return; }
+    if(origenId===destinoId){ prev.textContent='El cliente de origen y destino no pueden ser el mismo.'; btn.disabled=true; return; }
+    try{
+      const preps = await sbGet(`preparados?cliente_id=eq.${origenId}&select=id`);
+      prev.textContent = `Se van a mover ${preps.length} preparado(s) de "${fusOrigen.nombre}" hacia "${fusDestino.nombre}".`;
+      btn.disabled = false;
+    }catch(err){ prev.textContent='Error al contar preparados: '+err.message; btn.disabled=true; }
+  }
+  async function ejecutarFusion(){
+    const origenId=document.getElementById('fusOrigenId').value;
+    const destinoId=document.getElementById('fusDestinoId').value;
+    if(!origenId || !destinoId || origenId===destinoId) return;
+    const btn=document.getElementById('btnFusionar'); btn.disabled=true; btn.textContent='Fusionando…';
+    try{
+      const preps = await sbGet(`preparados?cliente_id=eq.${origenId}&select=id`);
+      for(const p of preps){ await sbPatch('preparados', p.id, {cliente_id:destinoId}); }
+      let msg = `✓ ${preps.length} preparado(s) movidos a "${fusDestino.nombre}"`;
+      if(document.getElementById('fusEliminarOrigen').checked){
+        try{
+          await sbDelete(`clientes?id=eq.${origenId}`);
+          msg += `, cliente "${fusOrigen.nombre}" eliminado`;
+        }catch(errDel){
+          msg += `. No se pudo eliminar "${fusOrigen.nombre}" (${errDel.message}) — puede tener otra información asociada.`;
+        }
+      }
+      mostrarToast(msg,'ok');
+      cerrarModal('modalFusionar');
+      await cargarTodo();
+    }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+    btn.disabled=false; btn.textContent='Fusionar';
+  }
 
   async function sbGet(path){const resp=await fetch(`${SB_URL}/${path}`,{headers:getAuthHeaders()});if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}return resp.json();}
   async function sbPost(table,body){const resp=await fetch(`${SB_URL}/${table}`,{method:'POST',headers:getAuthHeaders({'Content-Type':'application/json','Prefer':'return=representation'}),body:JSON.stringify(body)});if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}return resp.json();}
