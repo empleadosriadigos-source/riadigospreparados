@@ -188,7 +188,7 @@
     <div id="statusOS"><span class="spinner"></span> Cargando…</div>
     <div class="table-wrap" id="tablaOSWrap" style="display:none;">
       <table>
-        <thead><tr><th>Nombre</th><th>Teléfono</th><th>Admite genéricos</th><th>Declaración dispensa</th></tr></thead>
+        <thead><tr><th>Nombre</th><th>Teléfono</th><th>Admite genéricos</th><th>Genérico en receta</th></tr></thead>
         <tbody id="tbodyOS"></tbody>
       </table>
     </div>
@@ -334,13 +334,10 @@
             <label class="radio-opt"><input type="radio" name="osbIdent" value="afiliado" id="osbIdentAfiliado" checked> Nro afiliado</label>
           </div>
         </div>
-        <div class="toggle-row"><label>Se puede modificar afiliado</label><label class="switch"><input type="checkbox" id="osbModificarAfiliado"/><span class="switch-slider"></span></label></div>
-        <div class="field-group" style="margin-top:10px;"><label>Dígitos a quitar</label><input type="text" id="osbDigitosQuitar"/></div>
-        <div class="toggle-row"><label>Declaración de dispensa</label><label class="switch"><input type="checkbox" id="osbDeclaracion" onchange="document.getElementById('osbDeclaracionDetalleWrap').style.display=this.checked?'block':'none'"/><span class="switch-slider"></span></label></div>
-        <div class="field-group" id="osbDeclaracionDetalleWrap" style="display:none;margin-top:10px;"><label>Detalle de declaración de dispensa</label><textarea id="osbDeclaracionDetalle" rows="2"></textarea></div>
+        <div class="toggle-row"><label>Cambios en número de afiliado</label><label class="switch"><input type="checkbox" id="osbModificarAfiliado"/><span class="switch-slider"></span></label></div>
       </div>
 
-      <div class="field-group"><label>Mañas y particularidades</label><textarea id="osbParticularidades" rows="3"></textarea></div>
+      <div class="field-group"><label>Particularidades</label><textarea id="osbParticularidades" rows="3"></textarea></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="cerrarModal('modalOSBasico')">Cancelar</button>
@@ -363,7 +360,7 @@
         <div id="fosValidacion"></div>
       </div>
       <div class="ficha-section">
-        <div class="ficha-section-title">Mañas y particularidades</div>
+        <div class="ficha-section-title">Particularidades</div>
         <div id="fosParticularidades" style="font-size:13px;white-space:pre-wrap;"></div>
       </div>
       <div class="ficha-section">
@@ -814,7 +811,7 @@
     lista.forEach(o=>{
       const tr=document.createElement('tr');
       tr.onclick=()=>abrirFichaOS(o.id);
-      tr.innerHTML=`<td class="td-nombre">${escHtml(o.nombre)}</td><td class="td-muted">${escHtml(o.telefono||'—')}</td><td>${pillBool(o.admite_genericos)}</td><td>${pillBool(o.declaracion_dispensa)}</td>`;
+      tr.innerHTML=`<td class="td-nombre">${escHtml(o.nombre)}</td><td class="td-muted">${escHtml(o.telefono||'—')}</td><td>${pillBool(o.admite_genericos)}</td><td>${pillBool(o.generico_en_receta)}</td>`;
       tbody.appendChild(tr);
     });
   }
@@ -824,12 +821,10 @@
   function abrirNuevaOS(){
     osActual=null;
     document.getElementById('tituloOSBasico').textContent='Nueva obra social';
-    ['osbNombre','osbTelefono','osbEmail','osbWeb','osbDigitosQuitar','osbDeclaracionDetalle','osbParticularidades'].forEach(id=>document.getElementById(id).value='');
+    ['osbNombre','osbTelefono','osbEmail','osbWeb','osbParticularidades'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('osbAdmiteGenericos').checked=false;
     document.getElementById('osbGenericoReceta').checked=false;
     document.getElementById('osbModificarAfiliado').checked=false;
-    document.getElementById('osbDeclaracion').checked=false;
-    document.getElementById('osbDeclaracionDetalleWrap').style.display='none';
     document.getElementById('osbIdentAfiliado').checked=true;
     abrirModal('modalOSBasico');
   }
@@ -843,10 +838,6 @@
     document.getElementById('osbAdmiteGenericos').checked=!!osActual.admite_genericos;
     document.getElementById('osbGenericoReceta').checked=!!osActual.generico_en_receta;
     document.getElementById('osbModificarAfiliado').checked=!!osActual.se_puede_modificar_afiliado;
-    document.getElementById('osbDigitosQuitar').value=osActual.digitos_a_quitar||'';
-    document.getElementById('osbDeclaracion').checked=!!osActual.declaracion_dispensa;
-    document.getElementById('osbDeclaracionDetalleWrap').style.display=osActual.declaracion_dispensa?'block':'none';
-    document.getElementById('osbDeclaracionDetalle').value=osActual.declaracion_dispensa_detalle||'';
     document.getElementById('osbParticularidades').value=osActual.particularidades||'';
     document.getElementById(osActual.usar_dni?'osbIdentDni':'osbIdentAfiliado').checked=true;
     abrirModal('modalOSBasico');
@@ -867,9 +858,6 @@
       usar_dni:usaDni,
       usar_nro_afiliado:!usaDni,
       se_puede_modificar_afiliado:document.getElementById('osbModificarAfiliado').checked,
-      digitos_a_quitar:document.getElementById('osbDigitosQuitar').value||null,
-      declaracion_dispensa:document.getElementById('osbDeclaracion').checked,
-      declaracion_dispensa_detalle:document.getElementById('osbDeclaracionDetalle').value||null,
       particularidades:document.getElementById('osbParticularidades').value||null,
     });
     try{
@@ -907,10 +895,7 @@
         <div class="sub-item"><span>Admite genéricos</span><b>${os.admite_genericos?'Sí':'No'}</b></div>
         <div class="sub-item"><span>Genérico en receta</span><b>${os.generico_en_receta?'Sí':'No'}</b></div>
         <div class="sub-item"><span>Identificación</span><b>${os.usar_dni?'DNI':'Nro afiliado'}</b></div>
-        <div class="sub-item"><span>Se puede modificar afiliado</span><b>${os.se_puede_modificar_afiliado?'Sí':'No'}</b></div>
-        ${os.digitos_a_quitar?`<div class="sub-item"><span>Dígitos a quitar</span><b>${escHtml(os.digitos_a_quitar)}</b></div>`:''}
-        <div class="sub-item"><span>Declaración de dispensa</span><b>${os.declaracion_dispensa?'Sí':'No'}</b></div>
-        ${os.declaracion_dispensa&&os.declaracion_dispensa_detalle?`<div class="muted" style="font-size:12px;padding:6px 0;">${escHtml(os.declaracion_dispensa_detalle)}</div>`:''}
+        <div class="sub-item"><span>Cambios en número de afiliado</span><b>${os.se_puede_modificar_afiliado?'Sí':'No'}</b></div>
       `;
       document.getElementById('fosParticularidades').textContent = os.particularidades || 'Sin notas.';
       const planesOS = planes.filter(p=>p.obra_social_id===id);
