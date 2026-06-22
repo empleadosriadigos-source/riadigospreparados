@@ -262,16 +262,16 @@
       </div>
       <!-- Relaciones -->
       <div class="ficha-section">
-        <div class="ficha-section-title">Relaciones familiares<button class="btn btn-sm btn-ghost" onclick="mostrarFormRelacion()">+ Agregar</button></div>
+        <div class="ficha-section-title">Vínculo con clientes<button class="btn btn-sm btn-ghost" onclick="mostrarFormRelacion()">+ Agregar</button></div>
         <div id="fbRelaciones"></div>
         <div class="mini-form" id="formAgregarRel" style="display:none;">
           <div class="field-group ss-wrap full">
-            <label>Familiar</label>
+            <label>Vínculo</label>
             <input type="text" id="relBuscarInput" placeholder="Buscar cliente…" oninput="filtrarSSRelacion()" onfocus="abrirSSRelacion()" autocomplete="off"/>
             <div class="ss-dropdown" id="ssRelacion"></div>
             <input type="hidden" id="relSeleccionadoId"/>
           </div>
-          <div class="field-group full"><label>Descripción (ej: "Hijo de", "Pareja de")</label><input type="text" id="relDescripcion"/></div>
+          <div class="field-group full"><label>Descripción</label><input type="text" id="relDescripcion"/></div>
           <div class="full" style="display:flex;gap:8px;justify-content:flex-end;">
             <button class="btn btn-ghost btn-sm" onclick="ocultarFormRelacion()">Cancelar</button>
             <button class="btn btn-primary btn-sm" id="btnGuardarRel" onclick="guardarRelacion()">Guardar</button>
