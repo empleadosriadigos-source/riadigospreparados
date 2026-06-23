@@ -816,8 +816,8 @@
   // ── Supabase API ───────────────────────────────────────────────────────
   async function sbGet(path, all=false){
     const h=getAuthHeaders();
-    if(all){h['Range-Unit']='items';h['Range']='0-99999';}
-    const resp=await fetch(`${SB_URL}/${path}`,{headers:h});
+    const _url=all?`${SB_URL}/${path}${path.includes("?")?"&":"?"}limit=10000`:`${SB_URL}/${path}`;
+    const resp=await fetch(_url,{headers:h});
     if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
     return resp.json();
   }
