@@ -455,17 +455,20 @@
     setKanbanStatus('<span class="spinner"></span> Cargando…');
     document.getElementById('kanbanCols').style.display = 'none';
     try {
-      const [preps, comps, drs, clis] = await Promise.all([
+      const [preps, drs, clis] = await Promise.all([
         sbGet('preparados_completos?estado=neq.Entregado&order=fecha_recepcion.desc'),
-        sbGet('componentes_con_droga', true),
         sbGet('drogas?order=nombre.asc'),
         sbGet('clientes?order=nombre.asc&select=id,nombre,telefono'),
       ]);
       drogas   = drs;
       clientes = clis;
-      // Agrupar componentes por preparado_id
+      // Traer solo componentes de los preparados activos
       const compMap = {};
-      comps.forEach(c => { if(!compMap[c.preparado_id]) compMap[c.preparado_id]=[]; compMap[c.preparado_id].push(c); });
+      if(preps.length > 0){
+        const ids = preps.map(p=>p.id).join(',');
+        const comps = await sbGet('componentes_con_droga?preparado_id=in.('+ids+')');
+        comps.forEach(c => { if(!compMap[c.preparado_id]) compMap[c.preparado_id]=[]; compMap[c.preparado_id].push(c); });
+      }
       preparados = preps.map(p => ({ ...p, componentes: compMap[p.id] || [] }));
       setKanbanStatus('');
       renderKanban();
