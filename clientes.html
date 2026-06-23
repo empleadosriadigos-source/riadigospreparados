@@ -239,6 +239,9 @@
           <div class="field-group"><label>Plan</label><select id="osPlanSelect"><option value="">— Sin plan —</option></select></div>
           <div class="field-group"><label>Nro afiliado</label><input type="text" id="osNroAfiliado"/></div>
           <div class="field-group"><label>Coseguro</label><input type="text" id="osCoseguro"/></div>
+          <div class="field-group"><label>Titular (si retira por otra persona)</label><input type="text" id="osTitular" placeholder="Nombre a quien pertenece la obra social"/></div>
+          <div class="field-group"><label>Token / código de seguridad</label><input type="text" id="osToken"/></div>
+          <div class="field-group full"><label>Observaciones</label><input type="text" id="osObs"/></div>
           <div class="full" style="display:flex;gap:8px;justify-content:flex-end;">
             <button class="btn btn-ghost btn-sm" onclick="ocultarFormOS_Cliente()">Cancelar</button>
             <button class="btn btn-primary btn-sm" id="btnGuardarOSCliente" onclick="guardarOSCliente()">Guardar</button>
@@ -439,6 +442,8 @@
   let clientes = [], obrasSociales = [], planes = [];
   let clienteActual = null, osActual = null;
   let tabActual = 'clientes';
+  let clienteOSRows = [], clienteMedRows = [], clienteRelRows = [], clienteProdRows = [];
+  let editOSClienteId = null, editMedId = null, editRelId = null, editProdId = null;
 
   function initApp(){
     cargarClientes();
@@ -571,6 +576,7 @@
       ]);
       clienteActual = cli[0];
       if(!clienteActual){ mostrarToast('Cliente no encontrado','err'); return; }
+      clienteOSRows = osRows; clienteMedRows = meds; clienteRelRows = rels; clienteProdRows = prods;
       document.getElementById('fichaClienteTitulo').textContent = clienteActual.nombre;
       renderDatosBasicosCliente();
       renderObrasSocialesCliente(osRows);
@@ -601,11 +607,15 @@
       <div class="sub-item" data-id="${r.id}">
         <div class="sub-item-info">
           <b>${escHtml(r.obras_sociales?.nombre||'—')}</b>${r.planes_os?.nombre?' · '+escHtml(r.planes_os.nombre):''}<br>
+          ${r.titular_nombre?`<div class="muted">Titular: ${escHtml(r.titular_nombre)}</div>`:''}
           ${r.nro_afiliado?`<span class="copy-row">Afiliado: ${escHtml(r.nro_afiliado)} ${btnCopiarHtml(r.nro_afiliado)}</span>`:''}
           ${r.coseguro?`<div class="muted">Coseguro: ${escHtml(r.coseguro)}</div>`:''}
+          ${r.token?`<span class="copy-row">Token: ${escHtml(r.token)} ${btnCopiarHtml(r.token)}</span>`:''}
+          ${r.observaciones?`<div class="muted">${escHtml(r.observaciones)}</div>`:''}
         </div>
         <div class="sub-item-actions">
-          <button class="icon-btn" onclick="borrarOSCliente('${r.id}')" title="Eliminar">${svgTrash()}</button>
+          <button class="icon-btn" onclick="editarOSCliente('${r.id}')" title="Editar">${svgEdit()}</button>
+          <button class="icon-btn danger" onclick="borrarOSCliente('${r.id}')" title="Eliminar">${svgTrash()}</button>
         </div>
       </div>`).join('');
     activarBotonesCopiar(cont);
@@ -617,17 +627,23 @@
     cont.innerHTML = rows.map(m=>`
       <div class="sub-item" data-id="${m.id}">
         <div class="sub-item-info"><b>${escHtml(m.nombre)}</b>${m.marca?' · '+escHtml(m.marca):''}<br><span class="muted">${[m.miligramos,m.cantidad].filter(Boolean).map(escHtml).join(' · ')}</span></div>
-        <div class="sub-item-actions"><button class="icon-btn" onclick="borrarMedicamento('${m.id}')" title="Eliminar">${svgTrash()}</button></div>
+        <div class="sub-item-actions">
+          <button class="icon-btn" onclick="editarMedicamento('${m.id}')" title="Editar">${svgEdit()}</button>
+          <button class="icon-btn danger" onclick="borrarMedicamento('${m.id}')" title="Eliminar">${svgTrash()}</button>
+        </div>
       </div>`).join('');
   }
 
   function renderRelaciones(rows){
     const cont=document.getElementById('fbRelaciones');
-    if(!rows.length){ cont.innerHTML='<div class="empty-msg">Sin relaciones familiares.</div>'; return; }
+    if(!rows.length){ cont.innerHTML='<div class="empty-msg">Sin vínculos registrados.</div>'; return; }
     cont.innerHTML = rows.map(r=>`
       <div class="sub-item" data-id="${r.id}">
-        <div class="sub-item-info">${escHtml(r.descripcion||'Relacionado con')} <span class="link-familiar" onclick="cerrarModal('modalFichaCliente');setTimeout(()=>abrirFichaCliente('${r.cliente_relacionado?.id}'),150)">${escHtml(r.cliente_relacionado?.nombre||'—')}</span></div>
-        <div class="sub-item-actions"><button class="icon-btn" onclick="borrarRelacion('${r.id}')" title="Eliminar">${svgTrash()}</button></div>
+        <div class="sub-item-info">${escHtml(r.descripcion||'Vínculo con')} <span class="link-familiar" onclick="cerrarModal('modalFichaCliente');setTimeout(()=>abrirFichaCliente('${r.cliente_relacionado?.id}'),150)">${escHtml(r.cliente_relacionado?.nombre||'—')}</span></div>
+        <div class="sub-item-actions">
+          <button class="icon-btn" onclick="editarRelacion('${r.id}')" title="Editar">${svgEdit()}</button>
+          <button class="icon-btn danger" onclick="borrarRelacion('${r.id}')" title="Eliminar">${svgTrash()}</button>
+        </div>
       </div>`).join('');
   }
 
@@ -637,19 +653,38 @@
     cont.innerHTML = rows.map(p=>`
       <div class="sub-item" data-id="${p.id}">
         <div class="sub-item-info"><b>${escHtml(p.nombre)}</b>${p.codigo_barras?`<div class="copy-row">Cód: ${escHtml(p.codigo_barras)} ${btnCopiarHtml(p.codigo_barras)}</div>`:''}</div>
-        <div class="sub-item-actions"><button class="icon-btn" onclick="borrarProducto('${p.id}')" title="Eliminar">${svgTrash()}</button></div>
+        <div class="sub-item-actions">
+          <button class="icon-btn" onclick="editarProducto('${p.id}')" title="Editar">${svgEdit()}</button>
+          <button class="icon-btn danger" onclick="borrarProducto('${p.id}')" title="Eliminar">${svgTrash()}</button>
+        </div>
       </div>`).join('');
     activarBotonesCopiar(cont);
   }
 
-  // ── Obras sociales del cliente: agregar ───────────────────────────────
+  // ── Obras sociales del cliente: agregar / editar ──────────────────────
   function mostrarFormOS_Cliente(){
+    editOSClienteId = null;
     document.getElementById('formAgregarOS').style.display='grid';
     document.getElementById('osBuscarInput').value=''; document.getElementById('osSeleccionadaId').value='';
     document.getElementById('osNroAfiliado').value=''; document.getElementById('osCoseguro').value='';
+    document.getElementById('osTitular').value=''; document.getElementById('osToken').value=''; document.getElementById('osObs').value='';
     poblarSelectPlanes('');
   }
-  function ocultarFormOS_Cliente(){ document.getElementById('formAgregarOS').style.display='none'; }
+  function editarOSCliente(id){
+    const r = clienteOSRows.find(x=>x.id===id); if(!r) return;
+    editOSClienteId = id;
+    document.getElementById('formAgregarOS').style.display='grid';
+    document.getElementById('osBuscarInput').value = r.obras_sociales?.nombre||'';
+    document.getElementById('osSeleccionadaId').value = r.obra_social_id;
+    poblarSelectPlanes(r.obra_social_id);
+    document.getElementById('osPlanSelect').value = r.plan_id||'';
+    document.getElementById('osNroAfiliado').value = r.nro_afiliado||'';
+    document.getElementById('osCoseguro').value = r.coseguro||'';
+    document.getElementById('osTitular').value = r.titular_nombre||'';
+    document.getElementById('osToken').value = r.token||'';
+    document.getElementById('osObs').value = r.observaciones||'';
+  }
+  function ocultarFormOS_Cliente(){ editOSClienteId=null; document.getElementById('formAgregarOS').style.display='none'; }
   function filtrarSSObraSocial(){ const inp=document.getElementById('osBuscarInput'); renderSSObraSocial(obrasSociales.filter(o=>o.nombre.toLowerCase().includes(inp.value.toLowerCase()))); }
   function abrirSSObraSocial(){ const inp=document.getElementById('osBuscarInput'); renderSSObraSocial(obrasSociales.filter(o=>o.nombre.toLowerCase().includes(inp.value.toLowerCase()))); }
   function renderSSObraSocial(lista){
@@ -669,14 +704,18 @@
     const osId=document.getElementById('osSeleccionadaId').value;
     if(!osId){ mostrarToast('Seleccioná una obra social','err'); return; }
     const btn=document.getElementById('btnGuardarOSCliente'); btn.disabled=true;
+    const body = limpiar({
+      cliente_id:clienteActual.id, obra_social_id:osId,
+      plan_id:document.getElementById('osPlanSelect').value||null,
+      nro_afiliado:document.getElementById('osNroAfiliado').value||null,
+      coseguro:document.getElementById('osCoseguro').value||null,
+      titular_nombre:document.getElementById('osTitular').value||null,
+      token:document.getElementById('osToken').value||null,
+      observaciones:document.getElementById('osObs').value||null,
+    });
     try{
-      await sbPost('cliente_obras_sociales', limpiar({
-        cliente_id:clienteActual.id, obra_social_id:osId,
-        plan_id:document.getElementById('osPlanSelect').value||null,
-        nro_afiliado:document.getElementById('osNroAfiliado').value||null,
-        coseguro:document.getElementById('osCoseguro').value||null,
-      }));
-      mostrarToast('✓ Obra social agregada','ok');
+      if(editOSClienteId){ await sbPatch('cliente_obras_sociales', editOSClienteId, body); mostrarToast('✓ Obra social actualizada','ok'); }
+      else { await sbPost('cliente_obras_sociales', body); mostrarToast('✓ Obra social agregada','ok'); }
       ocultarFormOS_Cliente();
       await abrirFichaCliente(clienteActual.id);
       await cargarClientes();
@@ -688,21 +727,32 @@
     catch(err){ mostrarToast('Error: '+err.message,'err'); }
   }
 
-  // ── Medicamentos: agregar / borrar ─────────────────────────────────────
-  function mostrarFormMedicamento(){ document.getElementById('formAgregarMed').style.display='grid'; ['medNombre','medMarca','medMg','medCantidad'].forEach(id=>document.getElementById(id).value=''); }
-  function ocultarFormMedicamento(){ document.getElementById('formAgregarMed').style.display='none'; }
+  // ── Medicamentos: agregar / editar / borrar ────────────────────────────
+  function mostrarFormMedicamento(){ editMedId=null; document.getElementById('formAgregarMed').style.display='grid'; ['medNombre','medMarca','medMg','medCantidad'].forEach(id=>document.getElementById(id).value=''); }
+  function editarMedicamento(id){
+    const m = clienteMedRows.find(x=>x.id===id); if(!m) return;
+    editMedId = id;
+    document.getElementById('formAgregarMed').style.display='grid';
+    document.getElementById('medNombre').value = m.nombre||'';
+    document.getElementById('medMarca').value = m.marca||'';
+    document.getElementById('medMg').value = m.miligramos||'';
+    document.getElementById('medCantidad').value = m.cantidad||'';
+  }
+  function ocultarFormMedicamento(){ editMedId=null; document.getElementById('formAgregarMed').style.display='none'; }
   async function guardarMedicamento(){
     const nombre=document.getElementById('medNombre').value.trim();
     if(!nombre){ mostrarToast('El nombre es obligatorio','err'); return; }
     const btn=document.getElementById('btnGuardarMed'); btn.disabled=true;
+    const body = limpiar({
+      cliente_id:clienteActual.id, nombre,
+      marca:document.getElementById('medMarca').value||null,
+      miligramos:document.getElementById('medMg').value||null,
+      cantidad:document.getElementById('medCantidad').value||null,
+    });
     try{
-      await sbPost('cliente_medicamentos', limpiar({
-        cliente_id:clienteActual.id, nombre,
-        marca:document.getElementById('medMarca').value||null,
-        miligramos:document.getElementById('medMg').value||null,
-        cantidad:document.getElementById('medCantidad').value||null,
-      }));
-      mostrarToast('✓ Medicamento agregado','ok'); ocultarFormMedicamento();
+      if(editMedId){ await sbPatch('cliente_medicamentos', editMedId, body); mostrarToast('✓ Medicamento actualizado','ok'); }
+      else { await sbPost('cliente_medicamentos', body); mostrarToast('✓ Medicamento agregado','ok'); }
+      ocultarFormMedicamento();
       await abrirFichaCliente(clienteActual.id);
     }catch(err){ mostrarToast('Error: '+err.message,'err'); }
     btn.disabled=false;
@@ -712,9 +762,17 @@
     catch(err){ mostrarToast('Error: '+err.message,'err'); }
   }
 
-  // ── Relaciones: agregar / borrar ───────────────────────────────────────
-  function mostrarFormRelacion(){ document.getElementById('formAgregarRel').style.display='grid'; document.getElementById('relBuscarInput').value=''; document.getElementById('relSeleccionadoId').value=''; document.getElementById('relDescripcion').value=''; }
-  function ocultarFormRelacion(){ document.getElementById('formAgregarRel').style.display='none'; }
+  // ── Vínculos: agregar / editar / borrar ─────────────────────────────────
+  function mostrarFormRelacion(){ editRelId=null; document.getElementById('formAgregarRel').style.display='grid'; document.getElementById('relBuscarInput').value=''; document.getElementById('relSeleccionadoId').value=''; document.getElementById('relDescripcion').value=''; }
+  function editarRelacion(id){
+    const r = clienteRelRows.find(x=>x.id===id); if(!r) return;
+    editRelId = id;
+    document.getElementById('formAgregarRel').style.display='grid';
+    document.getElementById('relBuscarInput').value = r.cliente_relacionado?.nombre||'';
+    document.getElementById('relSeleccionadoId').value = r.cliente_relacionado_id||'';
+    document.getElementById('relDescripcion').value = r.descripcion||'';
+  }
+  function ocultarFormRelacion(){ editRelId=null; document.getElementById('formAgregarRel').style.display='none'; }
   function filtrarSSRelacion(){ const inp=document.getElementById('relBuscarInput'); renderSSRelacion(clientes.filter(c=>c.id!==clienteActual.id && c.nombre.toLowerCase().includes(inp.value.toLowerCase()))); }
   function abrirSSRelacion(){ const inp=document.getElementById('relBuscarInput'); renderSSRelacion(clientes.filter(c=>c.id!==clienteActual.id && c.nombre.toLowerCase().includes(inp.value.toLowerCase()))); }
   function renderSSRelacion(lista){
@@ -730,12 +788,14 @@
     const relId=document.getElementById('relSeleccionadoId').value;
     if(!relId){ mostrarToast('Seleccioná un cliente','err'); return; }
     const btn=document.getElementById('btnGuardarRel'); btn.disabled=true;
+    const body = limpiar({
+      cliente_id:clienteActual.id, cliente_relacionado_id:relId,
+      descripcion:document.getElementById('relDescripcion').value||null,
+    });
     try{
-      await sbPost('cliente_relaciones', limpiar({
-        cliente_id:clienteActual.id, cliente_relacionado_id:relId,
-        descripcion:document.getElementById('relDescripcion').value||null,
-      }));
-      mostrarToast('✓ Relación agregada','ok'); ocultarFormRelacion();
+      if(editRelId){ await sbPatch('cliente_relaciones', editRelId, body); mostrarToast('✓ Vínculo actualizado','ok'); }
+      else { await sbPost('cliente_relaciones', body); mostrarToast('✓ Vínculo agregado','ok'); }
+      ocultarFormRelacion();
       await abrirFichaCliente(clienteActual.id);
     }catch(err){ mostrarToast('Error: '+err.message,'err'); }
     btn.disabled=false;
@@ -745,19 +805,28 @@
     catch(err){ mostrarToast('Error: '+err.message,'err'); }
   }
 
-  // ── Productos: agregar / borrar ────────────────────────────────────────
-  function mostrarFormProducto(){ document.getElementById('formAgregarProd').style.display='grid'; document.getElementById('prodNombre').value=''; document.getElementById('prodCodigo').value=''; document.getElementById('prodCodigo').focus(); }
-  function ocultarFormProducto(){ document.getElementById('formAgregarProd').style.display='none'; }
+  // ── Productos: agregar / editar / borrar ───────────────────────────────
+  function mostrarFormProducto(){ editProdId=null; document.getElementById('formAgregarProd').style.display='grid'; document.getElementById('prodNombre').value=''; document.getElementById('prodCodigo').value=''; document.getElementById('prodCodigo').focus(); }
+  function editarProducto(id){
+    const p = clienteProdRows.find(x=>x.id===id); if(!p) return;
+    editProdId = id;
+    document.getElementById('formAgregarProd').style.display='grid';
+    document.getElementById('prodNombre').value = p.nombre||'';
+    document.getElementById('prodCodigo').value = p.codigo_barras||'';
+  }
+  function ocultarFormProducto(){ editProdId=null; document.getElementById('formAgregarProd').style.display='none'; }
   async function guardarProducto(){
     const nombre=document.getElementById('prodNombre').value.trim();
     if(!nombre){ mostrarToast('El nombre es obligatorio','err'); return; }
     const btn=document.getElementById('btnGuardarProd'); btn.disabled=true;
+    const body = limpiar({
+      cliente_id:clienteActual.id, nombre,
+      codigo_barras:document.getElementById('prodCodigo').value||null,
+    });
     try{
-      await sbPost('cliente_productos', limpiar({
-        cliente_id:clienteActual.id, nombre,
-        codigo_barras:document.getElementById('prodCodigo').value||null,
-      }));
-      mostrarToast('✓ Producto agregado','ok'); ocultarFormProducto();
+      if(editProdId){ await sbPatch('cliente_productos', editProdId, body); mostrarToast('✓ Producto actualizado','ok'); }
+      else { await sbPost('cliente_productos', body); mostrarToast('✓ Producto agregado','ok'); }
+      ocultarFormProducto();
       await abrirFichaCliente(clienteActual.id);
     }catch(err){ mostrarToast('Error: '+err.message,'err'); }
     btn.disabled=false;
@@ -973,6 +1042,7 @@
 
   // ── Helpers ────────────────────────────────────────────────────────────
   function svgTrash(){ return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`; }
+  function svgEdit(){ return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`; }
   function limpiar(obj){ const r={}; for(const[k,v] of Object.entries(obj)) if(v!==null&&v!==undefined) r[k]=v; return r; }
   function abrirModal(id){ document.getElementById(id).classList.add('open'); }
   function cerrarModal(id){ document.getElementById(id).classList.remove('open'); }
