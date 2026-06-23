@@ -211,27 +211,61 @@
     try{
       const preps = await sbGet('preparados_completos?order=fecha_recepcion.desc');
       todos=preps.map(p=>({...p,componentes:[]}));
-      // Cargar componentes solo de los preparados visibles (por defecto En laboratorio)
-      const prepsFiltrados = todos.filter(p=>p.estado==='En laboratorio');
-      if(prepsFiltrados.length > 0){
-        const ids = prepsFiltrados.map(p=>p.id).join(',');
-        const comps = await sbGet('componentes_con_droga?preparado_id=in.('+ids+')');
-        const compMap={};comps.forEach(c=>{if(!compMap[c.preparado_id])compMap[c.preparado_id]=[];compMap[c.preparado_id].push(c);});
-        todos = todos.map(p=>({...p, componentes: compMap[p.id]||[]}));
-      }
-      setStatus('');filtrar();
+      setStatus('');await filtrar();
     }catch(err){setStatus('Error al cargar: '+err.message,true);}
   }
 
+  let _etFiltrarTimeout=null;
   function filtrar(){
+    clearTimeout(_etFiltrarTimeout);
+    return new Promise(resolve=>{
+      _etFiltrarTimeout=setTimeout(async()=>{ await _filtrarExec(); resolve(); },200);
+    });
+  }
+
+  async function _filtrarExec(){
     const q=document.getElementById('buscador').value.toLowerCase().trim();
     const estado=document.getElementById('filtroEstado').value;
-    const res=todos.filter(p=>{
+
+    // Cargar componentes de los preparados del estado actual si no están cargados
+    const sinComps = todos.filter(p=>(!estado||p.estado===estado)&&p.componentes.length===0);
+    if(sinComps.length > 0){
+      setStatus('<span class="spinner"></span> Cargando componentes…');
+      const ids = sinComps.map(p=>p.id).join(',');
+      try{
+        const comps = await sbGet('componentes_con_droga?preparado_id=in.('+ids+')');
+        const cm={};comps.forEach(c=>{if(!cm[c.preparado_id])cm[c.preparado_id]=[];cm[c.preparado_id].push(c);});
+        sinComps.forEach(p=>{ p.componentes=cm[p.id]||[]; });
+      }catch(e){}
+    }
+
+    let res=todos.filter(p=>{
       if(estado&&p.estado!==estado) return false;
       if(!q) return true;
       const campos=[String(p.nro_cupon??''),p.cliente_nombre||'',p.forma_farmaceutica||'',...p.componentes.map(c=>c.droga_nombre||'')];
       return campos.some(v=>v.toLowerCase().includes(q));
     });
+
+    // Buscar por droga en Supabase si hay query y pocos resultados
+    if(q.length > 1){
+      try{
+        const drogasMatch = await sbGet('drogas?nombre=ilike.*'+encodeURIComponent(q)+'*&select=id');
+        if(drogasMatch.length > 0){
+          const dIds = drogasMatch.map(d=>d.id).join(',');
+          const compIds = await sbGet('componentes?droga_id=in.('+dIds+')&select=preparado_id');
+          const prepIds = [...new Set(compIds.map(c=>c.preparado_id))];
+          const yaEnRes = new Set(res.map(p=>p.id));
+          prepIds.forEach(id=>{
+            if(!yaEnRes.has(id)){
+              const p=todos.find(x=>x.id===id);
+              if(p&&(!estado||p.estado===estado)) res.push(p);
+            }
+          });
+        }
+      }catch(e){}
+    }
+
+    setStatus('');
     renderTabla(res);
   }
 

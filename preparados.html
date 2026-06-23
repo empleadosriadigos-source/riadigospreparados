@@ -328,6 +328,10 @@
   }
   document.addEventListener('click',e=>{if(!e.target.closest('.ss-wrap'))cerrarTodasSS();});
 
+  const POR_PAGINA = 30;
+  let paginaActual = 1;
+  let resultadosFiltrados = [];
+
   async function cargarTodo(){
     setStatus('<span class="spinner"></span> Cargando…');
     document.getElementById('tablaWrap').style.display='none';
@@ -339,50 +343,111 @@
       ]);
       drogas=drs; clientes=clis;
       todos=preps.map(p=>({...p,componentes:[]}));
-      setStatus('');filtrar();
+      setStatus('');
+      await filtrar();
     }catch(err){setStatus('Error al cargar: '+err.message,true);}
   }
 
   let _filtrarTimeout=null;
   function filtrar(){
-    const q=document.getElementById('buscador').value.toLowerCase().trim();
-    // Si la búsqueda parece ser por droga (más de 2 chars y no hay resultados locales), buscar en Supabase
     clearTimeout(_filtrarTimeout);
-    _filtrarTimeout=setTimeout(()=>_filtrarExec(q),300);
+    return new Promise(resolve=>{
+      _filtrarTimeout=setTimeout(async()=>{ await _filtrarExec(); resolve(); },300);
+    });
   }
-  async function _filtrarExec(q){
+
+  async function _filtrarExec(){
+    const q=document.getElementById('buscador').value.toLowerCase().trim();
     const estado=document.getElementById('filtroEstado').value;
-    const res=todos.filter(p=>{
+
+    setStatus('<span class="spinner"></span> Buscando…');
+
+    let res=todos.filter(p=>{
       if(estado&&p.estado!==estado) return false;
       if(!q) return true;
-      const campos=[String(p.nro_cupon??''),String(p.nro_receta??''),p.cliente_nombre||'',p.cliente_telefono||'',fmtFecha(p.fecha_recepcion),p.estado||'',p.forma_farmaceutica||'',String(p.cantidad_total??''),p.unidad||'',String(p.precio_venta??''),p.observaciones||'',...p.componentes.map(c=>c.droga_nombre||'')];
+      const campos=[String(p.nro_cupon??''),String(p.nro_receta??''),p.cliente_nombre||'',p.cliente_telefono||'',fmtFecha(p.fecha_recepcion),p.estado||'',p.forma_farmaceutica||'',String(p.cantidad_total??''),p.unidad||'',String(p.precio_venta??''),p.observaciones||''];
       return campos.some(v=>v.toLowerCase().includes(q));
     });
-    // Si hay búsqueda y sin resultados locales, buscar por droga en Supabase
-    if(q.length > 2 && res.length === 0){
+
+    // Buscar por droga en Supabase si hay query
+    if(q.length > 1){
       try{
         const drogasMatch = await sbGet('drogas?nombre=ilike.*'+encodeURIComponent(q)+'*&select=id');
         if(drogasMatch.length > 0){
-          const ids = drogasMatch.map(d=>d.id).join(',');
-          const compIds = await sbGet('componentes?droga_id=in.('+ids+')&select=preparado_id');
+          const dIds = drogasMatch.map(d=>d.id).join(',');
+          const compIds = await sbGet('componentes?droga_id=in.('+dIds+')&select=preparado_id');
           const prepIds = [...new Set(compIds.map(c=>c.preparado_id))];
-          const filtroEstado = document.getElementById('filtroEstado').value;
-          let url = 'preparados_completos?id=in.('+prepIds.join(',')+')&order=fecha_recepcion.desc';
-          if(filtroEstado) url += '&estado=eq.'+filtroEstado;
-          const prepsDB = await sbGet(url);
-          // Cargar componentes de estos preparados
-          if(prepsDB.length > 0){
-            const ids2 = prepsDB.map(p=>p.id).join(',');
-            const comps = await sbGet('componentes_con_droga?preparado_id=in.('+ids2+')');
-            const cm={};comps.forEach(c=>{if(!cm[c.preparado_id])cm[c.preparado_id]=[];cm[c.preparado_id].push(c);});
-            const result = prepsDB.map(p=>({...p,componentes:cm[p.id]||[]}));
-            renderTabla(aplicarOrden(result));
-            return;
+          if(prepIds.length > 0){
+            // Agregar preparados encontrados por droga que no estén ya en res
+            const yaEnRes = new Set(res.map(p=>p.id));
+            let url='preparados_completos?id=in.('+prepIds.join(',')+')&order=fecha_recepcion.desc';
+            if(estado) url+='&estado=eq.'+estado;
+            const porDroga = await sbGet(url);
+            porDroga.forEach(p=>{ if(!yaEnRes.has(p.id)) res.push({...p,componentes:[]}); });
           }
         }
       }catch(e){}
     }
-    renderTabla(aplicarOrden(res));
+
+    resultadosFiltrados = aplicarOrden(res);
+    paginaActual = 1;
+    renderPagina();
+  }
+
+  function renderPagina(){
+    const total = resultadosFiltrados.length;
+    const totalPags = Math.ceil(total/POR_PAGINA);
+    const inicio = (paginaActual-1)*POR_PAGINA;
+    const fin = inicio+POR_PAGINA;
+    const pagina = resultadosFiltrados.slice(inicio,fin);
+
+    if(!total){setStatus('No se encontraron preparados.');document.getElementById('tablaWrap').style.display='none';return;}
+    setStatus('');document.getElementById('tablaWrap').style.display='block';
+
+    // Cargar componentes de la página actual
+    const idsNecesarios = pagina.filter(p=>!p.componentes.length).map(p=>p.id);
+    if(idsNecesarios.length>0){
+      sbGet('componentes_con_droga?preparado_id=in.('+idsNecesarios.join(',')+')').then(comps=>{
+        const cm={};comps.forEach(c=>{if(!cm[c.preparado_id])cm[c.preparado_id]=[];cm[c.preparado_id].push(c);});
+        idsNecesarios.forEach(id=>{
+          const p=todos.find(x=>x.id===id);
+          const pr=resultadosFiltrados.find(x=>x.id===id);
+          if(p) p.componentes=cm[id]||[];
+          if(pr) pr.componentes=cm[id]||[];
+        });
+        renderTabla(pagina.map(p=>resultadosFiltrados.find(x=>x.id===p.id)||p));
+        renderPaginacion(total,totalPags);
+      });
+    } else {
+      renderTabla(pagina);
+      renderPaginacion(total,totalPags);
+    }
+  }
+
+  function renderPaginacion(total,totalPags){
+    document.getElementById('countBadge').textContent=`${total} preparado${total!==1?'s':''}`;
+    let pag=document.getElementById('paginacion');
+    if(!pag){pag=document.createElement('div');pag.id='paginacion';pag.style.cssText='display:flex;gap:6px;align-items:center;justify-content:center;padding:16px 0;flex-wrap:wrap;';document.getElementById('tablaWrap').after(pag);}
+    pag.innerHTML='';
+    if(totalPags<=1){pag.style.display='none';return;}
+    pag.style.display='flex';
+    const btn=(label,pg,disabled=false,active=false)=>{
+      const b=document.createElement('button');
+      b.textContent=label;b.disabled=disabled;
+      b.style.cssText=`padding:6px 12px;border-radius:6px;border:1px solid var(--border);cursor:${disabled?'default':'pointer'};font-size:13px;background:${active?'var(--accent2)':'var(--surface)'};color:${active?'#fff':'var(--text)'};font-weight:${active?'700':'400'};`;
+      if(!disabled) b.onclick=()=>{paginaActual=pg;renderPagina();window.scrollTo(0,0);};
+      return b;
+    };
+    pag.appendChild(btn('←',paginaActual-1,paginaActual===1));
+    const rango=2;
+    for(let i=1;i<=totalPags;i++){
+      if(i===1||i===totalPags||Math.abs(i-paginaActual)<=rango){
+        pag.appendChild(btn(i,i,false,i===paginaActual));
+      } else if(Math.abs(i-paginaActual)===rango+1){
+        const dots=document.createElement('span');dots.textContent='…';dots.style.padding='6px 4px';pag.appendChild(dots);
+      }
+    }
+    pag.appendChild(btn('→',paginaActual+1,paginaActual===totalPags));
   }
 
   function pillEstado(estado){
@@ -472,7 +537,7 @@
 
   async function recuperar(id){
     const p=todos.find(x=>x.id===id);if(!p)return;
-    try{await sbPatch('preparados',id,{estado:'Para retirar'});p.estado='Para retirar';mostrarToast('✓ Recuperado → Para retirar','ok');filtrar();}
+    try{await sbPatch('preparados',id,{estado:'Para retirar'});p.estado='Para retirar';mostrarToast('✓ Recuperado → Para retirar','ok');await filtrar();}
     catch(err){mostrarToast('Error: '+err.message,'err');}
   }
 
@@ -484,7 +549,7 @@
     }catch(e){ p.componentes=[]; }
   }
 
-  function abrirEditar(id){
+  async function abrirEditar(id){
     prepActual=todos.find(x=>x.id===id);if(!prepActual)return;
     const p=prepActual;
     document.getElementById('editarTitulo').textContent=`Editar cupón #${p.nro_cupon??''}`;
@@ -500,9 +565,11 @@
     document.getElementById('eUnidadHint').textContent='';
     document.getElementById('eClienteInput').value=p.cliente_nombre??'';
     document.getElementById('eClienteId').value=p.cliente_id??'';
-    const cont=document.getElementById('compRowsEditar');cont.innerHTML='';
-    p.componentes.forEach(c=>agregarCompRow('compRowsEditar',c.id,c.droga_nombre||'',c.droga_id,c.cantidad??'',c.unidad??''));
+    const cont=document.getElementById('compRowsEditar');cont.innerHTML='<div style="color:var(--muted);padding:8px;font-size:13px;">Cargando componentes…</div>';
     abrirModal('modalEditar');
+    await cargarComponentes(p);
+    cont.innerHTML='';
+    p.componentes.forEach(c=>agregarCompRow('compRowsEditar',c.id,c.droga_nombre||'',c.droga_id,c.cantidad??'',c.unidad??''));
   }
 
   async function guardarEdicion(){
@@ -544,7 +611,7 @@
 
   async function confirmarBorrar(){
     const btn=document.getElementById('btnConfirmarBorrar');btn.disabled=true;btn.textContent='Eliminando…';
-    try{await sbDelete('componentes?preparado_id=eq.'+prepActual.id);await sbDelete('preparados?id=eq.'+prepActual.id);todos=todos.filter(x=>x.id!==prepActual.id);mostrarToast('✓ Eliminado','ok');cerrarModal('modalBorrar');filtrar();}
+    try{await sbDelete('componentes?preparado_id=eq.'+prepActual.id);await sbDelete('preparados?id=eq.'+prepActual.id);todos=todos.filter(x=>x.id!==prepActual.id);mostrarToast('✓ Eliminado','ok');cerrarModal('modalBorrar');await filtrar();}
     catch(err){mostrarToast('Error: '+err.message,'err');}
     btn.disabled=false;btn.textContent='Eliminar';
   }
