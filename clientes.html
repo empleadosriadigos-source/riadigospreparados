@@ -480,16 +480,21 @@
   }
 
   // ── Carga CLIENTES ────────────────────────────────────────────────────
+  const CLI_POR_PAGINA = 30;
+  let cliPaginaActual = 1;
+  let clientesFiltrados = [];
+
   async function cargarClientes(){
     document.getElementById('statusClientes').innerHTML='<span class="spinner"></span> Cargando…';
     document.getElementById('tablaClientesWrap').style.display='none';
     try{
+      // Traer clientes con limit alto
       const [clis, osCli] = await Promise.all([
-        sbGet('clientes?select=id,nombre,dni,telefono,tarjeta_zetti,observaciones&order=nombre.asc'),
-        sbGet('cliente_obras_sociales?select=cliente_id,obra_social_id,obras_sociales(nombre)'),
+        sbGet('clientes?select=id,nombre,dni,telefono,tarjeta_zetti,observaciones&order=nombre.asc&limit=5000'),
+        sbGet('cliente_obras_sociales?select=cliente_id,obra_social_id,obras_sociales(nombre)&limit=5000'),
       ]);
       const osMap = {};
-      osCli.forEach(r=>{ if(!osMap[r.cliente_id]) osMap[r.cliente_id]=[]; osMap[r.cliente_id].push(r.obras_sociales?.nombre).filter(Boolean); });
+      osCli.forEach(r=>{ if(!osMap[r.cliente_id]) osMap[r.cliente_id]=[]; osMap[r.cliente_id].push(r.obras_sociales?.nombre); });
       clientes = clis.map(c=>({...c, obras_nombres:(osMap[c.id]||[]).filter(Boolean)}));
       document.getElementById('statusClientes').innerHTML='';
       filtrarClientes();
@@ -503,19 +508,53 @@
       const campos=[c.nombre||'',c.dni||'',c.telefono||'', ...(c.obras_nombres||[])];
       return campos.some(v=>v.toLowerCase().includes(q));
     });
-    renderTablaClientes(res);
+    clientesFiltrados = res;
+    cliPaginaActual = 1;
+    renderTablaClientes();
   }
 
-  function renderTablaClientes(lista){
+  function renderTablaClientes(){
+    const lista = clientesFiltrados;
     const tbody=document.getElementById('tbodyClientes'); tbody.innerHTML='';
-    if(!lista.length){ document.getElementById('statusClientes').innerHTML='No se encontraron clientes.'; document.getElementById('tablaClientesWrap').style.display='none'; return; }
+    if(!lista.length){ document.getElementById('statusClientes').innerHTML='No se encontraron clientes.'; document.getElementById('tablaClientesWrap').style.display='none'; renderPaginacionCli(0,0); return; }
     document.getElementById('statusClientes').innerHTML=''; document.getElementById('tablaClientesWrap').style.display='block';
-    lista.forEach(c=>{
+    const total = lista.length;
+    const totalPags = Math.ceil(total/CLI_POR_PAGINA);
+    const inicio = (cliPaginaActual-1)*CLI_POR_PAGINA;
+    const pagina = lista.slice(inicio, inicio+CLI_POR_PAGINA);
+    pagina.forEach(c=>{
       const tr=document.createElement('tr');
       tr.onclick=()=>abrirFichaCliente(c.id);
       tr.innerHTML=`<td class="td-nombre">${escHtml(c.nombre)}</td><td class="td-muted">${escHtml(c.dni||'—')}</td><td class="td-muted">${escHtml(c.telefono||'—')}</td><td class="td-muted">${escHtml((c.obras_nombres||[]).join(', ')||'—')}</td><td class="td-muted">${escHtml(c.tarjeta_zetti||'—')}</td>`;
       tbody.appendChild(tr);
     });
+    renderPaginacionCli(total, totalPags);
+  }
+
+  function renderPaginacionCli(total, totalPags){
+    let pag=document.getElementById('paginacionCli');
+    if(!pag){pag=document.createElement('div');pag.id='paginacionCli';pag.style.cssText='display:flex;gap:6px;align-items:center;justify-content:center;padding:12px 0;flex-wrap:wrap;';document.getElementById('tablaClientesWrap').after(pag);}
+    pag.innerHTML='';
+    if(total>0){const badge=document.createElement('div');badge.style.cssText='text-align:center;color:var(--muted);font-size:13px;width:100%;margin-bottom:4px;';badge.textContent=`${total} cliente${total!==1?'s':''}`;pag.appendChild(badge);}
+    if(totalPags<=1){pag.style.display=total?'flex':'none';return;}
+    pag.style.display='flex';
+    const btn=(label,pg,disabled=false,active=false)=>{
+      const b=document.createElement('button');
+      b.textContent=label;b.disabled=disabled;
+      b.style.cssText=`padding:6px 12px;border-radius:6px;border:1px solid var(--border);cursor:${disabled?'default':'pointer'};font-size:13px;background:${active?'var(--accent2)':'var(--surface)'};color:${active?'#fff':'var(--text)'};font-weight:${active?'700':'400'};`;
+      if(!disabled) b.onclick=()=>{cliPaginaActual=pg;renderTablaClientes();window.scrollTo(0,0);};
+      return b;
+    };
+    pag.appendChild(btn('←',cliPaginaActual-1,cliPaginaActual===1));
+    const rango=2;
+    for(let i=1;i<=totalPags;i++){
+      if(i===1||i===totalPags||Math.abs(i-cliPaginaActual)<=rango){
+        pag.appendChild(btn(i,i,false,i===cliPaginaActual));
+      } else if(Math.abs(i-cliPaginaActual)===rango+1){
+        const dots=document.createElement('span');dots.textContent='…';dots.style.padding='6px 4px';pag.appendChild(dots);
+      }
+    }
+    pag.appendChild(btn('→',cliPaginaActual+1,cliPaginaActual===totalPags));
   }
 
   // ── Nuevo / editar datos básicos cliente ──────────────────────────────

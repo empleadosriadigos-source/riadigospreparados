@@ -423,10 +423,10 @@
   });
 
   const ESTADOS   = ['Asignar precio','En laboratorio','Para retirar','Entregado'];
-  const FORMAS    = ['Solución','Loción','Crema','Ungüento','Gel','Cápsula','Sello','Supositorio','Óvulo','Suspensión','Jarabe','Gotas','Polvo','Comprimido','Parche','Colirio'];
-  const UNIDADES  = ['ml','g','gr','mg','unidades','UI'];
-  const UNID_COMP = ['ml','g','gr','mg','%','mcg','UI','c.s.p'];
-  const FORMA_UNIDAD = {'Solución':'ml','Loción':'ml','Crema':'g','Ungüento':'g','Gel':'g','Cápsula':'unidades','Sello':'unidades','Suspensión':'ml','Jarabe':'ml','Gotas':'ml','Polvo':'g','Supositorio':'unidades','Óvulo':'unidades','Comprimido':'unidades','Parche':'unidades','Colirio':'ml'};
+  const FORMAS    = ['Solución','Loción','Crema','Ungüento','Gel','Spray','Cápsula','Sello','Supositorio','Óvulo','Suspensión','Jarabe','Gotas','Polvo','Comprimido','Parche','Colirio'];
+  const UNIDADES  = ['ml','g','mg','unidades','UI'];
+  const UNID_COMP = ['ml','g','mg','%','mcg','UI','c.s.p'];
+  const FORMA_UNIDAD = {'Solución':'ml','Loción':'ml','Crema':'g','Ungüento':'g','Gel':'g','Spray':'ml','Cápsula':'unidades','Sello':'unidades','Suspensión':'ml','Jarabe':'ml','Gotas':'ml','Polvo':'g','Supositorio':'unidades','Óvulo':'unidades','Comprimido':'unidades','Parche':'unidades','Colirio':'ml'};
   const ESTADOS_KANBAN = ['Asignar precio','En laboratorio','Para retirar'];
   const COL_BODY  = {'Asignar precio':'body-asignar','En laboratorio':'body-lab','Para retirar':'body-retirar'};
   const COL_COUNT = {'Asignar precio':'count-asignar','En laboratorio':'count-lab','Para retirar':'count-retirar'};
@@ -629,7 +629,7 @@
   }
 
   // ── Editar ─────────────────────────────────────────────────────────────
-  function abrirEditar(e,id){
+  async function abrirEditar(e,id){
     e.stopPropagation();prepActual=preparados.find(x=>x.id===id);if(!prepActual)return;
     const p=prepActual;
     document.getElementById('editarTitulo').textContent=`Editar cupón #${p.nro_cupon??''}`;
@@ -645,9 +645,19 @@
     document.getElementById('eUnidadHint').textContent='';
     document.getElementById('eClienteInput').value=p.cliente_nombre??'';
     document.getElementById('eClienteId').value=p.cliente_id??'';
-    const cont=document.getElementById('compRowsEditar');cont.innerHTML='';
-    p.componentes.forEach(c=>agregarCompRow('compRowsEditar',c.id,c.droga_nombre||'',c.droga_id,c.cantidad??'',c.unidad??''));
+    const cont=document.getElementById('compRowsEditar');cont.innerHTML='<div style="color:var(--muted);padding:8px;font-size:13px;">Cargando componentes…</div>';
     abrirModal('modalEditar');
+    await cargarComponentes(p);
+    cont.innerHTML='';
+    p.componentes.forEach(c=>agregarCompRow('compRowsEditar',c.id,c.droga_nombre||'',c.droga_id,c.cantidad??'',c.unidad??''));
+  }
+
+  async function cargarComponentes(p){
+    if(p.componentes && p.componentes.length > 0) return;
+    try{
+      const comps = await sbGet('componentes_con_droga?preparado_id=eq.'+p.id);
+      p.componentes = comps;
+    }catch(e){ p.componentes=[]; }
   }
 
   async function guardarEdicion(){

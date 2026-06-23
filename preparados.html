@@ -313,10 +313,10 @@
   });
 
   const ESTADOS   = ['Asignar precio','En laboratorio','Para retirar','Entregado'];
-  const FORMAS    = ['Solución','Loción','Crema','Ungüento','Gel','Cápsula','Sello','Supositorio','Óvulo','Suspensión','Jarabe','Gotas','Polvo','Comprimido','Parche','Colirio'];
-  const UNIDADES  = ['ml','g','gr','mg','unidades','UI'];
-  const UNID_COMP = ['ml','g','gr','mg','%','mcg','UI','c.s.p'];
-  const FORMA_UNIDAD = {'Solución':'ml','Loción':'ml','Crema':'g','Ungüento':'g','Gel':'g','Cápsula':'unidades','Sello':'unidades','Suspensión':'ml','Jarabe':'ml','Gotas':'ml','Polvo':'g','Supositorio':'unidades','Óvulo':'unidades','Comprimido':'unidades','Parche':'unidades','Colirio':'ml'};
+  const FORMAS    = ['Solución','Loción','Crema','Ungüento','Gel','Spray','Cápsula','Sello','Supositorio','Óvulo','Suspensión','Jarabe','Gotas','Polvo','Comprimido','Parche','Colirio'];
+  const UNIDADES  = ['ml','g','mg','unidades','UI'];
+  const UNID_COMP = ['ml','g','mg','%','mcg','UI','c.s.p'];
+  const FORMA_UNIDAD = {'Solución':'ml','Loción':'ml','Crema':'g','Ungüento':'g','Gel':'g','Spray':'ml','Cápsula':'unidades','Sello':'unidades','Suspensión':'ml','Jarabe':'ml','Gotas':'ml','Polvo':'g','Supositorio':'unidades','Óvulo':'unidades','Comprimido':'unidades','Parche':'unidades','Colirio':'ml'};
 
   let todos=[], drogas=[], clientes=[], prepActual=null, cbDrogaIdx=null;
 
@@ -627,7 +627,7 @@
     btn.disabled=false;btn.textContent='Crear droga';
   }
 
-  function onFormaChange(){const forma=document.getElementById('eForma').value;const uni={'Solución':'ml','Loción':'ml','Crema':'g','Ungüento':'g','Gel':'g','Cápsula':'unidades','Sello':'unidades','Suspensión':'ml','Jarabe':'ml','Gotas':'ml','Polvo':'g','Supositorio':'unidades','Óvulo':'unidades','Comprimido':'unidades','Parche':'unidades','Colirio':'ml'}[forma]||'';const sel=document.getElementById('eUnidad');const hint=document.getElementById('eUnidadHint');if(uni&&sel&&!sel.value)sel.value=uni;if(hint)hint.textContent=uni?`Sugerida: ${uni}`:''; }
+  function onFormaChange(){const forma=document.getElementById('eForma').value;const uni={'Solución':'ml','Loción':'ml','Crema':'g','Ungüento':'g','Gel':'g','Spray':'ml','Cápsula':'unidades','Sello':'unidades','Suspensión':'ml','Jarabe':'ml','Gotas':'ml','Polvo':'g','Supositorio':'unidades','Óvulo':'unidades','Comprimido':'unidades','Parche':'unidades','Colirio':'ml'}[forma]||'';const sel=document.getElementById('eUnidad');const hint=document.getElementById('eUnidadHint');if(uni&&sel&&!sel.value)sel.value=uni;if(hint)hint.textContent=uni?`Sugerida: ${uni}`:''; }
 
   function agregarCompRow(contId,recId='',dNom='',dId='',cant='',unid=''){
     const cont=document.getElementById(contId);const idx=Date.now()+Math.random();const div=document.createElement('div');div.className='comp-row';div.dataset.recid=recId;
