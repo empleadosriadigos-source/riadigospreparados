@@ -332,22 +332,25 @@
     setStatus('<span class="spinner"></span> Cargando…');
     document.getElementById('tablaWrap').style.display='none';
     try{
-      const [preps,comps,drs,clis]=await Promise.all([
+      const [preps,drs,clis]=await Promise.all([
         sbGet('preparados_completos?order=fecha_recepcion.desc'),
-        sbGet('componentes_con_droga', true),
         sbGet('drogas?order=nombre.asc'),
         sbGet('clientes?order=nombre.asc&select=id,nombre,telefono'),
       ]);
       drogas=drs; clientes=clis;
-      const compMap={};
-      comps.forEach(c=>{if(!compMap[c.preparado_id])compMap[c.preparado_id]=[];compMap[c.preparado_id].push(c);});
-      todos=preps.map(p=>({...p,componentes:compMap[p.id]||[]}));
+      todos=preps.map(p=>({...p,componentes:[]}));
       setStatus('');filtrar();
     }catch(err){setStatus('Error al cargar: '+err.message,true);}
   }
 
+  let _filtrarTimeout=null;
   function filtrar(){
     const q=document.getElementById('buscador').value.toLowerCase().trim();
+    // Si la búsqueda parece ser por droga (más de 2 chars y no hay resultados locales), buscar en Supabase
+    clearTimeout(_filtrarTimeout);
+    _filtrarTimeout=setTimeout(()=>_filtrarExec(q),300);
+  }
+  async function _filtrarExec(q){
     const estado=document.getElementById('filtroEstado').value;
     const res=todos.filter(p=>{
       if(estado&&p.estado!==estado) return false;
@@ -355,6 +358,30 @@
       const campos=[String(p.nro_cupon??''),String(p.nro_receta??''),p.cliente_nombre||'',p.cliente_telefono||'',fmtFecha(p.fecha_recepcion),p.estado||'',p.forma_farmaceutica||'',String(p.cantidad_total??''),p.unidad||'',String(p.precio_venta??''),p.observaciones||'',...p.componentes.map(c=>c.droga_nombre||'')];
       return campos.some(v=>v.toLowerCase().includes(q));
     });
+    // Si hay búsqueda y sin resultados locales, buscar por droga en Supabase
+    if(q.length > 2 && res.length === 0){
+      try{
+        const drogasMatch = await sbGet('drogas?nombre=ilike.*'+encodeURIComponent(q)+'*&select=id');
+        if(drogasMatch.length > 0){
+          const ids = drogasMatch.map(d=>d.id).join(',');
+          const compIds = await sbGet('componentes?droga_id=in.('+ids+')&select=preparado_id');
+          const prepIds = [...new Set(compIds.map(c=>c.preparado_id))];
+          const filtroEstado = document.getElementById('filtroEstado').value;
+          let url = 'preparados_completos?id=in.('+prepIds.join(',')+')&order=fecha_recepcion.desc';
+          if(filtroEstado) url += '&estado=eq.'+filtroEstado;
+          const prepsDB = await sbGet(url);
+          // Cargar componentes de estos preparados
+          if(prepsDB.length > 0){
+            const ids2 = prepsDB.map(p=>p.id).join(',');
+            const comps = await sbGet('componentes_con_droga?preparado_id=in.('+ids2+')');
+            const cm={};comps.forEach(c=>{if(!cm[c.preparado_id])cm[c.preparado_id]=[];cm[c.preparado_id].push(c);});
+            const result = prepsDB.map(p=>({...p,componentes:cm[p.id]||[]}));
+            renderTabla(aplicarOrden(result));
+            return;
+          }
+        }
+      }catch(e){}
+    }
     renderTabla(aplicarOrden(res));
   }
 
@@ -447,6 +474,14 @@
     const p=todos.find(x=>x.id===id);if(!p)return;
     try{await sbPatch('preparados',id,{estado:'Para retirar'});p.estado='Para retirar';mostrarToast('✓ Recuperado → Para retirar','ok');filtrar();}
     catch(err){mostrarToast('Error: '+err.message,'err');}
+  }
+
+  async function cargarComponentes(p){
+    if(p.componentes && p.componentes.length > 0) return; // ya cargados
+    try{
+      const comps = await sbGet('componentes_con_droga?preparado_id=eq.'+p.id);
+      p.componentes = comps;
+    }catch(e){ p.componentes=[]; }
   }
 
   function abrirEditar(id){
@@ -613,7 +648,7 @@
     btn.disabled=false; btn.textContent='Fusionar';
   }
 
-  async function sbGet(path, all=false){const h=getAuthHeaders();if(all){h['Range-Unit']='items';h['Range']='0-99999';}const resp=await fetch(`${SB_URL}/${path}`,{headers:h});if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}return resp.json();}
+  async function sbGet(path){const resp=await fetch(`${SB_URL}/${path}`,{headers:getAuthHeaders()});if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}return resp.json();}
   async function sbPost(table,body){const resp=await fetch(`${SB_URL}/${table}`,{method:'POST',headers:getAuthHeaders({'Content-Type':'application/json','Prefer':'return=representation'}),body:JSON.stringify(body)});if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}return resp.json();}
   async function sbPatch(table,id,body){const resp=await fetch(`${SB_URL}/${table}?id=eq.${id}`,{method:'PATCH',headers:getAuthHeaders({'Content-Type':'application/json','Prefer':'return=representation'}),body:JSON.stringify(body)});if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}return resp.json();}
   async function sbDelete(path){const resp=await fetch(`${SB_URL}/${path}`,{method:'DELETE',headers:getAuthHeaders()});if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}}

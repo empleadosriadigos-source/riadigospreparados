@@ -209,12 +209,16 @@
     document.getElementById('tablaWrap').style.display='none';
     todos=[];seleccion.clear();actualizarContador();
     try{
-      const [preps,comps]=await Promise.all([
-        sbGet('preparados_completos?order=fecha_recepcion.desc'),
-        sbGet('componentes_con_droga'),
-      ]);
-      const compMap={};comps.forEach(c=>{if(!compMap[c.preparado_id])compMap[c.preparado_id]=[];compMap[c.preparado_id].push(c);});
-      todos=preps.map(p=>({...p,componentes:compMap[p.id]||[]}));
+      const preps = await sbGet('preparados_completos?order=fecha_recepcion.desc');
+      todos=preps.map(p=>({...p,componentes:[]}));
+      // Cargar componentes solo de los preparados visibles (por defecto En laboratorio)
+      const prepsFiltrados = todos.filter(p=>p.estado==='En laboratorio');
+      if(prepsFiltrados.length > 0){
+        const ids = prepsFiltrados.map(p=>p.id).join(',');
+        const comps = await sbGet('componentes_con_droga?preparado_id=in.('+ids+')');
+        const compMap={};comps.forEach(c=>{if(!compMap[c.preparado_id])compMap[c.preparado_id]=[];compMap[c.preparado_id].push(c);});
+        todos = todos.map(p=>({...p, componentes: compMap[p.id]||[]}));
+      }
       setStatus('');filtrar();
     }catch(err){setStatus('Error al cargar: '+err.message,true);}
   }
