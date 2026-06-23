@@ -457,7 +457,7 @@
     try {
       const [preps, comps, drs, clis] = await Promise.all([
         sbGet('preparados_completos?estado=neq.Entregado&order=fecha_recepcion.desc'),
-        sbGet('componentes_con_droga'),
+        sbGet('componentes_con_droga', true),
         sbGet('drogas?order=nombre.asc'),
         sbGet('clientes?order=nombre.asc&select=id,nombre,telefono'),
       ]);
@@ -814,8 +814,10 @@
   function cerrarTodasSS(){document.querySelectorAll('.ss-dropdown').forEach(d=>d.classList.remove('open'));}
 
   // ── Supabase API ───────────────────────────────────────────────────────
-  async function sbGet(path){
-    const resp=await fetch(`${SB_URL}/${path}`,{headers:getAuthHeaders()});
+  async function sbGet(path, all=false){
+    const h=getAuthHeaders();
+    if(all){h['Range-Unit']='items';h['Range']='0-99999';}
+    const resp=await fetch(`${SB_URL}/${path}`,{headers:h});
     if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
     return resp.json();
   }
