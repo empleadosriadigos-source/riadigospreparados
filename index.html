@@ -231,7 +231,21 @@
     </div>
     <div class="modal-body">
       <div class="field-row">
-        <div class="field-group"><label>Nro Cupón <span style="color:var(--danger)">*</span></label><input type="number" id="pCupon"/></div>
+        <div class="field-group">
+          <label>Nro Cupón <span style="color:var(--danger)">*</span></label>
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+            <label style="font-size:12px;font-weight:500;display:flex;align-items:center;gap:4px;cursor:pointer;">
+              <input type="radio" name="tipoCupon" value="nuevo" id="tipoCuponNuevo" checked onchange="toggleTipoCupon()"> Nuevo (automático)
+            </label>
+            <label style="font-size:12px;font-weight:500;display:flex;align-items:center;gap:4px;cursor:pointer;">
+              <input type="radio" name="tipoCupon" value="viejo" id="tipoCuponViejo" onchange="toggleTipoCupon()"> Cupón físico existente
+            </label>
+          </div>
+          <div id="cuponNuevoWrap" style="color:var(--muted);font-size:13px;padding:8px;background:var(--bg);border-radius:6px;border:1px solid var(--border);">
+            Se asignará automáticamente al guardar
+          </div>
+          <input type="number" id="pCupon" placeholder="Ingresá el número de cupón físico" style="display:none;"/>
+        </div>
         <div class="field-group"><label>Nro Receta</label><input type="number" id="pReceta"/></div>
       </div>
       <div class="field-row">
@@ -697,10 +711,32 @@
 
   // ── Guardar preparado nuevo ────────────────────────────────────────────
   function abrirModalPreparado(){limpiarFormPreparado();abrirModal('modalPreparado');}
+  function toggleTipoCupon(){
+    const nuevo = document.getElementById('tipoCuponNuevo').checked;
+    document.getElementById('cuponNuevoWrap').style.display = nuevo ? '' : 'none';
+    document.getElementById('pCupon').style.display = nuevo ? 'none' : '';
+    if(nuevo) document.getElementById('pCupon').value='';
+  }
+
   async function guardarPreparado(){
-    const cupon=parseInt(document.getElementById('pCupon').value);
+    const tipoNuevo = document.getElementById('tipoCuponNuevo').checked;
+    let cupon;
+    if(tipoNuevo){
+      // Obtener número automático de Supabase
+      const r = await sbGet('rpc/next_cupon');
+      cupon = typeof r === 'number' ? r : (r?.next_cupon ?? null);
+      if(!cupon){
+        // fallback: llamar via POST
+        try{
+          const resp = await fetch(`${SB_URL}/rpc/next_cupon`,{method:'POST',headers:getAuthHeaders(),body:'{}'});
+          cupon = await resp.json();
+        }catch(e){ mostrarToast('Error al obtener número de cupón','err'); return; }
+      }
+    } else {
+      cupon = parseInt(document.getElementById('pCupon').value);
+      if(!cupon){mostrarToast('El Nro Cupón es obligatorio','err');return;}
+    }
     const cliId=document.getElementById('pClienteId').value;
-    if(!cupon){mostrarToast('El Nro Cupón es obligatorio','err');return;}
     if(!cliId){mostrarToast('Seleccioná un cliente','err');return;}
     const btn=document.getElementById('btnGuardarPrep');btn.disabled=true;btn.textContent='Guardando…';
     try{
@@ -725,7 +761,17 @@
         if(!drugId) continue;
         await sbPost('componentes',limpiar({preparado_id:prepId,droga_id:drugId,cantidad:cant,unidad:unid}));
       }
-      mostrarToast('✓ Preparado cargado','ok');cerrarModal('modalPreparado');await cargarTodo();
+      mostrarToast('✓ Preparado cargado','ok');
+      cerrarModal('modalPreparado');
+      await cargarTodo();
+      // Imprimir cupones solo si es numeración nueva
+      if(tipoNuevo){
+        const prepCompleto = preparados.find(p=>p.id===prepId) || nuevoPrep[0];
+        if(prepCompleto){
+          await cargarComponentes(prepCompleto);
+          await imprimirCupones({...prepCompleto, nro_cupon: cupon});
+        }
+      }
     }catch(err){mostrarToast('Error: '+err.message,'err');}
     btn.disabled=false;btn.textContent='Guardar preparado';
   }
@@ -859,5 +905,128 @@
   function setKanbanStatus(html,esError=false){const el=document.getElementById('kanbanStatus');el.innerHTML=html;el.style.color=esError?'var(--danger)':'var(--muted)';}
   function mostrarToast(msg,tipo=''){const t=document.getElementById('toast');t.textContent=msg;t.className='show '+tipo;setTimeout(()=>{t.className='';},3500);}
 </script>
+  <script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js"></script>
+  <script>
+  // ── QZ Tray ──────────────────────────────────────────────────────────
+  let qzConectado = false;
+
+  async function conectarQZ(){
+    if(qzConectado) return true;
+    try{
+      await qz.websocket.connect();
+      qzConectado = true;
+      return true;
+    }catch(e){
+      console.warn('QZ Tray no disponible:', e);
+      return false;
+    }
+  }
+
+  qz.websocket.setClosedCallbacks(()=>{ qzConectado=false; });
+
+  async function imprimirCupones(prep){
+    const ok = await conectarQZ();
+    if(!ok){ mostrarToast('QZ Tray no está activo. Abrilo desde la barra de tareas.','err'); return; }
+
+    try{
+      const printer = await qz.printers.getDefault();
+      const config = qz.configs.create(printer, {copies:1});
+
+      // Helpers ESC/POS
+      const ESC = '\x1b';
+      const GS  = '\x1d';
+      const INIT        = ESC+'\x40';
+      const BOLD_ON     = ESC+'\x45\x01';
+      const BOLD_OFF    = ESC+'\x45\x00';
+      const CENTER      = ESC+'\x61\x01';
+      const LEFT        = ESC+'\x61\x00';
+      const RIGHT       = ESC+'\x61\x02';
+      const CUT         = GS+'\x56\x41\x00';
+      const LF          = '\n';
+      const LINE        = '________________________________'+LF;
+
+      const fecha = prep.fecha_recepcion ? new Date(prep.fecha_recepcion+'T00:00:00').toLocaleDateString('es-AR') : '';
+      const cupon = prep.nro_cupon ?? '—';
+      const cliente = prep.cliente_nombre ?? '—';
+      const tel = prep.cliente_telefono ?? '—';
+      const forma = prep.forma_farmaceutica ?? '';
+      const cant = prep.cantidad_total != null ? prep.cantidad_total+(prep.unidad?' '+prep.unidad:'') : '';
+      const receta = prep.nro_receta ?? '';
+      const precio = prep.precio_venta != null ? '$'+Number(prep.precio_venta).toLocaleString('es-AR') : '';
+      const obs = prep.observaciones ?? '';
+
+      // Componentes resumidos para cliente
+      const compsCorto = (prep.componentes||[]).map(c=>{
+        let s = c.droga_nombre||'';
+        if(c.cantidad!=null) s += ' '+c.cantidad+(c.unidad?' '+c.unidad:'');
+        return s;
+      }).join(' · ');
+
+      // Componentes detallados para farmacia
+      const compsLargo = (prep.componentes||[]).map(c=>{
+        const nombre = (c.droga_nombre||'').padEnd(22);
+        const detalle = c.cantidad!=null ? c.cantidad+(c.unidad?' '+c.unidad:'') : '';
+        return nombre+detalle+LF;
+      }).join('');
+
+      // ── CUPÓN CLIENTE ────────────────────────────────────────────────
+      const cuponCliente = [
+        INIT,
+        CENTER, BOLD_ON,
+        'Riadigos*'+LF,
+        'Preparados Magistrales'+LF,
+        BOLD_OFF,
+        LINE,
+        LEFT,
+        '#'+cupon+'          '+fecha+LF,
+        cliente+LF,
+        tel ? 'Tel: '+tel+LF : '',
+        LINE,
+        (forma || cant) ? (forma+(forma&&cant?' · ':'')+cant)+LF : '',
+        compsCorto ? compsCorto+LF : '',
+        LINE,
+        LF,
+        CUT,
+      ].join('');
+
+      // ── CUPÓN FARMACIA ───────────────────────────────────────────────
+      const cuponFarmacia = [
+        INIT,
+        CENTER, BOLD_ON,
+        'Riadigos*'+LF,
+        'Preparados Magistrales'+LF,
+        BOLD_OFF,
+        LINE,
+        LEFT,
+        'CUPON: #'+cupon+LF,
+        receta ? 'RECETA: #'+receta+LF : 'RECETA: ___________'+LF,
+        'FECHA: '+fecha+LF,
+        'CLIENTE: '+cliente+LF,
+        tel ? 'TEL: '+tel+LF : 'TEL: ___________'+LF,
+        LINE,
+        'FORMA: '+(forma||'___________')+LF,
+        'CANTIDAD: '+(cant||'___________')+LF,
+        'PRECIO: '+(precio||'___________')+LF,
+        LINE,
+        'COMPONENTES:'+LF,
+        compsLargo || '___________'+LF,
+        LINE,
+        'OBS: '+(obs||'')+LF,
+        LF,
+        LF,
+        '________________________________'+LF,
+        LF,
+        LF,
+        CUT,
+      ].join('');
+
+      await qz.print(config, [{type:'raw', format:'plain', data: cuponCliente}]);
+      await qz.print(config, [{type:'raw', format:'plain', data: cuponFarmacia}]);
+      mostrarToast('✓ Cupones impresos','ok');
+    }catch(e){
+      mostrarToast('Error al imprimir: '+e.message,'err');
+    }
+  }
+  </script>
 </body>
 </html>
