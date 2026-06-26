@@ -965,16 +965,24 @@
       });
 
       // Helpers ESC/POS como arrays de bytes
-      const INIT     = [0x1B,0x40];           // inicializar
-      const BOLD_ON  = [0x1B,0x45,0x01];      // negrita on
-      const BOLD_OFF = [0x1B,0x45,0x00];      // negrita off
-      const CENTER   = [0x1B,0x61,0x01];      // centrar
-      const LEFT     = [0x1B,0x61,0x00];      // izquierda
-      const CUT      = [0x1D,0x56,0x42,0x00]; // corte parcial (más compatible)
-      const LF       = [0x0A];                // salto de línea
-      const LINE     = '________________________________';
+      const INIT      = [0x1B,0x40];           // inicializar
+      const CHARSET   = [0x1B,0x74,0x02];      // charset PC850 - soporta Ñ y caracteres latinos
+      const BOLD_ON   = [0x1B,0x45,0x01];      // negrita on
+      const BOLD_OFF  = [0x1B,0x45,0x00];      // negrita off
+      const CENTER    = [0x1B,0x61,0x01];      // centrar
+      const LEFT      = [0x1B,0x61,0x00];      // izquierda
+      const CUT       = [0x1D,0x56,0x42,0x00]; // corte
+      const LF        = [0x0A];                // salto de línea
+      const LINE      = '________________________________';
+      // Fuente doble alto para título
+      const FONT_2H   = [0x1B,0x21,0x10];      // doble alto
+      const FONT_NORM = [0x1B,0x21,0x00];      // normal
 
-      function txt(s){ return s.split('').map(c=>c.charCodeAt(0)); }
+      // Mapa de caracteres especiales a PC850
+      const PC850 = {'Ñ':0xA5,'ñ':0xA4,'Á':0xB5,'á':0xA0,'É':0x90,'é':0x82,'Í':0xD6,'í':0xA1,'Ó':0xE0,'ó':0xA2,'Ú':0xE9,'ú':0xA3,'Ü':0x9A,'ü':0x81,'¿':0xA8,'¡':0xAD};
+      function txt(s){
+        return Array.from(s).map(c => PC850[c] !== undefined ? PC850[c] : (c.charCodeAt(0) < 256 ? c.charCodeAt(0) : 0x3F));
+      }
       function linea(s){ return [...txt(s),...LF]; }
       function sep(){ return [...txt(LINE),...LF]; }
 
@@ -1006,9 +1014,10 @@
       // ── CUPÓN CLIENTE ────────────────────────────────────────────────
       const datosCli = [
         ...INIT,
-        ...CENTER, ...BOLD_ON,
+        ...CHARSET,
+        ...CENTER, ...FONT_2H, ...BOLD_ON,
         ...linea('Riadigos*'),
-        ...linea('Preparados Magistrales'),
+        ...FONT_NORM, ...linea('Preparados Magistrales'),
         ...BOLD_OFF,
         ...sep(),
         ...LEFT,
@@ -1026,9 +1035,10 @@
       // ── CUPÓN FARMACIA ───────────────────────────────────────────────
       const datosFarm = [
         ...INIT,
-        ...CENTER, ...BOLD_ON,
+        ...CHARSET,
+        ...CENTER, ...FONT_2H, ...BOLD_ON,
         ...linea('Riadigos*'),
-        ...linea('Preparados Magistrales'),
+        ...FONT_NORM, ...linea('Preparados Magistrales'),
         ...BOLD_OFF,
         ...sep(),
         ...LEFT,
