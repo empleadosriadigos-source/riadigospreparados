@@ -29,7 +29,7 @@
     .drop-zone.drag-active{background:#1A5C3A;border-color:var(--accent);color:#fff;}
     .drop-zone.drag-over{background:var(--accent);border-color:#fff;color:#fff;transform:scale(1.05);}
     .kanban-wrap{padding:68px 20px 20px;}
-    .kanban-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start;}
+    .kanban-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:stretch;}
     @media(max-width:800px){.kanban-cols{grid-template-columns:1fr;}}
     .col{background:#E8E4DA;border-radius:var(--radius);border:1px solid var(--border);min-height:200px;display:flex;flex-direction:column;}
     .col-header{padding:12px 14px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);}
@@ -37,7 +37,7 @@
     .col-dot{width:10px;height:10px;border-radius:50%;}
     .dot-asignar{background:#D97706;}.dot-lab{background:#2563EB;}.dot-retirar{background:var(--accent);}
     .col-count{font-size:12px;color:var(--muted);background:var(--surface);border-radius:20px;padding:2px 8px;font-weight:600;}
-    .col-body{padding:10px;display:flex;flex-direction:column;gap:8px;flex:1;min-height:80px;}
+    .col-body{padding:10px;display:flex;flex-direction:column;gap:8px;flex:1;min-height:500px;}
     .col-body.drag-over{background:rgba(104,169,204,0.12);border-radius:6px;}
     .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:grab;box-shadow:var(--shadow);transition:box-shadow 0.15s,transform 0.1s;user-select:none;}
     .card:hover{box-shadow:0 4px 14px rgba(0,0,0,0.13);}
@@ -471,7 +471,7 @@
     try {
       const [preps, drs, clis] = await Promise.all([
         sbGet('preparados_completos?estado=neq.Entregado&order=fecha_recepcion.desc'),
-        sbGet('drogas?order=nombre.asc'),
+        sbGet('drogas?order=nombre.asc&limit=5000'),
         sbGet('clientes?order=nombre.asc&select=id,nombre,telefono'),
       ]);
       drogas   = drs;
@@ -722,16 +722,12 @@
     const tipoNuevo = document.getElementById('tipoCuponNuevo').checked;
     let cupon;
     if(tipoNuevo){
-      // Obtener número automático de Supabase
-      const r = await sbGet('rpc/next_cupon');
-      cupon = typeof r === 'number' ? r : (r?.next_cupon ?? null);
-      if(!cupon){
-        // fallback: llamar via POST
-        try{
-          const resp = await fetch(`${SB_URL}/rpc/next_cupon`,{method:'POST',headers:getAuthHeaders(),body:'{}'});
-          cupon = await resp.json();
-        }catch(e){ mostrarToast('Error al obtener número de cupón','err'); return; }
-      }
+      try{
+        const resp = await fetch(`${SB_URL}/rpc/next_cupon`,{method:'POST',headers:getAuthHeaders(),body:'{}'});
+        if(!resp.ok) throw new Error('HTTP '+resp.status);
+        cupon = await resp.json();
+        if(!cupon){ mostrarToast('Error al obtener número de cupón','err'); return; }
+      }catch(e){ mostrarToast('Error al obtener número de cupón: '+e.message,'err'); return; }
     } else {
       cupon = parseInt(document.getElementById('pCupon').value);
       if(!cupon){mostrarToast('El Nro Cupón es obligatorio','err');return;}
