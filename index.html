@@ -970,24 +970,24 @@
 
       const fecha = prep.fecha_recepcion ? prep.fecha_recepcion.slice(8,10)+'/'+prep.fecha_recepcion.slice(5,7)+'/'+prep.fecha_recepcion.slice(0,4) : '';
       const cupon = String(prep.nro_cupon ?? '');
-      const cliente = (prep.cliente_nombre ?? '').replace(/[^ -ÿ]/g,'?');
+      const cliente = (prep.cliente_nombre ?? '');
       const tel = prep.cliente_telefono ?? '';
       const forma = prep.forma_farmaceutica ?? '';
       const cant = prep.cantidad_total != null ? prep.cantidad_total+(prep.unidad?' '+prep.unidad:'') : '';
       const receta = prep.nro_receta ?? '';
       const precio = prep.precio_venta != null ? '$'+Number(prep.precio_venta).toLocaleString('es-AR') : '';
-      const obs = (prep.observaciones ?? '').replace(/[^ -ÿ]/g,'?');
+      const obs = (prep.observaciones ?? '');
 
       // Componentes resumidos para cliente
       const compsCorto = (prep.componentes||[]).map(c=>{
-        let s = (c.droga_nombre||'').replace(/[^ -ÿ]/g,'?');
+        let s = (c.droga_nombre||'');
         if(c.cantidad!=null) s += ' '+c.cantidad+(c.unidad?' '+c.unidad:'');
         return s;
       }).join(' - ');
 
       // Componentes detallados para farmacia
       const compsLargoData = (prep.componentes||[]).map(c=>{
-        const nom = (c.droga_nombre||'').replace(/[^ -ÿ]/g,'?');
+        const nom = (c.droga_nombre||'');
         const det = c.cantidad!=null ? String(c.cantidad)+(c.unidad?' '+c.unidad:'') : '';
         const linePad = (nom+'                      ').slice(0,22)+det;
         return linea(linePad);
