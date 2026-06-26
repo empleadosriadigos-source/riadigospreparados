@@ -916,6 +916,23 @@
   <script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js"></script>
   <script>
   // ── QZ Tray ──────────────────────────────────────────────────────────
+  const QZ_CERT = `-----BEGIN CERTIFICATE-----\nMIID+zCCAuOgAwIBAgIGAZ7/i6A/MA0GCSqGSIb3DQEBCwUAMIGaMQswCQYDVQQG\nEwJVUzELMAkGA1UECAwCTlkxEjAQBgNVBAcMCUNhbmFzdG90YTEbMBkGA1UECgwS\nUVogSW5kdXN0cmllcywgTExDMRswGQYDVQQLDBJRWiBJbmR1c3RyaWVzLCBMTEMx\nHDAaBgkqhkiG9w0BCQEWDXN1cHBvcnRAcXouaW8xEjAQBgNVBAMMCWxvY2FsaG9z\ndDAeFw0yNjA2MjQxNjEwMDFaFw00NjA2MjQxNjEwMDFaMIGaMQswCQYDVQQGEwJV\nUzELMAkGA1UECAwCTlkxEjAQBgNVBAcMCUNhbmFzdG90YTEbMBkGA1UECgwSUVog\nSW5kdXN0cmllcywgTExDMRswGQYDVQQLDBJRWiBJbmR1c3RyaWVzLCBMTEMxHDAa\nBgkqhkiG9w0BCQEWDXN1cHBvcnRAcXouaW8xEjAQBgNVBAMMCWxvY2FsaG9zdDCC\nASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKkP2PuezWjG2G/O5CHrDqQW\nQm8d6a1jDrhX7+poKpZQ9+4o6EB1jAygMuP37kxuB/+VojAqsFxudx1emN/BvpNV\nyVfN6R9sMNuMDHdZ3OJq9ozEVDcANd9RrmiGAPAwF8oneuyzIIpvfniTPgoRrnsF\nyibPR2Ur1sLBURsDRiI9Wgm+uua1qkg74Taerd/LxRd1HtnnGn2gi69Jd+h2BKTO\nXsut9o2DzaTQkoH/8sk9+xIJ+HkCrBS1nUY+vtWxgtfcwkYxI10fe53TUkYYIRQG\n0NVRE6A7V17YQA6LgJPkam5AXyGHERAn2duKjrhbtNjDWX3Ac8HdMmpl3g2mijMC\nAwEAAaNFMEMwEgYDVR0TAQH/BAgwBgEB/wIBATAOBgNVHQ8BAf8EBAMCAQYwHQYD\nVR0OBBYEFNLOBVCEGK8OTTif7j56YRPpmk06MA0GCSqGSIb3DQEBCwUAA4IBAQCh\nuN+cRqRU3FzaxMhXKWQcURv7JpvNkyvVdq08ZI+iSMu9mjsSjmOHw/uAyvRUY7s1\nNbGS6uyWO5YpQNY4ki7MxPdQUnZd5k1w+p8QykMCPMtQ/oMk0HuWFIqwbbEEZKxU\nqk3vLIQ/LRUrJt02S9ORc+D3mBfaYp2MA6EnjDVVG791NEY/qTRhOeTKBCD1/HQY\ni9dCyDcMBsMQIoYb+GSzBBzPt2t8x/Z38jfhVZD41RbG+EKv1DXVDJnRN3jMJRr4\nw5jv4yBR/WB1zZf75MYSYa8a7mvwW6wu4UWIWdvfrfoeBYXhhme1sEc5oP7y8S9d\nFj7ZH8AcbZ1wH+vRQnY5\n-----END CERTIFICATE-----`;
+
+  const QZ_KEY = `MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCvbKQQPHxjO8N0B6YWYOuJrDtj/yE7BC5sud0qrcQE5DiMAEpa8KIMtGBriPmsWHCqknVGpPzl2SZGRTqqQlFPv3JHVk/w9kuFZCwUUTTT/Qj6QJNgZZvauOVXNQDCsFcxzNhMqErxJTf0GbTmWdYFrMxg4fp/IXF9kOKnYDPxuxwx0kcvlgeQ7Gi3jWU5KtQkTQeQFyNgaO/+plwsoHkrQ1zB9RN5Oz7JfJN8KWpummyB89K8zceejIaP/r26jBImo+kc+3D6gnRphwKb+AfAP3/EfPB5pbXJLNIP2i/oVpl2XazBeF2bNi4DF/5JLUOxLxVf+94g9rhw3woybusBAgMBAAECggEAAKkTN28A9Yzf4mNmaY80SGIlsFUwo1aZqwCBYCjgy6T3dmQ8RPQYQmCzL/Ir6C7YlMqtRbyyeNxMaKmnD9GPq876KfPgyNZvmB1gOA+mHKw08iLrSyAdqhN0RfhThSUT0N4EEQeIIIImrFNhsGDN39T57dFCFKDIrT5SkRVfYIB7pTCTLQO9JX8AumEyD7SYCHoIE4wXLjpGMlvuJzQyrVsq6pq+VVflzMixt/PJSLQjU2bUNAGYII8h8qFpB0pKdrZu6zyHz1a3x1ge/Av+CUrWMXNAVxjPZ/hS2aLEocT19lIjOKW0/Agu7Inn3T7Tgi9S65HwCjYwNLoAW/YUdwKBgQDgK1xd3wksPgmKw4Nm6h+B4mAdu1uyz67gokU7yikzcXDn+ayAjk8Wg2x5AuBrH1xV1wZDwoPkCMjRIbIPGVhfZR0WE/UrNklA6manuVhikVWVSIO2cl1PMAibOzAMqVO9Bun52IYyJdNAtRhe+c2VerB2HACB9epMzNKB5uTR6wKBgQDIVWGlXKT/ZNBnRvLIuzT+yTt21GLW+eLZd92q7fi3ppD7QaIKHqI+o6tvWbWYQgh6Af6kqk/ggstos4RlX8cJb6SzzqEKMcDsMBsZExDlyI04OWgKaOb+G+3hcuojSAfO+e8MSYk94uUVthPB4tPeRiH5hI40qTGV5cqiRbLPwwKBgAkKVqBGhWUuX04kUmFNIdYoHf409x6/92qBwM8HeR/k/EuuqwFIO/JJfI9oyUooqp2fnVYQOydwH0En3bl0KTc3qbOhPGrwtoWSrm8nL2RSPiRWF1G9TPwLkN1JxsdL8N+XrsnvrIHLOrjKVOBHrL3Rg9pPiMm09C0CuZ6ZhDLfAoGBAKbiCV+5V3GxR7Jg9eqlmLYOaEzLDDNNIt5J7gxwBNroFKpZuGR5tGo96ZfuwUm+6FTKyJffkH7UNiJYORhBuwpvSGLI5HobjDy0rj4rFc51TL7jg3n4fUR9e6JtGgKeBHM03R/9OiillHSLotXG4PuurKqw882GjFn0fOLE8PoFAoGBALeFc7K76Bi4/908VQ33xd/VJnxRy65465v2TYlPJ6V92VHlpYivhpdbZWcdPmYLhHUDR4W1KrqCTVYMgiQshjd2xoHJ/+wqWxzPOOdFVweue3oZNqJ8xnIAljbVECSKCC88hXzaNiD/Dy/ghZ24e6g2DvamdzuvnShSU02asPjZ`;
+
+  qz.security.setCertificatePromise(resolve => resolve(QZ_CERT));
+  qz.security.setSignatureAlgorithm('SHA512');
+  qz.security.setSignaturePromise(toSign => (resolve, reject) => {
+    try {
+      const binaryKey = Uint8Array.from(atob(QZ_KEY), c => c.charCodeAt(0));
+      crypto.subtle.importKey('pkcs8', binaryKey.buffer,
+        {name:'RSASSA-PKCS1-v1_5', hash:'SHA-512'}, false, ['sign'])
+      .then(k => crypto.subtle.sign('RSASSA-PKCS1-v1_5', k, new TextEncoder().encode(toSign)))
+      .then(sig => resolve(btoa(String.fromCharCode(...new Uint8Array(sig)))))
+      .catch(reject);
+    } catch(e){ reject(e); }
+  });
+
   let qzConectado = false;
 
   async function imprimirDesdeCard(e, id){
