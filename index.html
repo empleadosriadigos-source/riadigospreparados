@@ -67,6 +67,7 @@
     .card-btn:hover{opacity:0.8;}
     .card-btn-edit{background:#E8F4FB;color:var(--accent2);border:1px solid #C0DFF0;}
     .card-btn-delete{background:#FDECEA;color:var(--danger);border:1px solid #F5C6C2;}
+    .card-btn-print{background:#F0F7EE;color:#5A8A3A;border:1px solid #C3DFB8;}
     .card-ghost { opacity: 0.4; background: var(--accent-l, #EAF4EF); }
     .card-chosen { box-shadow: 0 8px 24px rgba(0,0,0,0.18); transform: rotate(1deg); cursor: grabbing; }
     .card-dragging { opacity: 0.9; }
@@ -519,6 +520,7 @@
     const svgC=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${clrMut}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
     const svgE=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
     const svgD=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+    const svgPrint=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>`;
     div.innerHTML=`
       <div class="card-top"><div class="card-cupon">#${p.nro_cupon??'—'}</div></div>
       <div class="card-contact">
@@ -536,6 +538,7 @@
       </div>
       <div class="card-actions">
         <button class="card-btn card-btn-edit" onclick="abrirEditar(event,'${p.id}')">${svgE} Editar</button>
+        <button class="card-btn card-btn-print" onclick="imprimirDesdeCard(event,'${p.id}')" title="Imprimir cupones">${svgPrint} Imprimir</button>
         <button class="card-btn card-btn-delete" onclick="abrirBorrar(event,'${p.id}')">${svgD} Eliminar</button>
       </div>`;
     return div;
@@ -915,6 +918,14 @@
   // ── QZ Tray ──────────────────────────────────────────────────────────
   let qzConectado = false;
 
+  async function imprimirDesdeCard(e, id){
+    e.stopPropagation();
+    const prep = preparados.find(p=>p.id===id);
+    if(!prep) return;
+    await cargarComponentes(prep);
+    await imprimirCupones(prep);
+  }
+
   async function conectarQZ(){
     if(qzConectado) return true;
     try{
@@ -935,98 +946,109 @@
 
     try{
       const printer = await qz.printers.getDefault();
-      const config = qz.configs.create(printer, {copies:1});
+      // flavor:'escpos' para encoding correcto de caracteres especiales
+      const config = qz.configs.create(printer, {
+        copies: 1,
+        encoding: 'ISO-8859-1',
+        margins: 0,
+        size: {width: 80}
+      });
 
-      // Helpers ESC/POS
-      const ESC = '\x1b';
-      const GS  = '\x1d';
-      const INIT        = ESC+'\x40';
-      const BOLD_ON     = ESC+'\x45\x01';
-      const BOLD_OFF    = ESC+'\x45\x00';
-      const CENTER      = ESC+'\x61\x01';
-      const LEFT        = ESC+'\x61\x00';
-      const RIGHT       = ESC+'\x61\x02';
-      const CUT         = GS+'\x56\x41\x00';
-      const LF          = '\n';
-      const LINE        = '________________________________'+LF;
+      // Helpers ESC/POS como arrays de bytes
+      const INIT     = [0x1B,0x40];           // inicializar
+      const BOLD_ON  = [0x1B,0x45,0x01];      // negrita on
+      const BOLD_OFF = [0x1B,0x45,0x00];      // negrita off
+      const CENTER   = [0x1B,0x61,0x01];      // centrar
+      const LEFT     = [0x1B,0x61,0x00];      // izquierda
+      const CUT      = [0x1D,0x56,0x41,0x00]; // corte
+      const LF       = [0x0A];                // salto de línea
+      const LINE     = '________________________________';
 
-      const fecha = prep.fecha_recepcion ? new Date(prep.fecha_recepcion+'T00:00:00').toLocaleDateString('es-AR') : '';
-      const cupon = prep.nro_cupon ?? '—';
-      const cliente = prep.cliente_nombre ?? '—';
-      const tel = prep.cliente_telefono ?? '—';
+      function txt(s){ return s.split('').map(c=>c.charCodeAt(0)); }
+      function linea(s){ return [...txt(s),...LF]; }
+      function sep(){ return [...txt(LINE),...LF]; }
+
+      const fecha = prep.fecha_recepcion ? prep.fecha_recepcion.slice(8,10)+'/'+prep.fecha_recepcion.slice(5,7)+'/'+prep.fecha_recepcion.slice(0,4) : '';
+      const cupon = String(prep.nro_cupon ?? '');
+      const cliente = (prep.cliente_nombre ?? '').replace(/[^ -ÿ]/g,'?');
+      const tel = prep.cliente_telefono ?? '';
       const forma = prep.forma_farmaceutica ?? '';
       const cant = prep.cantidad_total != null ? prep.cantidad_total+(prep.unidad?' '+prep.unidad:'') : '';
       const receta = prep.nro_receta ?? '';
       const precio = prep.precio_venta != null ? '$'+Number(prep.precio_venta).toLocaleString('es-AR') : '';
-      const obs = prep.observaciones ?? '';
+      const obs = (prep.observaciones ?? '').replace(/[^ -ÿ]/g,'?');
 
       // Componentes resumidos para cliente
       const compsCorto = (prep.componentes||[]).map(c=>{
-        let s = c.droga_nombre||'';
+        let s = (c.droga_nombre||'').replace(/[^ -ÿ]/g,'?');
         if(c.cantidad!=null) s += ' '+c.cantidad+(c.unidad?' '+c.unidad:'');
         return s;
-      }).join(' · ');
+      }).join(' - ');
 
       // Componentes detallados para farmacia
-      const compsLargo = (prep.componentes||[]).map(c=>{
-        const nombre = (c.droga_nombre||'').padEnd(22);
-        const detalle = c.cantidad!=null ? c.cantidad+(c.unidad?' '+c.unidad:'') : '';
-        return nombre+detalle+LF;
-      }).join('');
+      const compsLargoData = (prep.componentes||[]).map(c=>{
+        const nom = (c.droga_nombre||'').replace(/[^ -ÿ]/g,'?');
+        const det = c.cantidad!=null ? String(c.cantidad)+(c.unidad?' '+c.unidad:'') : '';
+        const linePad = (nom+'                      ').slice(0,22)+det;
+        return linea(linePad);
+      }).flat();
 
       // ── CUPÓN CLIENTE ────────────────────────────────────────────────
-      const cuponCliente = [
-        INIT,
-        CENTER, BOLD_ON,
-        'Riadigos*'+LF,
-        'Preparados Magistrales'+LF,
-        BOLD_OFF,
-        LINE,
-        LEFT,
-        '#'+cupon+'          '+fecha+LF,
-        cliente+LF,
-        tel ? 'Tel: '+tel+LF : '',
-        LINE,
-        (forma || cant) ? (forma+(forma&&cant?' · ':'')+cant)+LF : '',
-        compsCorto ? compsCorto+LF : '',
-        LINE,
-        LF,
-        CUT,
-      ].join('');
+      const datosCli = [
+        ...INIT,
+        ...CENTER, ...BOLD_ON,
+        ...linea('Riadigos*'),
+        ...linea('Preparados Magistrales'),
+        ...BOLD_OFF,
+        ...sep(),
+        ...LEFT,
+        ...linea('#'+cupon+'   '+fecha),
+        ...linea(cliente),
+        ...(tel ? linea('Tel: '+tel) : []),
+        ...sep(),
+        ...((forma||cant) ? linea(forma+(forma&&cant?' - ':'')+cant) : []),
+        ...(compsCorto ? linea(compsCorto) : []),
+        ...sep(),
+        ...LF,
+        ...CUT,
+      ];
 
       // ── CUPÓN FARMACIA ───────────────────────────────────────────────
-      const cuponFarmacia = [
-        INIT,
-        CENTER, BOLD_ON,
-        'Riadigos*'+LF,
-        'Preparados Magistrales'+LF,
-        BOLD_OFF,
-        LINE,
-        LEFT,
-        'CUPON: #'+cupon+LF,
-        receta ? 'RECETA: #'+receta+LF : 'RECETA: ___________'+LF,
-        'FECHA: '+fecha+LF,
-        'CLIENTE: '+cliente+LF,
-        tel ? 'TEL: '+tel+LF : 'TEL: ___________'+LF,
-        LINE,
-        'FORMA: '+(forma||'___________')+LF,
-        'CANTIDAD: '+(cant||'___________')+LF,
-        'PRECIO: '+(precio||'___________')+LF,
-        LINE,
-        'COMPONENTES:'+LF,
-        compsLargo || '___________'+LF,
-        LINE,
-        'OBS: '+(obs||'')+LF,
-        LF,
-        LF,
-        '________________________________'+LF,
-        LF,
-        LF,
-        CUT,
-      ].join('');
+      const datosFarm = [
+        ...INIT,
+        ...CENTER, ...BOLD_ON,
+        ...linea('Riadigos*'),
+        ...linea('Preparados Magistrales'),
+        ...BOLD_OFF,
+        ...sep(),
+        ...LEFT,
+        ...linea('CUPON: #'+cupon),
+        ...linea(receta ? 'RECETA: #'+receta : 'RECETA: ___________'),
+        ...linea('FECHA: '+fecha),
+        ...linea('CLIENTE: '+cliente),
+        ...linea(tel ? 'TEL: '+tel : 'TEL: ___________'),
+        ...sep(),
+        ...linea('FORMA: '+(forma||'___________')),
+        ...linea('CANTIDAD: '+(cant||'___________')),
+        ...linea('PRECIO: '+(precio||'___________')),
+        ...sep(),
+        ...linea('COMPONENTES:'),
+        ...(compsLargoData.length ? compsLargoData : linea('___________')),
+        ...sep(),
+        ...linea('OBS: '+(obs||'')),
+        ...LF,...LF,
+        ...sep(),
+        ...LF,...LF,...LF,
+        ...CUT,
+      ];
 
-      await qz.print(config, [{type:'raw', format:'plain', data: cuponCliente}]);
-      await qz.print(config, [{type:'raw', format:'plain', data: cuponFarmacia}]);
+      // Convertir bytes a Uint8Array y mandar como base64
+      function toB64(bytes){
+        return btoa(String.fromCharCode(...bytes));
+      }
+
+      await qz.print(config, [{type:'raw', format:'base64', data: toB64(datosCli)}]);
+      await qz.print(config, [{type:'raw', format:'base64', data: toB64(datosFarm)}]);
       mostrarToast('✓ Cupones impresos','ok');
     }catch(e){
       mostrarToast('Error al imprimir: '+e.message,'err');
