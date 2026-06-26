@@ -440,7 +440,7 @@
   const ESTADOS   = ['Asignar precio','En laboratorio','Para retirar','Entregado'];
   const FORMAS    = ['Solución','Loción','Crema','Ungüento','Gel','Spray','Shampoo','Cápsula','Sello','Supositorio','Óvulo','Suspensión','Jarabe','Gotas','Polvo','Comprimido','Parche','Colirio'];
   const UNIDADES  = ['ml','g','mg','unidades','UI'];
-  const UNID_COMP = ['ml','g','mg','%','mcg','UI','c.s.p'];
+  const UNID_COMP = ['ml','g','mg','%','mcg','UI','c.s.p','mg/ml','g/ml','mcg/ml','UI/ml'];
   const FORMA_UNIDAD = {'Solución':'ml','Loción':'ml','Crema':'g','Ungüento':'g','Gel':'g','Spray':'ml','Shampoo':'ml','Cápsula':'unidades','Sello':'unidades','Suspensión':'ml','Jarabe':'ml','Gotas':'ml','Polvo':'g','Supositorio':'unidades','Óvulo':'unidades','Comprimido':'unidades','Parche':'unidades','Colirio':'ml'};
   const ESTADOS_KANBAN = ['Asignar precio','En laboratorio','Para retirar'];
   const COL_BODY  = {'Asignar precio':'body-asignar','En laboratorio':'body-lab','Para retirar':'body-retirar'};
@@ -831,18 +831,12 @@
     if(hint) hint.textContent=uni?`Sugerida: ${uni}`:'';
   }
 
-  const FORMAS_ML = ['Solución','Loción','Spray','Shampoo','Suspensión','Jarabe','Gotas'];
-  const UNID_CONC = ['mg/ml','g/ml','mcg/ml','UI/ml','%'];
-
-  function agregarCompRow(contId,recId='',dNom='',dId='',cant='',unid='',conc=''){
+  function agregarCompRow(contId,recId='',dNom='',dId='',cant='',unid=''){
     const cont=document.getElementById(contId);
     const idx=Date.now()+Math.random();
     const div=document.createElement('div');
     div.className='comp-row';div.dataset.recid=recId;
     const unidOpts=['<option value="">—</option>',...UNID_COMP.map(o=>`<option value="${o}" ${o===unid?'selected':''}>${o}</option>`)].join('');
-    const formaActual = document.getElementById('pForma')?.value || document.getElementById('eForma')?.value || '';
-    const mostrarConc = FORMAS_ML.includes(formaActual);
-    const concOpts=['<option value="">conc.</option>',...UNID_CONC.map(o=>`<option value="${o}" ${o===conc?'selected':''}>${o}</option>`)].join('');
     div.innerHTML=`
       <div class="ss-wrap">
         <input type="text" class="ss-input" data-idx="${idx}" placeholder="Buscar droga…" value="${escHtml(dNom)}" oninput="filtrarSSComp(this)" onfocus="abrirSSComp(this)" autocomplete="off"/>
@@ -851,7 +845,6 @@
       </div>
       <input type="number" class="comp-cant" value="${cant}" placeholder="Cant." step="any"/>
       <select class="comp-unid">${unidOpts}</select>
-      ${mostrarConc?`<select class="comp-conc" title="Concentración" style="min-width:80px;">${concOpts}</select>`:`<input type="hidden" class="comp-conc" value=""/>`}
       <button class="btn-del-comp" onclick="this.closest('.comp-row').remove()">×</button>`;
     cont.appendChild(div);
   }
@@ -867,8 +860,8 @@
     act.onmousedown=e=>{e.preventDefault();dd.classList.remove('open');document.getElementById('cNombre').value=texto;clienteCB=cli=>{document.getElementById(`${pref}ClienteInput`).value=cli.nombre;document.getElementById(`${pref}ClienteId`).value=cli.id;};abrirModal('modalCliente');};
     dd.appendChild(act);
   }
-  function filtrarSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
-  function abrirSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
+  function filtrarSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);if(!input.value.trim()){dd.classList.remove('open');return;}renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())).slice(0,50),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
+  function abrirSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);if(!input.value.trim()){dd.classList.remove('open');return;}renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
   function renderSSComp(dd,fil,idx,texto){
     dd.innerHTML='';
     fil.forEach(d=>{const div=document.createElement('div');div.className='ss-option';div.textContent=d.nombre;div.onmousedown=e=>{e.preventDefault();const inp=document.querySelector(`.ss-input[data-idx="${idx}"]`);const hid=document.querySelector(`.comp-drug-id[data-idx="${idx}"]`);if(inp)inp.value=d.nombre;if(hid)hid.value=d.id;dd.classList.remove('open');};dd.appendChild(div);});
@@ -977,7 +970,7 @@
       const BOLD_OFF = [0x1B,0x45,0x00];      // negrita off
       const CENTER   = [0x1B,0x61,0x01];      // centrar
       const LEFT     = [0x1B,0x61,0x00];      // izquierda
-      const CUT      = [0x1D,0x56,0x41,0x00]; // corte
+      const CUT      = [0x1D,0x56,0x42,0x00]; // corte parcial (más compatible)
       const LF       = [0x0A];                // salto de línea
       const LINE     = '________________________________';
 
@@ -1056,7 +1049,7 @@
         ...LF,...LF,
         ...sep(),
         ...LF,...LF,...LF,
-        ...CUT,
+        ...LF,...LF,...CUT,
       ];
 
       // Convertir bytes a Uint8Array y mandar como base64
