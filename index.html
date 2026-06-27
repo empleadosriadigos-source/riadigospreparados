@@ -919,8 +919,12 @@
   // criptografia client-side. Asi no hace falta exponer ninguna clave
   // privada en el codigo publico del sitio.
 
-  qz.security.setCertificatePromise(function(resolve) { resolve(); });
-  qz.security.setSignaturePromise(function() { return function(resolve) { resolve(); }; });
+  qz.security.setCertificatePromise(function(resolve, reject) {
+    resolve();
+  });
+  qz.security.setSignaturePromise(function(toSign) {
+    return function(resolve, reject) { resolve(); };
+  });
 
   let qzConectado = false;
 
