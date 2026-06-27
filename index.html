@@ -417,24 +417,22 @@
   }
   async function cerrarSesion(){ await sbAuth.auth.signOut(); location.reload(); }
   function mostrarLogin(){ document.getElementById('loginOverlay').style.display='flex'; document.getElementById('appRoot').style.display='none'; }
+  let appIniciada = false;
   function mostrarApp(session){
     document.getElementById('loginOverlay').style.display='none';
     document.getElementById('appRoot').style.display='';
     const u=session.user;
     const nameEl=document.getElementById('userNombre');
     if(nameEl) nameEl.textContent=u.user_metadata?.full_name||u.email||'';
-    if(typeof initApp==='function') initApp();
+    if(!appIniciada && typeof initApp==='function'){ appIniciada=true; initApp(); }
   }
-  async function chequearSesion(){
-    const {data:{session}}=await sbAuth.auth.getSession();
-    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { mostrarLogin(); }
-  }
+  // onAuthStateChange ya emite el evento INITIAL_SESSION al suscribirse,
+  // asi que no hace falta llamar tambien a getSession() por separado.
   sbAuth.auth.onAuthStateChange((_event,session)=>{
-    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { SB_TOKEN=null; mostrarLogin(); }
+    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { SB_TOKEN=null; appIniciada=false; mostrarLogin(); }
   });
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btnGoogleLogin').addEventListener('click', iniciarSesionGoogle);
-    chequearSesion();
   });
 
   const ESTADOS   = ['Asignar precio','En laboratorio','Para retirar','Entregado'];
@@ -551,9 +549,6 @@
     sortables.forEach(s => s.destroy());
     sortables = [];
 
-    const ESTADOS_KANBAN = ['Asignar precio', 'En laboratorio', 'Para retirar'];
-    const COL_BODY = {'Asignar precio':'body-asignar','En laboratorio':'body-lab','Para retirar':'body-retirar'};
-
     ESTADOS_KANBAN.forEach(estado => {
       const el = document.getElementById(COL_BODY[estado]);
       const s = Sortable.create(el, {
@@ -585,9 +580,7 @@
             // Actualizar contadores
             const counts = {'Asignar precio':0,'En laboratorio':0,'Para retirar':0};
             preparados.forEach(x => { if(counts[x.estado]!==undefined) counts[x.estado]++; });
-            ESTADOS_KANBAN.forEach(e => { document.getElementById({
-              'Asignar precio':'count-asignar','En laboratorio':'count-lab','Para retirar':'count-retirar'
-            }[e]).textContent = counts[e]; });
+            ESTADOS_KANBAN.forEach(e => { document.getElementById(COL_COUNT[e]).textContent = counts[e]; });
           } catch(err) {
             mostrarToast('Error: ' + err.message, 'err');
             // Revertir visualmente
@@ -606,8 +599,6 @@
       e.preventDefault();
       dropZoneEl.classList.remove('drag-over');
       dropZoneEl.classList.remove('drag-active');
-      // Buscar el elemento que se estaba arrastrando
-      const dragging = document.querySelector('.card-chosen') || document.querySelector('[data-id]');
       // Usar el último id arrastrado
       if (!window._lastDragId) return;
       prepActual = preparados.find(x => x.id === window._lastDragId);

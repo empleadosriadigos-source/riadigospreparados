@@ -180,24 +180,22 @@
   }
   async function cerrarSesion(){ await sbAuth.auth.signOut(); location.reload(); }
   function mostrarLogin(){ document.getElementById('loginOverlay').style.display='flex'; document.getElementById('appRoot').style.display='none'; }
+  let appIniciada = false;
   function mostrarApp(session){
     document.getElementById('loginOverlay').style.display='none';
     document.getElementById('appRoot').style.display='';
     const u=session.user;
     const nameEl=document.getElementById('userNombre');
     if(nameEl) nameEl.textContent=u.user_metadata?.full_name||u.email||'';
-    if(typeof initApp==='function') initApp();
+    if(!appIniciada && typeof initApp==='function'){ appIniciada=true; initApp(); }
   }
-  async function chequearSesion(){
-    const {data:{session}}=await sbAuth.auth.getSession();
-    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { mostrarLogin(); }
-  }
+  // onAuthStateChange ya emite el evento INITIAL_SESSION al suscribirse,
+  // asi que no hace falta llamar tambien a getSession() por separado.
   sbAuth.auth.onAuthStateChange((_event,session)=>{
-    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { SB_TOKEN=null; mostrarLogin(); }
+    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { SB_TOKEN=null; appIniciada=false; mostrarLogin(); }
   });
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btnGoogleLogin').addEventListener('click', iniciarSesionGoogle);
-    chequearSesion();
   });
 
   let todos=[], seleccion=new Set();
@@ -209,7 +207,7 @@
     document.getElementById('tablaWrap').style.display='none';
     todos=[];seleccion.clear();actualizarContador();
     try{
-      const preps = await sbGet('preparados_completos?order=fecha_recepcion.desc');
+      const preps = await sbGet('preparados_completos?order=fecha_recepcion.desc', true);
       todos=preps.map(p=>({...p,componentes:[]}));
       setStatus('');await filtrar();
     }catch(err){setStatus('Error al cargar: '+err.message,true);}
@@ -405,7 +403,21 @@
     btn.disabled=false;btn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar Word`;
   }
 
-  async function sbGet(path){const resp=await fetch(`${SB_URL}/${path}`,{headers:getAuthHeaders()});if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}return resp.json();}
+  async function sbGet(path,all=false){
+    const h=getAuthHeaders();
+    if(!all){
+      const resp=await fetch(`${SB_URL}/${path}`,{headers:h});
+      if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
+      return resp.json();
+    }
+    const pageSize=1000;let offset=0,out=[],page;
+    do{
+      const resp=await fetch(`${SB_URL}/${path}`,{headers:{...h,'Range-Unit':'items','Range':`${offset}-${offset+pageSize-1}`}});
+      if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
+      page=await resp.json();out=out.concat(page);offset+=pageSize;
+    }while(page.length===pageSize);
+    return out;
+  }
 
   function fmtFecha(iso){if(!iso)return '—';const[y,m,d]=iso.slice(0,10).split('-');return `${d}/${m}/${y}`;}
   function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}

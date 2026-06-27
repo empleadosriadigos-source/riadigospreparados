@@ -88,7 +88,7 @@
     .btn:hover:not(:disabled){opacity:0.85;}.btn:disabled{opacity:0.5;cursor:not-allowed;}
     .btn-primary{background:var(--accent);color:#fff;}.btn-danger{background:var(--danger);color:#fff;}.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}.btn-sm{padding:5px 10px;font-size:12px;}
     #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:11px 24px;border-radius:8px;font-size:14px;font-weight:500;color:#fff;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;white-space:nowrap;}
-    #toast.show{opacity:1;}.#toast.ok{background:var(--accent);}.#toast.err{background:var(--danger);}
+    #toast.show{opacity:1;}
     #toast.ok{background:var(--accent);}#toast.err{background:var(--danger);}
     .login-overlay{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;}
     .login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,0.15);padding:40px 36px;max-width:360px;width:100%;text-align:center;}
@@ -292,30 +292,28 @@
   }
   async function cerrarSesion(){ await sbAuth.auth.signOut(); location.reload(); }
   function mostrarLogin(){ document.getElementById('loginOverlay').style.display='flex'; document.getElementById('appRoot').style.display='none'; }
+  let appIniciada = false;
   function mostrarApp(session){
     document.getElementById('loginOverlay').style.display='none';
     document.getElementById('appRoot').style.display='';
     const u=session.user;
     const nameEl=document.getElementById('userNombre');
     if(nameEl) nameEl.textContent=u.user_metadata?.full_name||u.email||'';
-    if(typeof initApp==='function') initApp();
+    if(!appIniciada && typeof initApp==='function'){ appIniciada=true; initApp(); }
   }
-  async function chequearSesion(){
-    const {data:{session}}=await sbAuth.auth.getSession();
-    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { mostrarLogin(); }
-  }
+  // onAuthStateChange ya emite el evento INITIAL_SESSION al suscribirse,
+  // asi que no hace falta llamar tambien a getSession() por separado.
   sbAuth.auth.onAuthStateChange((_event,session)=>{
-    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { SB_TOKEN=null; mostrarLogin(); }
+    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { SB_TOKEN=null; appIniciada=false; mostrarLogin(); }
   });
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btnGoogleLogin').addEventListener('click', iniciarSesionGoogle);
-    chequearSesion();
   });
 
   const ESTADOS   = ['Asignar precio','En laboratorio','Para retirar','Entregado'];
   const FORMAS    = ['Solución','Loción','Crema','Ungüento','Gel','Spray','Shampoo','Cápsula','Sello','Supositorio','Óvulo','Suspensión','Jarabe','Gotas','Polvo','Comprimido','Parche','Colirio'];
   const UNIDADES  = ['ml','g','mg','unidades','UI'];
-  const UNID_COMP = ['ml','g','mg','%','mcg','UI','c.s.p'];
+  const UNID_COMP = ['ml','g','mg','%','mcg','UI','c.s.p','mg/ml','g/ml','mcg/ml','UI/ml'];
   const FORMA_UNIDAD = {'Solución':'ml','Loción':'ml','Crema':'g','Ungüento':'g','Gel':'g','Spray':'ml','Shampoo':'ml','Cápsula':'unidades','Sello':'unidades','Suspensión':'ml','Jarabe':'ml','Gotas':'ml','Polvo':'g','Supositorio':'unidades','Óvulo':'unidades','Comprimido':'unidades','Parche':'unidades','Colirio':'ml'};
 
   let todos=[], drogas=[], clientes=[], prepActual=null, cbDrogaIdx=null;

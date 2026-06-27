@@ -418,24 +418,22 @@
   }
   async function cerrarSesion(){ await sbAuth.auth.signOut(); location.reload(); }
   function mostrarLogin(){ document.getElementById('loginOverlay').style.display='flex'; document.getElementById('appRoot').style.display='none'; }
+  let appIniciada = false;
   function mostrarApp(session){
     document.getElementById('loginOverlay').style.display='none';
     document.getElementById('appRoot').style.display='';
     const u=session.user;
     const nameEl=document.getElementById('userNombre');
     if(nameEl) nameEl.textContent=u.user_metadata?.full_name||u.email||'';
-    if(typeof initApp==='function') initApp();
+    if(!appIniciada && typeof initApp==='function'){ appIniciada=true; initApp(); }
   }
-  async function chequearSesion(){
-    const {data:{session}}=await sbAuth.auth.getSession();
-    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { mostrarLogin(); }
-  }
+  // onAuthStateChange ya emite el evento INITIAL_SESSION al suscribirse,
+  // asi que no hace falta llamar tambien a getSession() por separado.
   sbAuth.auth.onAuthStateChange((_event,session)=>{
-    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { SB_TOKEN=null; mostrarLogin(); }
+    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { SB_TOKEN=null; appIniciada=false; mostrarLogin(); }
   });
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btnGoogleLogin').addEventListener('click', iniciarSesionGoogle);
-    chequearSesion();
   });
 
   // ── Estado ───────────────────────────────────────────────────────────────
@@ -459,10 +457,22 @@
   }
 
   // ── Supabase API helpers ───────────────────────────────────────────────
-  async function sbGet(path){
-    const resp=await fetch(`${SB_URL}/${path}`,{headers:getAuthHeaders()});
-    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
-    return resp.json();
+  async function sbGet(path,all=false){
+    const h=getAuthHeaders();
+    if(!all){
+      const resp=await fetch(`${SB_URL}/${path}`,{headers:h});
+      if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
+      return resp.json();
+    }
+    // Supabase impone un limite de filas por request (db.max_rows) que un
+    // ?limit= mas alto no puede superar; hay que paginar con el header Range.
+    const pageSize=1000;let offset=0,out=[],page;
+    do{
+      const resp=await fetch(`${SB_URL}/${path}`,{headers:{...h,'Range-Unit':'items','Range':`${offset}-${offset+pageSize-1}`}});
+      if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
+      page=await resp.json();out=out.concat(page);offset+=pageSize;
+    }while(page.length===pageSize);
+    return out;
   }
   async function sbPost(table,body){
     const resp=await fetch(`${SB_URL}/${table}`,{method:'POST',headers:getAuthHeaders({'Content-Type':'application/json','Prefer':'return=representation'}),body:JSON.stringify(body)});
@@ -490,8 +500,8 @@
     try{
       // Traer clientes con limit alto
       const [clis, osCli] = await Promise.all([
-        sbGet('clientes?select=id,nombre,dni,telefono,tarjeta_zetti,observaciones&order=nombre.asc&limit=5000'),
-        sbGet('cliente_obras_sociales?select=cliente_id,obra_social_id,obras_sociales(nombre)&limit=5000'),
+        sbGet('clientes?select=id,nombre,dni,telefono,tarjeta_zetti,observaciones&order=nombre.asc', true),
+        sbGet('cliente_obras_sociales?select=cliente_id,obra_social_id,obras_sociales(nombre)', true),
       ]);
       const osMap = {};
       osCli.forEach(r=>{ if(!osMap[r.cliente_id]) osMap[r.cliente_id]=[]; osMap[r.cliente_id].push(r.obras_sociales?.nombre); });

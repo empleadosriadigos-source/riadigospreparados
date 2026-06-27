@@ -160,24 +160,22 @@
   }
   async function cerrarSesion(){ await sbAuth.auth.signOut(); location.reload(); }
   function mostrarLogin(){ document.getElementById('loginOverlay').style.display='flex'; document.getElementById('appRoot').style.display='none'; }
+  let appIniciada = false;
   function mostrarApp(session){
     document.getElementById('loginOverlay').style.display='none';
     document.getElementById('appRoot').style.display='';
     const u=session.user;
     const nameEl=document.getElementById('userNombre');
     if(nameEl) nameEl.textContent=u.user_metadata?.full_name||u.email||'';
-    if(typeof initApp==='function') initApp();
+    if(!appIniciada && typeof initApp==='function'){ appIniciada=true; initApp(); }
   }
-  async function chequearSesion(){
-    const {data:{session}}=await sbAuth.auth.getSession();
-    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { mostrarLogin(); }
-  }
+  // onAuthStateChange ya emite el evento INITIAL_SESSION al suscribirse,
+  // asi que no hace falta llamar tambien a getSession() por separado.
   sbAuth.auth.onAuthStateChange((_event,session)=>{
-    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { SB_TOKEN=null; mostrarLogin(); }
+    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { SB_TOKEN=null; appIniciada=false; mostrarLogin(); }
   });
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btnGoogleLogin').addEventListener('click', iniciarSesionGoogle);
-    chequearSesion();
   });
 
   let _datos=[];
@@ -200,14 +198,12 @@
     setStatus('<span class="spinner"></span> Consultando…');
     try{
       // Traer IDs de preparados en el período
-      const prepsResp=await fetch(`${SB_URL}/preparados?select=id&fecha_recepcion=gte.${desde}&fecha_recepcion=lte.${hasta}`,{headers:getAuthHeaders()});
-      const preps=await prepsResp.json();
+      const preps=await sbGetAll(`preparados?select=id&fecha_recepcion=gte.${desde}&fecha_recepcion=lte.${hasta}`);
       if(!preps.length){setStatus('No hay preparados en ese período.');btn.disabled=false;return;}
       const ids=preps.map(p=>p.id).join(',');
 
       // Traer componentes con cantidad_gramos y cantidad_ui ya calculados por la vista
-      const compsResp=await fetch(`${SB_URL}/componentes_con_droga?select=droga_nombre,cantidad,unidad,cantidad_gramos,cantidad_ui&preparado_id=in.(${ids})`,{headers:getAuthHeaders()});
-      const comps=await compsResp.json();
+      const comps=await sbGetAll(`componentes_con_droga?select=droga_nombre,cantidad,unidad,cantidad_gramos,cantidad_ui&preparado_id=in.(${ids})`);
       if(!comps.length){setStatus('No hay componentes en ese período.');btn.disabled=false;return;}
 
       // Agrupar por droga
@@ -231,11 +227,14 @@
     btn.disabled=false;
   }
 
-  async function getPrepadosIds(desde,hasta){
-    const resp=await fetch(`${SB_URL}/preparados?select=id&fecha_recepcion=gte.${desde}&fecha_recepcion=lte.${hasta}`,{headers:getAuthHeaders()});
-    const data=await resp.json();
-    if(!data.length) return '00000000-0000-0000-0000-000000000000';
-    return data.map(p=>p.id).join(',');
+  async function sbGetAll(path){
+    const pageSize=1000;let offset=0,out=[],page;
+    do{
+      const resp=await fetch(`${SB_URL}/${path}`,{headers:getAuthHeaders({'Range-Unit':'items','Range':`${offset}-${offset+pageSize-1}`})});
+      if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
+      page=await resp.json();out=out.concat(page);offset+=pageSize;
+    }while(page.length===pageSize);
+    return out;
   }
 
   function renderTabla(totalesG,totalesUI,desde,hasta){
