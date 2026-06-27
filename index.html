@@ -948,7 +948,7 @@
     if(!ok){ mostrarToast('QZ Tray no está activo. Abrilo desde la barra de tareas.','err'); return; }
 
     try{
-      const printer = await qz.printers.getDefault();
+      const printer = "Printer-POS-80";
       // flavor:'escpos' para encoding correcto de caracteres especiales
       const config = qz.configs.create(printer, {
         copies: 1,
