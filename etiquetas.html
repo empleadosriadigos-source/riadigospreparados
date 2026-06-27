@@ -240,7 +240,7 @@
     let res=todos.filter(p=>{
       if(estado&&p.estado!==estado) return false;
       if(!q) return true;
-      const campos=[String(p.nro_cupon??''),p.cliente_nombre||'',p.forma_farmaceutica||'',...p.componentes.map(c=>c.droga_nombre||'')];
+      const campos=[String(p.nro_cupon??''),String(p.nro_cupon_nuevo??''),p.cliente_nombre||'',p.forma_farmaceutica||'',...p.componentes.map(c=>c.droga_nombre||'')];
       return campos.some(v=>v.toLowerCase().includes(q));
     });
 
@@ -274,7 +274,7 @@
     preparados.forEach(p=>{
       const tr=document.createElement('tr');if(seleccion.has(p.id))tr.classList.add('selected');
       const compMini=p.componentes.map(c=>c.droga_nombre||'').join(', ');
-      tr.innerHTML=`<td><input type="checkbox" data-id="${p.id}" ${seleccion.has(p.id)?'checked':''} onchange="toggleCheck('${p.id}',this)" onclick="event.stopPropagation()"/></td><td class="td-cupon">#${p.nro_cupon??'—'}</td><td class="td-cliente">${escHtml(p.cliente_nombre||'—')}</td><td class="td-muted">${fmtFecha(p.fecha_recepcion)}</td><td>${p.forma_farmaceutica?`<span class="pill-forma">${escHtml(p.forma_farmaceutica)}</span>`:'—'}</td><td class="comp-mini">${escHtml(compMini)||'—'}</td>`;
+      tr.innerHTML=`<td><input type="checkbox" data-id="${p.id}" ${seleccion.has(p.id)?'checked':''} onchange="toggleCheck('${p.id}',this)" onclick="event.stopPropagation()"/></td><td class="td-cupon">${fmtCupon(p)}</td><td class="td-cliente">${escHtml(p.cliente_nombre||'—')}</td><td class="td-muted">${fmtFecha(p.fecha_recepcion)}</td><td>${p.forma_farmaceutica?`<span class="pill-forma">${escHtml(p.forma_farmaceutica)}</span>`:'—'}</td><td class="comp-mini">${escHtml(compMini)||'—'}</td>`;
       tr.onclick=()=>{const chk=tr.querySelector('input[type=checkbox]');chk.checked=!chk.checked;toggleCheck(p.id,chk);};
       tbody.appendChild(tr);
     });
@@ -419,6 +419,14 @@
     return out;
   }
 
+
+  function fmtCupon(p) {
+    if (p.nro_cupon_nuevo != null) {
+      return `<span style="color:#5BA8D4;font-weight:800">#${p.nro_cupon_nuevo}</span>`;
+    } else {
+      return `<span style="color:#B8980A;font-weight:800">T${p.nro_cupon??'—'}</span>`;
+    }
+  }
   function fmtFecha(iso){if(!iso)return '—';const[y,m,d]=iso.slice(0,10).split('-');return `${d}/${m}/${y}`;}
   function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
   function setStatus(html,esError=false){const el=document.getElementById('status');el.innerHTML=html;el.className=esError?'error':'';}

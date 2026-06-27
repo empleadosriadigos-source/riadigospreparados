@@ -363,7 +363,7 @@
     let res=todos.filter(p=>{
       if(estado&&p.estado!==estado) return false;
       if(!q) return true;
-      const campos=[String(p.nro_cupon??''),String(p.nro_receta??''),p.cliente_nombre||'',p.cliente_telefono||'',fmtFecha(p.fecha_recepcion),p.estado||'',p.forma_farmaceutica||'',String(p.cantidad_total??''),p.unidad||'',String(p.precio_venta??''),p.observaciones||''];
+      const campos=[String(p.nro_cupon??''),String(p.nro_cupon_nuevo??''),String(p.nro_receta??''),p.cliente_nombre||'',p.cliente_telefono||'',fmtFecha(p.fecha_recepcion),p.estado||'',p.forma_farmaceutica||'',String(p.cantidad_total??''),p.unidad||'',String(p.precio_venta??''),p.observaciones||''];
       return campos.some(v=>v.toLowerCase().includes(q));
     });
 
@@ -475,7 +475,7 @@
       const svgRec=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 19 9 24"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>`;
       const svgD=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
       tr.innerHTML=`
-        <td class="td-cupon">#${p.nro_cupon??'—'}</td>
+        <td class="td-cupon">${fmtCupon(p)}</td>
         <td class="td-cliente">${escHtml(p.cliente_nombre||'—')}</td>
         <td class="td-muted">${escHtml(p.cliente_telefono||'—')}</td>
         <td class="td-muted">${fmtFecha(p.fecha_recepcion)}</td>
@@ -550,8 +550,9 @@
   async function abrirEditar(id){
     prepActual=todos.find(x=>x.id===id);if(!prepActual)return;
     const p=prepActual;
-    document.getElementById('editarTitulo').textContent=`Editar cupón #${p.nro_cupon??''}`;
+    document.getElementById('editarTitulo').textContent=`Editar preparado ${p.nro_cupon_nuevo!=null?'#'+p.nro_cupon_nuevo:'T'+p.nro_cupon}`;
     document.getElementById('eCupon').value=p.nro_cupon??'';
+      document.getElementById('eCupon').readOnly=p.nro_cupon_nuevo!=null;
     document.getElementById('eReceta').value=p.nro_receta??'';
     document.getElementById('eFecha').value=p.fecha_recepcion??'';
     document.getElementById('eEstado').value=p.estado??'';
@@ -574,7 +575,8 @@
     const btn=document.getElementById('btnGuardarEditar');btn.disabled=true;btn.textContent='Guardando…';
     try{
       const cliId=document.getElementById('eClienteId').value;
-      await sbPatch('preparados',prepActual.id,limpiar({nro_cupon:parseInt(document.getElementById('eCupon').value)||null,nro_receta:parseInt(document.getElementById('eReceta').value)||null,cliente_id:cliId||null,fecha_recepcion:document.getElementById('eFecha').value||null,estado:document.getElementById('eEstado').value||null,forma_farmaceutica:document.getElementById('eForma').value||null,cantidad_total:parseFloat(document.getElementById('eCantTotal').value)||null,unidad:document.getElementById('eUnidad').value||null,precio_venta:parseFloat(document.getElementById('ePrecio').value)||null,observaciones:document.getElementById('eObs').value||null}));
+      await sbPatch('preparados',prepActual.id,limpiar({// nro_cupon_nuevo nunca se edita
+        nro_cupon:p.nro_cupon_nuevo==null?(parseInt(document.getElementById('eCupon').value)||null):p.nro_cupon,nro_receta:parseInt(document.getElementById('eReceta').value)||null,cliente_id:cliId||null,fecha_recepcion:document.getElementById('eFecha').value||null,estado:document.getElementById('eEstado').value||null,forma_farmaceutica:document.getElementById('eForma').value||null,cantidad_total:parseFloat(document.getElementById('eCantTotal').value)||null,unidad:document.getElementById('eUnidad').value||null,precio_venta:parseFloat(document.getElementById('ePrecio').value)||null,observaciones:document.getElementById('eObs').value||null}));
       const rows=document.querySelectorAll('#compRowsEditar .comp-row');
       const viejosIds=prepActual.componentes.map(c=>c.id);const nuevosIds=[];
       for(const row of rows){
@@ -605,7 +607,7 @@
     btn.disabled=false;btn.textContent='↺ Crear preparado';
   }
 
-  function abrirBorrar(id){prepActual=todos.find(x=>x.id===id);if(!prepActual)return;document.getElementById('borrarCupon').textContent=`#${prepActual.nro_cupon??''}`;abrirModal('modalBorrar');}
+  function abrirBorrar(id){prepActual=todos.find(x=>x.id===id);if(!prepActual)return;document.getElementById('borrarCupon').innerHTML=fmtCupon(prepActual);abrirModal('modalBorrar');}
 
   async function confirmarBorrar(){
     const btn=document.getElementById('btnConfirmarBorrar');btn.disabled=true;btn.textContent='Eliminando…';
@@ -736,6 +738,14 @@
   function limpiar(obj){const r={};for(const[k,v]of Object.entries(obj))if(v!==null&&v!==undefined)r[k]=v;return r;}
   function abrirModal(id){document.getElementById(id).classList.add('open');}
   function cerrarModal(id){document.getElementById(id).classList.remove('open');}
+
+  function fmtCupon(p) {
+    if (p.nro_cupon_nuevo != null) {
+      return `<span style="color:#5BA8D4;font-weight:800">#${p.nro_cupon_nuevo}</span>`;
+    } else {
+      return `<span style="color:#B8980A;font-weight:800">T${p.nro_cupon??'—'}</span>`;
+    }
+  }
   function fmtFecha(iso){if(!iso)return '—';const[y,m,d]=iso.slice(0,10).split('-');return `${d}/${m}/${y}`;}
   function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
   function setStatus(html,esError=false){const el=document.getElementById('status');el.innerHTML=html;el.className=esError?'error':'';}

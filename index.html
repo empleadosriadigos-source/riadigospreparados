@@ -520,7 +520,7 @@
     const svgD=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
     const svgPrint=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>`;
     div.innerHTML=`
-      <div class="card-top"><div class="card-cupon">#${p.nro_cupon??'—'}</div></div>
+      <div class="card-top"><div class="card-cupon">${fmtCupon(p)}</div></div>
       <div class="card-contact">
         <div class="card-contact-row">${svgP}<span class="card-cliente-text">${escHtml(p.cliente_nombre||'—')}</span></div>
         <div class="card-contact-row">${svgT}<span class="card-tel-text">${escHtml(p.cliente_telefono||'')}</span></div>
@@ -603,7 +603,7 @@
       if (!window._lastDragId) return;
       prepActual = preparados.find(x => x.id === window._lastDragId);
       if (!prepActual) return;
-      document.getElementById('entregarCupon').textContent = `#${prepActual.nro_cupon??''}`;
+      document.getElementById('entregarCupon').innerHTML = fmtCupon(prepActual);
       abrirModal('modalEntregar');
     });
   }
@@ -624,7 +624,7 @@
   }
 
   // ── Borrar ─────────────────────────────────────────────────────────────
-  function abrirBorrar(e,id){e.stopPropagation();prepActual=preparados.find(x=>x.id===id);if(!prepActual)return;document.getElementById('borrarCupon').textContent=`#${prepActual.nro_cupon??''}`;abrirModal('modalBorrar');}
+  function abrirBorrar(e,id){e.stopPropagation();prepActual=preparados.find(x=>x.id===id);if(!prepActual)return;document.getElementById('borrarCupon').innerHTML=fmtCupon(prepActual);abrirModal('modalBorrar');}
   async function confirmarBorrar(){
     const btn=document.getElementById('btnConfirmarBorrar');
     btn.disabled=true;btn.textContent='Eliminando…';
@@ -640,7 +640,7 @@
   async function abrirEditar(e,id){
     e.stopPropagation();prepActual=preparados.find(x=>x.id===id);if(!prepActual)return;
     const p=prepActual;
-    document.getElementById('editarTitulo').textContent=`Editar cupón #${p.nro_cupon??''}`;
+    document.getElementById('editarTitulo').textContent=`Editar preparado ${p.nro_cupon_nuevo!=null?'#'+p.nro_cupon_nuevo:'T'+p.nro_cupon}`;
     document.getElementById('eCupon').value=p.nro_cupon??'';
     document.getElementById('eReceta').value=p.nro_receta??'';
     document.getElementById('eFecha').value=p.fecha_recepcion??'';
@@ -719,7 +719,7 @@
       try{
         const h=getAuthHeaders();
         h['Content-Type']='application/json';
-        const resp = await fetch(`${SB_URL}/rpc/next_cupon`,{method:'POST',headers:h,body:'null'});
+        const resp = await fetch(`${SB_URL}/rpc/next_cupon_nuevo`,{method:'POST',headers:h,body:'null'});
         if(!resp.ok){ const e=await resp.json().catch(()=>({})); throw new Error(e.message||'HTTP '+resp.status); }
         cupon = await resp.json();
         if(!cupon){ mostrarToast('Error al obtener número de cupón','err'); return; }
@@ -733,7 +733,7 @@
     const btn=document.getElementById('btnGuardarPrep');btn.disabled=true;btn.textContent='Guardando…';
     try{
       const nuevoPrep=await sbPost('preparados',limpiar({
-        nro_cupon:cupon,
+        nro_cupon_nuevo:cupon,
         nro_receta:parseInt(document.getElementById('pReceta').value)||null,
         cliente_id:cliId,
         fecha_recepcion:document.getElementById('pFecha').value||null,
@@ -761,7 +761,7 @@
         const prepCompleto = preparados.find(p=>p.id===prepId) || nuevoPrep[0];
         if(prepCompleto){
           await cargarComponentes(prepCompleto);
-          await imprimirCupones({...prepCompleto, nro_cupon: cupon});
+          await imprimirCupones({...prepCompleto, nro_cupon_nuevo: cupon});
         }
       }
     }catch(err){mostrarToast('Error: '+err.message,'err');}
@@ -926,6 +926,15 @@
     return function(resolve, reject) { resolve(); };
   });
 
+
+  // Helper: mostrar número de cupón con estilo según tipo
+  function fmtCupon(p) {
+    if (p.nro_cupon_nuevo != null) {
+      return `<span style="color:#5BA8D4;font-weight:800">#${p.nro_cupon_nuevo}</span>`;
+    } else {
+      return `<span style="color:#B8980A;font-weight:800">T${p.nro_cupon??'—'}</span>`;
+    }
+  }
   let qzConectado = false;
 
   async function imprimirDesdeCard(e, id){
@@ -987,7 +996,7 @@
       function sep(){ return [...txt(LINE),...LF]; }
 
       const fecha = prep.fecha_recepcion ? prep.fecha_recepcion.slice(8,10)+'/'+prep.fecha_recepcion.slice(5,7)+'/'+prep.fecha_recepcion.slice(0,4) : '';
-      const cupon = String(prep.nro_cupon ?? '');
+      const cupon = prep.nro_cupon_nuevo != null ? String(prep.nro_cupon_nuevo) : 'T'+String(prep.nro_cupon ?? '');
       const cliente = (prep.cliente_nombre ?? '');
       const tel = prep.cliente_telefono ?? '';
       const forma = prep.forma_farmaceutica ?? '';
@@ -1058,7 +1067,6 @@
         ...linea('OBS: '+(obs||'')),
         ...LF,...LF,
         ...sep(),
-        ...LF,...LF,...LF,
         ...LF,...LF,...CUT,
       ];
 
@@ -1067,8 +1075,8 @@
         return btoa(String.fromCharCode(...bytes));
       }
 
-      await qz.print(config, [{type:'raw', format:'base64', data: toB64(datosCli)}]);
-      await qz.print(config, [{type:'raw', format:'base64', data: toB64(datosFarm)}]);
+      const todosLosDatos = [...datosCli, ...datosFarm];
+      await qz.print(config, [{type:'raw', format:'base64', data: toB64(todosLosDatos)}]);
       mostrarToast('✓ Cupones impresos','ok');
     }catch(e){
       mostrarToast('Error al imprimir: '+e.message,'err');
