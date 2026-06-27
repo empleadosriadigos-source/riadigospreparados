@@ -337,9 +337,9 @@
     document.getElementById('tablaWrap').style.display='none';
     try{
       const [preps,drs,clis]=await Promise.all([
-        sbGet('preparados_completos?order=fecha_recepcion.desc'),
-        sbGet('drogas?order=nombre.asc'),
-        sbGet('clientes?order=nombre.asc&select=id,nombre,telefono'),
+        sbGet('preparados_completos?order=fecha_recepcion.desc', true),
+        sbGet('drogas?order=nombre.asc', true),
+        sbGet('clientes?order=nombre.asc&select=id,nombre,telefono', true),
       ]);
       drogas=drs; clientes=clis;
       todos=preps.map(p=>({...p,componentes:[]}));
@@ -715,7 +715,21 @@
     btn.disabled=false; btn.textContent='Fusionar';
   }
 
-  async function sbGet(path){const resp=await fetch(`${SB_URL}/${path}`,{headers:getAuthHeaders()});if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}return resp.json();}
+  async function sbGet(path,all=false){
+    const h=getAuthHeaders();
+    if(!all){
+      const resp=await fetch(`${SB_URL}/${path}`,{headers:h});
+      if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
+      return resp.json();
+    }
+    const pageSize=1000;let offset=0,out=[],page;
+    do{
+      const resp=await fetch(`${SB_URL}/${path}`,{headers:{...h,'Range-Unit':'items','Range':`${offset}-${offset+pageSize-1}`}});
+      if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
+      page=await resp.json();out=out.concat(page);offset+=pageSize;
+    }while(page.length===pageSize);
+    return out;
+  }
   async function sbPost(table,body){const resp=await fetch(`${SB_URL}/${table}`,{method:'POST',headers:getAuthHeaders({'Content-Type':'application/json','Prefer':'return=representation'}),body:JSON.stringify(body)});if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}return resp.json();}
   async function sbPatch(table,id,body){const resp=await fetch(`${SB_URL}/${table}?id=eq.${id}`,{method:'PATCH',headers:getAuthHeaders({'Content-Type':'application/json','Prefer':'return=representation'}),body:JSON.stringify(body)});if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}return resp.json();}
   async function sbDelete(path){const resp=await fetch(`${SB_URL}/${path}`,{method:'DELETE',headers:getAuthHeaders()});if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}}
