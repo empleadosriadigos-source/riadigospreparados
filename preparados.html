@@ -185,7 +185,7 @@
     <div class="modal-header"><h2 id="editarTitulo">Editar preparado</h2><button class="modal-close" onclick="cerrarModal('modalEditar')">✕</button></div>
     <div class="modal-body">
       <div class="field-row">
-        <div class="field-group"><label>Nro Cupón</label><input type="number" id="eCupon"/></div>
+        <div class="field-group" id="eCuponWrap"><label>Nro Cupón (talonario)</label><input type="number" id="eCupon"/></div>
         <div class="field-group"><label>Nro Receta</label><input type="number" id="eReceta"/></div>
       </div>
       <div class="field-row">
@@ -552,7 +552,9 @@
     const p=prepActual;
     document.getElementById('editarTitulo').textContent=`Editar preparado ${p.nro_cupon_nuevo!=null?'#'+p.nro_cupon_nuevo:'T'+p.nro_cupon}`;
     document.getElementById('eCupon').value=p.nro_cupon??'';
-      document.getElementById('eCupon').readOnly=p.nro_cupon_nuevo!=null;
+      const esCuponNuevo = p.nro_cupon_nuevo != null;
+      document.getElementById('eCuponWrap').style.display = esCuponNuevo ? 'none' : '';
+      document.getElementById('eCupon').readOnly = esCuponNuevo;
     document.getElementById('eReceta').value=p.nro_receta??'';
     document.getElementById('eFecha').value=p.fecha_recepcion??'';
     document.getElementById('eEstado').value=p.estado??'';
