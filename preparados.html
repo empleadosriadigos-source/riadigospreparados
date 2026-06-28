@@ -200,7 +200,7 @@
         <div class="field-group"><label>Cantidad total</label><input type="number" id="eCantTotal" step="any"/><div class="unidad-hint" id="eUnidadHint"></div></div>
         <div class="field-group"><label>Unidad</label><select id="eUnidad" style="width:100%"><option value="">— Sin especificar —</option></select></div>
       </div>
-      <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="ePrecio" step="any"/></div>
+      <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="ePrecio" min="0" step="any"/></div>
       <div class="field-group"><label>Observaciones</label><textarea id="eObs" rows="2"></textarea></div>
       <div class="sec-title">Componentes</div>
       <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div>Unidad</div><div></div></div><div id="compRowsEditar"></div></div>
@@ -311,10 +311,16 @@
   });
 
   const ESTADOS   = ['Asignar precio','En laboratorio','Para retirar','Entregado'];
-  const FORMAS    = ['Solución','Loción','Crema','Ungüento','Gel','Spray','Shampoo','Cápsula','Sello','Supositorio','Óvulo','Suspensión','Jarabe','Gotas','Polvo','Comprimido','Parche','Colirio'];
+  const FORMAS    = ['Solución','Loción','Crema','Ungüento','Gel','Spray','Shampoo','Cápsulas','Suspensión','Jarabe','Gotas','Polvo','Sobres','Oro Base'];
   const UNIDADES  = ['ml','g','mg','unidades','UI'];
   const UNID_COMP = ['ml','g','mg','%','mcg','UI','c.s.p','mg/ml','g/ml','mcg/ml','UI/ml'];
-  const FORMA_UNIDAD = {'Solución':'ml','Loción':'ml','Crema':'g','Ungüento':'g','Gel':'g','Spray':'ml','Shampoo':'ml','Cápsula':'unidades','Sello':'unidades','Suspensión':'ml','Jarabe':'ml','Gotas':'ml','Polvo':'g','Supositorio':'unidades','Óvulo':'unidades','Comprimido':'unidades','Parche':'unidades','Colirio':'ml'};
+  const FORMA_UNIDAD = {
+    'Solución':'ml','Loción':'ml','Spray':'ml','Shampoo':'ml','Suspensión':'ml','Jarabe':'ml','Gotas':'ml',
+    'Cápsulas':'unidades','Sobres':'unidades',
+    'Crema':null,'Ungüento':null,'Gel':null,'Polvo':null,'Oro Base':null
+  };
+  const FORMA_UNIDAD_BLOQUEADA = ['Solución','Loción','Spray','Shampoo','Suspensión','Jarabe','Gotas','Cápsulas','Sobres'];
+  const FORMA_UNIDAD_OPCIONES = {'Crema':['g','mg','UI'],'Ungüento':['g','mg','UI'],'Gel':['g','mg','UI'],'Polvo':['g','mg','UI'],'Oro Base':['g','mg','UI']};
 
   let todos=[], drogas=[], clientes=[], prepActual=null, cbDrogaIdx=null;
 
@@ -629,7 +635,30 @@
     btn.disabled=false;btn.textContent='Crear droga';
   }
 
-  function onFormaChange(){const forma=document.getElementById('eForma').value;const uni={'Solución':'ml','Loción':'ml','Crema':'g','Ungüento':'g','Gel':'g','Spray':'ml','Shampoo':'ml','Cápsula':'unidades','Sello':'unidades','Suspensión':'ml','Jarabe':'ml','Gotas':'ml','Polvo':'g','Supositorio':'unidades','Óvulo':'unidades','Comprimido':'unidades','Parche':'unidades','Colirio':'ml'}[forma]||'';const sel=document.getElementById('eUnidad');const hint=document.getElementById('eUnidadHint');if(uni&&sel&&!sel.value)sel.value=uni;if(hint)hint.textContent=uni?`Sugerida: ${uni}`:''; }
+  function onFormaChange(){
+    const forma=document.getElementById('eForma').value;
+    const sel=document.getElementById('eUnidad');
+    const hint=document.getElementById('eUnidadHint');
+    if(!sel) return;
+    const bloqueada = FORMA_UNIDAD_BLOQUEADA.includes(forma);
+    const opcionesRestr = FORMA_UNIDAD_OPCIONES[forma];
+    const uniAuto = FORMA_UNIDAD[forma];
+    sel.innerHTML='';
+    if(bloqueada){
+      sel.innerHTML=`<option value="${uniAuto}">${uniAuto}</option>`;
+      sel.disabled=true;
+      sel.value=uniAuto;
+      if(hint) hint.textContent='';
+    } else if(opcionesRestr){
+      sel.innerHTML='<option value="">— Sin especificar —</option>'+opcionesRestr.map(o=>`<option value="${o}">${o}</option>`).join('');
+      sel.disabled=false;
+      if(hint) hint.textContent='';
+    } else {
+      sel.innerHTML='<option value="">— Sin especificar —</option>'+UNIDADES.map(o=>`<option value="${o}">${o}</option>`).join('');
+      sel.disabled=false;
+      if(hint) hint.textContent='';
+    }
+  }
 
   function agregarCompRow(contId,recId='',dNom='',dId='',cant='',unid=''){
     const cont=document.getElementById(contId);const idx=Date.now()+Math.random();const div=document.createElement('div');div.className='comp-row';div.dataset.recid=recId;

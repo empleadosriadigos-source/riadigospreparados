@@ -261,7 +261,7 @@
         <div class="field-group"><label>Fecha de recepción <span style="color:var(--danger)">*</span></label><input type="date" id="pFecha"/></div>
       </div>
       <div class="field-row">
-        <div class="field-group"><label>Forma farmacéutica</label><select id="pForma"><option value="">— Sin especificar —</option></select></div>
+        <div class="field-group"><label>Forma farmacéutica</label><select id="pForma" onchange="onFormaChange('p')"><option value="">— Sin especificar —</option></select></div>
         <div class="field-group"><label>Estado inicial</label><select id="pEstado"></select></div>
       </div>
       <div class="field-row">
@@ -272,7 +272,7 @@
         </div>
         <div class="field-group"><label>Unidad</label><select id="pUnidad"><option value="">— Sin especificar —</option></select></div>
       </div>
-      <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="pPrecio" step="any"/></div>
+      <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="pPrecio" min="0" step="any"/></div>
       <div class="field-group"><label>Observaciones</label><textarea id="pObs" rows="2"></textarea></div>
       <div class="sec-title">Componentes</div>
       <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div>Unidad</div><div></div></div><div id="compRowsNuevo"></div></div>
@@ -381,7 +381,7 @@
         <div class="field-group"><label>Cantidad total</label><input type="number" id="eCantTotal" step="any"/><div class="unidad-hint" id="eUnidadHint"></div></div>
         <div class="field-group"><label>Unidad</label><select id="eUnidad"><option value="">— Sin especificar —</option></select></div>
       </div>
-      <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="ePrecio" step="any"/></div>
+      <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="ePrecio" min="0" step="any"/></div>
       <div class="field-group"><label>Observaciones</label><textarea id="eObs" rows="2"></textarea></div>
       <div class="sec-title">Componentes</div>
       <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div>Unidad</div><div></div></div><div id="compRowsEditar"></div></div>
@@ -436,10 +436,16 @@
   });
 
   const ESTADOS   = ['Asignar precio','En laboratorio','Para retirar','Entregado'];
-  const FORMAS    = ['Solución','Loción','Crema','Ungüento','Gel','Spray','Shampoo','Cápsula','Sello','Supositorio','Óvulo','Suspensión','Jarabe','Gotas','Polvo','Comprimido','Parche','Colirio'];
+  const FORMAS    = ['Solución','Loción','Crema','Ungüento','Gel','Spray','Shampoo','Cápsulas','Suspensión','Jarabe','Gotas','Polvo','Sobres','Oro Base'];
   const UNIDADES  = ['ml','g','mg','unidades','UI'];
   const UNID_COMP = ['ml','g','mg','%','mcg','UI','c.s.p','mg/ml','g/ml','mcg/ml','UI/ml'];
-  const FORMA_UNIDAD = {'Solución':'ml','Loción':'ml','Crema':'g','Ungüento':'g','Gel':'g','Spray':'ml','Shampoo':'ml','Cápsula':'unidades','Sello':'unidades','Suspensión':'ml','Jarabe':'ml','Gotas':'ml','Polvo':'g','Supositorio':'unidades','Óvulo':'unidades','Comprimido':'unidades','Parche':'unidades','Colirio':'ml'};
+  const FORMA_UNIDAD = {
+    'Solución':'ml','Loción':'ml','Spray':'ml','Shampoo':'ml','Suspensión':'ml','Jarabe':'ml','Gotas':'ml',
+    'Cápsulas':'unidades','Sobres':'unidades',
+    'Crema':null,'Ungüento':null,'Gel':null,'Polvo':null,'Oro Base':null
+  };
+  const FORMA_UNIDAD_BLOQUEADA = ['Solución','Loción','Spray','Shampoo','Suspensión','Jarabe','Gotas','Cápsulas','Sobres'];
+  const FORMA_UNIDAD_OPCIONES = {'Crema':['g','mg','UI'],'Ungüento':['g','mg','UI'],'Gel':['g','mg','UI'],'Polvo':['g','mg','UI'],'Oro Base':['g','mg','UI']};
   const ESTADOS_KANBAN = ['Asignar precio','En laboratorio','Para retirar'];
   const COL_BODY  = {'Asignar precio':'body-asignar','En laboratorio':'body-lab','Para retirar':'body-retirar'};
   const COL_COUNT = {'Asignar precio':'count-asignar','En laboratorio':'count-lab','Para retirar':'count-retirar'};
@@ -676,7 +682,7 @@
     try{
       const cliId=document.getElementById('eClienteId').value;
       await sbPatch('preparados',prepActual.id,limpiar({
-        nro_cupon:p.nro_cupon_nuevo==null?(parseInt(document.getElementById('eCupon').value)||null):p.nro_cupon,
+        nro_cupon:prepActual.nro_cupon_nuevo==null?(parseInt(document.getElementById('eCupon').value)||null):prepActual.nro_cupon,
         nro_receta:parseInt(document.getElementById('eReceta').value)||null,
         cliente_id:cliId||null,
         fecha_recepcion:document.getElementById('eFecha').value||null,
@@ -717,6 +723,8 @@
 
   async function guardarPreparado(){
     const tipoNuevo = document.getElementById('tipoCuponNuevo').checked;
+    // Validar forma farmacéutica obligatoria
+    if(!document.getElementById('pForma').value){mostrarToast('Seleccioná una forma farmacéutica','err');return;}
     let cupon;
     if(tipoNuevo){
       try{
@@ -725,7 +733,7 @@
         const resp = await fetch(`${SB_URL}/rpc/next_cupon_nuevo`,{method:'POST',headers:h,body:'null'});
         if(!resp.ok){ const e=await resp.json().catch(()=>({})); throw new Error(e.message||'HTTP '+resp.status); }
         cupon = await resp.json();
-        if(!cupon){ mostrarToast('Error al obtener número de cupón','err'); return; }
+        if(!cupon && cupon !== 0){ mostrarToast('Error al obtener número de cupón','err'); btn.disabled=false; btn.textContent='Guardar preparado'; return; }
       }catch(e){ mostrarToast('Error al obtener número de cupón: '+e.message,'err'); return; }
     } else {
       cupon = parseInt(document.getElementById('pCupon').value);
@@ -818,11 +826,31 @@
   // ── Comp rows ──────────────────────────────────────────────────────────
   function onFormaChange(pref){
     const forma=document.getElementById(`${pref}Forma`).value;
-    const uni=FORMA_UNIDAD[forma]||'';
     const sel=document.getElementById(`${pref}Unidad`);
     const hint=document.getElementById(`${pref}UnidadHint`);
-    if(uni&&sel&&!sel.value) sel.value=uni;
-    if(hint) hint.textContent=uni?`Sugerida: ${uni}`:'';
+    if(!sel) return;
+    // Reconstruir opciones según la forma
+    const bloqueada = FORMA_UNIDAD_BLOQUEADA.includes(forma);
+    const opcionesRestr = FORMA_UNIDAD_OPCIONES[forma];
+    const uniAuto = FORMA_UNIDAD[forma];
+    sel.innerHTML='';
+    if(bloqueada){
+      // Solo una opción, bloqueada
+      sel.innerHTML=`<option value="${uniAuto}">${uniAuto}</option>`;
+      sel.disabled=true;
+      sel.value=uniAuto;
+      if(hint) hint.textContent='';
+    } else if(opcionesRestr){
+      // Opciones restringidas: g, mg, UI
+      sel.innerHTML='<option value="">— Sin especificar —</option>'+opcionesRestr.map(o=>`<option value="${o}">${o}</option>`).join('');
+      sel.disabled=false;
+      if(hint) hint.textContent='';
+    } else {
+      // Sin forma seleccionada: todas las opciones
+      sel.innerHTML='<option value="">— Sin especificar —</option>'+UNIDADES.map(o=>`<option value="${o}">${o}</option>`).join('');
+      sel.disabled=false;
+      if(hint) hint.textContent='';
+    }
   }
 
   function agregarCompRow(contId,recId='',dNom='',dId='',cant='',unid=''){
