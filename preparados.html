@@ -599,7 +599,7 @@
     btn.disabled=false;btn.textContent='Guardar cambios';
   }
 
-  function abrirRepetir(id){prepActual=todos.find(x=>x.id===id);if(!prepActual)return;document.getElementById('rCupon').value='';document.getElementById('rPrecio').value='';document.getElementById('rObs').value=prepActual.observaciones??'';abrirModal('modalRepetir');}
+  function abrirRepetir(id){prepActual=todos.find(x=>x.id===id);if(!prepActual)return;document.getElementById('rPrecio').value='';document.getElementById('rObs').value=prepActual.observaciones??'';abrirModal('modalRepetir');}
 
   async function confirmarRepetir(){
     // Obtener número de cupón automático
