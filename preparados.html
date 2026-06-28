@@ -215,9 +215,8 @@
   <div class="modal modal-sm">
     <div class="modal-header"><h2>Repetir preparado</h2><button class="modal-close" onclick="cerrarModal('modalRepetir')">✕</button></div>
     <div class="modal-body">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Se copiará con fecha de hoy. Completá los datos nuevos:</p>
-      <div class="field-group"><label>Nro Cupón nuevo <span style="color:var(--danger)">*</span></label><input type="number" id="rCupon"/></div>
-      <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="rPrecio"/></div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Se copiará con fecha de hoy. El número de cupón se asignará automáticamente.</p>
+      <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="rPrecio" min="0"/></div>
       <div class="field-group"><label>Observaciones</label><textarea id="rObs" rows="2"></textarea></div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal('modalRepetir')">Cancelar</button><button class="btn btn-primary" id="btnRepetirConfirm" onclick="confirmarRepetir()">↺ Crear preparado</button></div>
@@ -603,11 +602,19 @@
   function abrirRepetir(id){prepActual=todos.find(x=>x.id===id);if(!prepActual)return;document.getElementById('rCupon').value='';document.getElementById('rPrecio').value='';document.getElementById('rObs').value=prepActual.observaciones??'';abrirModal('modalRepetir');}
 
   async function confirmarRepetir(){
-    const cupon=parseInt(document.getElementById('rCupon').value);if(!cupon){mostrarToast('El Nro Cupón es obligatorio','err');return;}
+    // Obtener número de cupón automático
+    let cupon;
+    try{
+      const h=getAuthHeaders();h['Content-Type']='application/json';
+      const resp=await fetch(`${SB_URL}/rpc/next_cupon_nuevo`,{method:'POST',headers:h,body:'null'});
+      if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||'HTTP '+resp.status);}
+      cupon=await resp.json();
+      if(!cupon && cupon!==0){mostrarToast('Error al obtener número de cupón','err');return;}
+    }catch(e){mostrarToast('Error al obtener número de cupón: '+e.message,'err');return;}
     const btn=document.getElementById('btnRepetirConfirm');btn.disabled=true;btn.textContent='Creando…';
     try{
       const p=prepActual;const hoy=new Date().toISOString().slice(0,10);
-      const nuevo=await sbPost('preparados',limpiar({nro_cupon:cupon,cliente_id:p.cliente_id,fecha_recepcion:hoy,estado:'Asignar precio',forma_farmaceutica:p.forma_farmaceutica,cantidad_total:p.cantidad_total,unidad:p.unidad,precio_venta:parseFloat(document.getElementById('rPrecio').value)||null,observaciones:document.getElementById('rObs').value||null}));
+      const nuevo=await sbPost('preparados',limpiar({nro_cupon_nuevo:cupon,cliente_id:p.cliente_id,fecha_recepcion:hoy,estado:'Asignar precio',forma_farmaceutica:p.forma_farmaceutica,cantidad_total:p.cantidad_total,unidad:p.unidad,precio_venta:parseFloat(document.getElementById('rPrecio').value)||null,observaciones:document.getElementById('rObs').value||null}));
       const prepId=nuevo[0].id;
       for(const c of p.componentes){await sbPost('componentes',limpiar({preparado_id:prepId,droga_id:c.droga_id,cantidad:c.cantidad,unidad:c.unidad}));}
       mostrarToast('✓ Preparado creado','ok');cerrarModal('modalRepetir');await cargarTodo();
