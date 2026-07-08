@@ -744,7 +744,8 @@
     const btn=document.getElementById('btnGuardarPrep');btn.disabled=true;btn.textContent='Guardando…';
     try{
       const nuevoPrep=await sbPost('preparados',limpiar({
-        nro_cupon_nuevo:cupon,
+        nro_cupon_nuevo:tipoNuevo?cupon:null,
+        nro_cupon:tipoNuevo?null:cupon,
         nro_receta:parseInt(document.getElementById('pReceta').value)||null,
         cliente_id:cliId,
         fecha_recepcion:document.getElementById('pFecha').value||null,
@@ -772,7 +773,7 @@
         const prepCompleto = preparados.find(p=>p.id===prepId) || nuevoPrep[0];
         if(prepCompleto){
           await cargarComponentes(prepCompleto);
-          await imprimirCupones({...prepCompleto, nro_cupon_nuevo: cupon});
+          await imprimirCupones({...prepCompleto, nro_cupon_nuevo: tipoNuevo?cupon:null, nro_cupon: tipoNuevo?null:cupon});
         }
       }
     }catch(err){mostrarToast('Error: '+err.message,'err');}
