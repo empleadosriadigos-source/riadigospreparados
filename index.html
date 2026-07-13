@@ -43,6 +43,10 @@
     .card:hover{box-shadow:0 4px 14px rgba(0,0,0,0.13);}
     .card.dragging{opacity:0.45;transform:rotate(1.5deg);cursor:grabbing;}
     .card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;}
+
+    .cli-item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);}
+    .cli-item:hover{background:var(--bg);}
+    .cli-item:last-child{border-bottom:none;}
     .btn-print-card{background:none;border:none;cursor:pointer;font-size:16px;padding:2px 4px;opacity:0.6;transition:opacity .15s;}
     .btn-print-card:hover{opacity:1;}
     .card-cupon{font-size:22px;font-weight:800;line-height:1;}
@@ -170,9 +174,9 @@
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     Cargar preparado
   </button>
-  <button class="nav-btn nav-btn-blue" onclick="abrirModal('modalCliente')">
+  <button class="nav-btn nav-btn-blue" onclick="abrirModalClientes()">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-    Nuevo cliente
+    Clientes
   </button>
   <div class="topbar-sep"></div>
   <a class="nav-btn nav-btn-dark" href="reporte.html">
@@ -187,10 +191,7 @@
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
     Etiquetas
   </a>
-  <a class="nav-btn nav-btn-dark" href="clientes.html">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-    Clientes
-  </a>
+
   <div class="topbar-right">
     <span class="user-chip" id="userNombre"></span>
     <button class="btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
@@ -288,21 +289,35 @@
 </div>
 
 <!-- Modal Cliente -->
-<div class="modal-overlay" id="modalCliente">
+<div class="modal-overlay" id="modalClientes">
   <div class="modal modal-sm">
     <div class="modal-header">
-      <h2 id="modalClienteTitulo">Nuevo cliente</h2>
-      <button class="modal-close" onclick="cerrarModal('modalCliente')">✕</button>
+      <h2 id="modalClientesTitulo">Clientes</h2>
+      <button class="modal-close" onclick="cerrarModal('modalClientes')">✕</button>
     </div>
     <div class="modal-body">
-      <div class="field-group"><label>Nombre <span style="color:var(--danger)">*</span></label><input type="text" id="cNombre"/></div>
-      <div class="field-group"><label>Teléfono</label><input type="text" id="cTelefono"/></div>
-      <div class="field-group"><label>Fecha de alta</label><input type="date" id="cFechaAlta"/></div>
-      <div class="field-group"><label>Observaciones</label><textarea id="cObs" rows="2"></textarea></div>
+      <!-- Vista: buscar/listar -->
+      <div id="cliVistaLista">
+        <div class="field-group" style="margin-bottom:10px;">
+          <input type="text" id="cliBuscarInput" placeholder="Buscar cliente…" oninput="filtrarClientesModal()" autocomplete="off"/>
+        </div>
+        <div id="cliResultados" style="max-height:260px;overflow-y:auto;"></div>
+        <div style="margin-top:12px;">
+          <button class="btn btn-primary btn-sm" onclick="abrirFormCliente(null)">＋ Nuevo cliente</button>
+        </div>
+      </div>
+      <!-- Vista: crear/editar -->
+      <div id="cliVistaForm" style="display:none;">
+        <div style="margin-bottom:10px;"><button class="btn btn-ghost btn-sm" onclick="volverListaClientes()">← Volver</button></div>
+        <div class="field-group"><label>Nombre <span style="color:var(--danger)">*</span></label><input type="text" id="cNombre"/></div>
+        <div class="field-group"><label>Teléfono</label><input type="text" id="cTelefono"/></div>
+        <div class="field-group"><label>Observaciones</label><textarea id="cObs" rows="2"></textarea></div>
+        <input type="hidden" id="cClienteId"/>
+      </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="cerrarModal('modalCliente')">Cancelar</button>
-      <button class="btn btn-primary" id="btnGuardarCliente" onclick="guardarCliente()">Guardar cliente</button>
+    <div class="modal-footer" id="cliFooter">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalClientes')">Cerrar</button>
+      <button class="btn btn-primary" id="btnGuardarCliente" style="display:none;" onclick="guardarClienteModal()">Guardar</button>
     </div>
   </div>
 </div>
@@ -801,21 +816,81 @@
     document.getElementById('compRowsNuevo').innerHTML='';
   }
 
-  // ── Guardar cliente ────────────────────────────────────────────────────
-  async function guardarCliente(){
+  // ── Modal clientes unificado ───────────────────────────────────────────
+  function abrirModalClientes(){
+    document.getElementById('cliBuscarInput').value='';
+    filtrarClientesModal();
+    document.getElementById('cliVistaLista').style.display='';
+    document.getElementById('cliVistaForm').style.display='none';
+    document.getElementById('btnGuardarCliente').style.display='none';
+    abrirModal('modalClientes');
+    setTimeout(()=>document.getElementById('cliBuscarInput').focus(),100);
+  }
+  function filtrarClientesModal(){
+    const q=document.getElementById('cliBuscarInput').value.toLowerCase();
+    const fil=clientes.filter(c=>c.nombre.toLowerCase().includes(q)).slice(0,30);
+    const cont=document.getElementById('cliResultados');
+    if(!fil.length){cont.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px;">Sin resultados</div>';return;}
+    cont.innerHTML=fil.map(c=>`<div class="cli-item" onclick="abrirFormCliente('${c.id}')">
+      <span>${escHtml(c.nombre)}</span>
+      <span style="color:var(--muted);font-size:12px;">${c.telefono||''}</span>
+    </div>`).join('');
+  }
+  function abrirFormCliente(id){
+    document.getElementById('cliVistaLista').style.display='none';
+    document.getElementById('cliVistaForm').style.display='';
+    document.getElementById('btnGuardarCliente').style.display='';
+    document.getElementById('cClienteId').value=id||'';
+    if(id){
+      const cli=clientes.find(c=>c.id===id);
+      document.getElementById('cNombre').value=cli?.nombre||'';
+      document.getElementById('cTelefono').value=cli?.telefono||'';
+      document.getElementById('cObs').value=cli?.observaciones||'';
+      document.getElementById('modalClientesTitulo').textContent='Editar cliente';
+    } else {
+      ['cNombre','cTelefono','cObs'].forEach(id=>document.getElementById(id).value='');
+      document.getElementById('modalClientesTitulo').textContent='Nuevo cliente';
+    }
+    setTimeout(()=>document.getElementById('cNombre').focus(),100);
+  }
+  function volverListaClientes(){
+    document.getElementById('cliVistaLista').style.display='';
+    document.getElementById('cliVistaForm').style.display='none';
+    document.getElementById('btnGuardarCliente').style.display='none';
+    document.getElementById('modalClientesTitulo').textContent='Clientes';
+    filtrarClientesModal();
+  }
+  async function guardarClienteModal(){
     const nombre=document.getElementById('cNombre').value.trim();
     if(!nombre){mostrarToast('El nombre es obligatorio','err');return;}
     const btn=document.getElementById('btnGuardarCliente');btn.disabled=true;btn.textContent='Guardando…';
+    const id=document.getElementById('cClienteId').value;
     try{
-      const nuevo=await sbPost('clientes',limpiar({nombre,telefono:document.getElementById('cTelefono').value||null,fecha_alta:document.getElementById('cFechaAlta').value||null,observaciones:document.getElementById('cObs').value||null}));
-      clientes.push({id:nuevo[0].id,nombre});clientes.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
-      mostrarToast('✓ Cliente creado','ok');cerrarModal('modalCliente');
-      if(clienteCB){clienteCB({id:nuevo[0].id,nombre});clienteCB=null;}
-      ['cNombre','cTelefono','cObs'].forEach(id=>document.getElementById(id).value='');
-      document.getElementById('cFechaAlta').value=new Date().toISOString().slice(0,10);
+      const datos=limpiar({nombre,telefono:document.getElementById('cTelefono').value||null,observaciones:document.getElementById('cObs').value||null});
+      if(id){
+        // Editar
+        await sbPatch('clientes',id,datos);
+        const idx=clientes.findIndex(c=>c.id===id);
+        if(idx>=0) clientes[idx]={...clientes[idx],...datos};
+        clientes.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+        // Actualizar cards del kanban que tengan este cliente
+        preparados.filter(p=>p.cliente_id===id).forEach(p=>{p.cliente_nombre=nombre;p.cliente_telefono=datos.telefono||p.cliente_telefono;});
+        renderKanban();
+        mostrarToast('✓ Cliente actualizado','ok');
+      } else {
+        // Crear
+        const nuevo=await sbPost('clientes',{...datos,fecha_alta:new Date().toISOString().slice(0,10)});
+        const cli={id:nuevo[0].id,nombre,telefono:datos.telefono||null,observaciones:datos.observaciones||null};
+        clientes.push(cli);clientes.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+        if(clienteCB){clienteCB(cli);clienteCB=null;cerrarModal('modalClientes');return;}
+        mostrarToast('✓ Cliente creado','ok');
+      }
+      volverListaClientes();
     }catch(err){mostrarToast('Error: '+err.message,'err');}
-    btn.disabled=false;btn.textContent='Guardar cliente';
+    btn.disabled=false;btn.textContent='Guardar';
   }
+  // Mantener compatibilidad con código que abre modalCliente
+  function guardarCliente(){ guardarClienteModal(); }
 
   // ── Guardar droga ──────────────────────────────────────────────────────
   async function guardarDroga(){
@@ -910,7 +985,7 @@
     fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById(`${pref}ClienteInput`).value=c.nombre;document.getElementById(`${pref}ClienteId`).value=c.id;dd.classList.remove('open');};dd.appendChild(d);});
     if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}
     const act=document.createElement('div');act.className='ss-action';act.textContent='＋ Crear cliente nuevo';
-    act.onmousedown=e=>{e.preventDefault();dd.classList.remove('open');document.getElementById('cNombre').value=texto;clienteCB=cli=>{document.getElementById(`${pref}ClienteInput`).value=cli.nombre;document.getElementById(`${pref}ClienteId`).value=cli.id;};abrirModal('modalCliente');};
+    act.onmousedown=e=>{e.preventDefault();dd.classList.remove('open');document.getElementById('cNombre').value=texto;clienteCB=cli=>{document.getElementById(`${pref}ClienteInput`).value=cli.nombre;document.getElementById(`${pref}ClienteId`).value=cli.id;};abrirFormCliente(null);};
     dd.appendChild(act);
   }
   function filtrarSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);if(!input.value.trim()){dd.classList.remove('open');return;}renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())).slice(0,50),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
