@@ -82,6 +82,7 @@
   .radio-opt{display:flex;align-items:center;gap:6px;font-size:13px;}
   /* Modal */
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center;padding:16px;}
+  #modalClienteBasico,#modalOSBasico,#modalAgregarDestacado{z-index:300;}
   .modal-overlay.open{display:flex;}
   .modal{background:var(--surface);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,0.2);width:100%;max-width:780px;max-height:92vh;overflow-y:auto;}
   .modal-sm{max-width:420px;}
@@ -151,7 +152,6 @@
 <div class="topbar">
   <div class="topbar-brand"><img src="https://cdn.batitienda.com/baticloud/images/header_asset_aa4503ac710d4fbc870bb62b1236829f_638438133950724818_0_m.png" height="28" style="margin-right:8px;vertical-align:middle;filter:brightness(0) invert(1);">Riadigos <span>·</span> Clientes</div>
   <div class="topbar-sep"></div>
-  <a class="nav-btn" href="index.html">Volver al inicio</a>
   <div class="topbar-right">
     <span class="user-chip" id="userNombre"></span>
     <button class="btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
@@ -161,6 +161,7 @@
 <div class="wrap">
   <div class="tabs">
     <button class="tab-btn active" id="tabBtnClientes" onclick="cambiarTab('clientes')">CLIENTES</button>
+    <button class="tab-btn" id="tabBtnDestacados" onclick="cambiarTab('destacados')">DESTACADOS</button>
     <button class="tab-btn" id="tabBtnOS" onclick="cambiarTab('os')">OBRAS SOCIALES</button>
   </div>
 
@@ -180,6 +181,14 @@
   </div>
 
   <!-- ===== TAB OBRAS SOCIALES ===== -->
+  <div class="tab-panel" id="panelDestacados">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
+      <button class="btn btn-primary btn-sm" onclick="abrirAgregarDestacado()">+ Agregar destacado</button>
+    </div>
+    <div id="gridDestacados" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;"></div>
+    <div id="statusDestacados" style="color:var(--muted);font-size:14px;padding:20px 0;"></div>
+  </div>
+
   <div class="tab-panel" id="panelOS">
     <div class="toolbar">
       <div class="search-wrap"><input type="text" id="buscadorOS" placeholder="Buscar por nombre…" oninput="filtrarOS()"/></div>
@@ -205,7 +214,7 @@
         <div class="field-group"><label>DNI</label><input type="text" id="cbDni"/></div>
         <div class="field-group"><label>Teléfono</label><input type="text" id="cbTelefono"/></div>
       </div>
-      <div class="field-group"><label>Tarjeta Zetti</label><input type="text" id="cbZetti"/></div>
+      <div class="field-group"><label>Tarjeta de puntos</label><input type="text" id="cbZetti"/></div>
       <div class="field-group"><label>Observaciones</label><textarea id="cbObs" rows="2"></textarea></div>
     </div>
     <div class="modal-footer">
@@ -257,6 +266,7 @@
           <div class="field-group"><label>Marca</label><input type="text" id="medMarca"/></div>
           <div class="field-group"><label>Miligramos</label><input type="text" id="medMg"/></div>
           <div class="field-group"><label>Cantidad</label><input type="text" id="medCantidad"/></div>
+          <div class="field-group"><label>Código de barras</label><input type="text" id="medCodigoBarras"/></div>
           <div class="full" style="display:flex;gap:8px;justify-content:flex-end;">
             <button class="btn btn-ghost btn-sm" onclick="ocultarFormMedicamento()">Cancelar</button>
             <button class="btn btn-primary btn-sm" id="btnGuardarMed" onclick="guardarMedicamento()">Guardar</button>
@@ -320,11 +330,6 @@
     <div class="modal-header"><h2 id="tituloOSBasico">Nueva obra social</h2><button class="modal-close" onclick="cerrarModal('modalOSBasico')">✕</button></div>
     <div class="modal-body">
       <div class="field-group"><label>Nombre <span style="color:var(--danger)">*</span></label><input type="text" id="osbNombre"/></div>
-      <div class="field-row">
-        <div class="field-group"><label>Teléfono</label><input type="text" id="osbTelefono"/></div>
-        <div class="field-group"><label>Email</label><input type="text" id="osbEmail"/></div>
-      </div>
-      <div class="field-group"><label>Web</label><input type="text" id="osbWeb" placeholder="https://…"/></div>
 
       <div class="ficha-section">
         <div class="ficha-section-title">Validación de recetas</div>
@@ -340,6 +345,18 @@
         <div class="toggle-row"><label>Cambios en número de afiliado</label><label class="switch"><input type="checkbox" id="osbModificarAfiliado"/><span class="switch-slider"></span></label></div>
       </div>
 
+      <div class="field-row">
+        <div class="field-group"><label>Recetario</label><input type="text" id="osbRecetario"/></div>
+        <div class="field-group"><label>Rec. electrónicas</label><input type="text" id="osbRecElec"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field-group"><label>Vencimiento receta</label><input type="text" id="osbVencimiento" placeholder="ej. 30 DIAS"/></div>
+        <div class="field-group"><label>Validador</label><input type="text" id="osbValidador"/></div>
+      </div>
+      <div class="field-group"><label>Diagnóstico requerido</label>
+        <select id="osbDiagnostico"><option value="">— Sin especificar —</option><option value="true">Sí</option><option value="false">No</option></select>
+      </div>
+      <div class="field-group"><label>Notas de afiliado</label><textarea id="osbNotasAfiliado" rows="2" placeholder="Ej: Siempre quitar los primeros 2 dígitos"></textarea></div>
       <div class="field-group"><label>Particularidades</label><textarea id="osbParticularidades" rows="3"></textarea></div>
     </div>
     <div class="modal-footer">
@@ -361,6 +378,14 @@
       <div class="ficha-section">
         <div class="ficha-section-title">Validación de recetas</div>
         <div id="fosValidacion"></div>
+      </div>
+      <div class="ficha-section">
+        <div class="ficha-section-title">Recetario y vencimiento</div>
+        <div id="fosRecetario"></div>
+      </div>
+      <div class="ficha-section">
+        <div class="ficha-section-title">Notas de afiliado</div>
+        <div id="fosNotasAfiliado" style="font-size:13px;white-space:pre-wrap;color:var(--muted);"></div>
       </div>
       <div class="ficha-section">
         <div class="ficha-section-title">Particularidades</div>
@@ -394,6 +419,27 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="cerrarModal('modalBorrarOS')">Cancelar</button>
       <button class="btn btn-danger" id="btnConfirmarBorrarOS" onclick="confirmarBorrarOSFinal()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Agregar destacado -->
+<div class="modal-overlay" id="modalAgregarDestacado">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h2>Agregar cliente destacado</h2><button class="modal-close" onclick="cerrarModal('modalAgregarDestacado')">✕</button></div>
+    <div class="modal-body">
+      <div class="field-group">
+        <label>Buscar cliente</label>
+        <div class="ss-wrap">
+          <input type="text" id="destBuscarInput" placeholder="Buscar cliente…" oninput="filtrarSSDestacado()" onfocus="filtrarSSDestacado()" autocomplete="off"/>
+          <div class="ss-dropdown" id="ssDestacado"></div>
+          <input type="hidden" id="destClienteId"/>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalAgregarDestacado')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarAgregarDestacado()">Agregar</button>
     </div>
   </div>
 </div>
@@ -451,9 +497,12 @@
   function cambiarTab(t){
     tabActual = t;
     document.getElementById('tabBtnClientes').classList.toggle('active', t==='clientes');
+    document.getElementById('tabBtnDestacados').classList.toggle('active', t==='destacados');
     document.getElementById('tabBtnOS').classList.toggle('active', t==='os');
     document.getElementById('panelClientes').classList.toggle('active', t==='clientes');
+    document.getElementById('panelDestacados').classList.toggle('active', t==='destacados');
     document.getElementById('panelOS').classList.toggle('active', t==='os');
+    if(t==='destacados') renderGridDestacados();
   }
 
   // ── Supabase API helpers ───────────────────────────────────────────────
@@ -643,7 +692,7 @@
       <div class="sub-item-info" style="margin-bottom:8px;"><b>${escHtml(c.nombre)}</b></div>
       ${c.dni?`<div class="copy-row" style="margin-bottom:8px;"><span class="muted" style="font-size:13px;">DNI: ${escHtml(c.dni)}</span>${btnCopiarHtml(c.dni)}</div>`:''}
       ${c.telefono?`<div class="copy-row" style="margin-bottom:8px;"><span class="muted" style="font-size:13px;">Tel: ${escHtml(c.telefono)}</span>${btnCopiarHtml(c.telefono)}</div>`:''}
-      ${c.tarjeta_zetti?`<div class="copy-row" style="margin-bottom:8px;"><span class="muted" style="font-size:13px;">Tarjeta Zetti: ${escHtml(c.tarjeta_zetti)}</span>${btnCopiarHtml(c.tarjeta_zetti)}</div>`:''}
+      ${c.tarjeta_zetti?`<div class="copy-row" style="margin-bottom:8px;"><span class="muted" style="font-size:13px;">Tarjeta de puntos: ${escHtml(c.tarjeta_zetti)}</span>${btnCopiarHtml(c.tarjeta_zetti)}</div>`:''}
       ${c.observaciones?`<div class="muted" style="font-size:13px;margin-top:6px;">${escHtml(c.observaciones)}</div>`:''}
     `;
     activarBotonesCopiar(document.getElementById('fbDatosBasicos'));
@@ -675,7 +724,7 @@
     if(!rows.length){ cont.innerHTML='<div class="empty-msg">Sin medicamentos habituales.</div>'; return; }
     cont.innerHTML = rows.map(m=>`
       <div class="sub-item" data-id="${m.id}">
-        <div class="sub-item-info"><b>${escHtml(m.nombre)}</b>${m.marca?' · '+escHtml(m.marca):''}<br><span class="muted">${[m.miligramos,m.cantidad].filter(Boolean).map(escHtml).join(' · ')}</span></div>
+        <div class="sub-item-info"><b>${escHtml(m.nombre)}</b>${m.marca?' · '+escHtml(m.marca):''}<br><span class="muted">${[m.miligramos,m.cantidad].filter(Boolean).map(escHtml).join(' · ')}</span>${m.codigo_barras?`<div class="copy-row" style="margin-top:2px;">Cód: ${escHtml(m.codigo_barras)} ${btnCopiarHtml(m.codigo_barras)}</div>`:''}</div>
         <div class="sub-item-actions">
           <button class="icon-btn" onclick="editarMedicamento('${m.id}')" title="Editar">${svgEdit()}</button>
           <button class="icon-btn danger" onclick="borrarMedicamento('${m.id}')" title="Eliminar">${svgTrash()}</button>
@@ -777,7 +826,7 @@
   }
 
   // ── Medicamentos: agregar / editar / borrar ────────────────────────────
-  function mostrarFormMedicamento(){ editMedId=null; document.getElementById('formAgregarMed').style.display='grid'; ['medNombre','medMarca','medMg','medCantidad'].forEach(id=>document.getElementById(id).value=''); }
+  function mostrarFormMedicamento(){ editMedId=null; document.getElementById('formAgregarMed').style.display='grid'; ['medNombre','medMarca','medMg','medCantidad','medCodigoBarras'].forEach(id=>document.getElementById(id).value=''); }
   function editarMedicamento(id){
     const m = clienteMedRows.find(x=>x.id===id); if(!m) return;
     editMedId = id;
@@ -786,6 +835,7 @@
     document.getElementById('medMarca').value = m.marca||'';
     document.getElementById('medMg').value = m.miligramos||'';
     document.getElementById('medCantidad').value = m.cantidad||'';
+    document.getElementById('medCodigoBarras').value = m.codigo_barras||'';
   }
   function ocultarFormMedicamento(){ editMedId=null; document.getElementById('formAgregarMed').style.display='none'; }
   async function guardarMedicamento(){
@@ -797,6 +847,7 @@
       marca:document.getElementById('medMarca').value||null,
       miligramos:document.getElementById('medMg').value||null,
       cantidad:document.getElementById('medCantidad').value||null,
+      codigo_barras:document.getElementById('medCodigoBarras').value||null,
     });
     try{
       if(editMedId){ await sbPatch('cliente_medicamentos', editMedId, body); mostrarToast('✓ Medicamento actualizado','ok'); }
@@ -939,7 +990,8 @@
   function abrirNuevaOS(){
     osActual=null;
     document.getElementById('tituloOSBasico').textContent='Nueva obra social';
-    ['osbNombre','osbTelefono','osbEmail','osbWeb','osbParticularidades'].forEach(id=>document.getElementById(id).value='');
+    ['osbNombre','osbRecetario','osbRecElec','osbVencimiento','osbValidador','osbNotasAfiliado','osbParticularidades'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('osbDiagnostico').value='';
     document.getElementById('osbAdmiteGenericos').checked=false;
     document.getElementById('osbGenericoReceta').checked=false;
     document.getElementById('osbModificarAfiliado').checked=false;
@@ -950,12 +1002,15 @@
     if(!osActual) return;
     document.getElementById('tituloOSBasico').textContent='Editar obra social';
     document.getElementById('osbNombre').value=osActual.nombre||'';
-    document.getElementById('osbTelefono').value=osActual.telefono||'';
-    document.getElementById('osbEmail').value=osActual.email||'';
-    document.getElementById('osbWeb').value=osActual.web||'';
     document.getElementById('osbAdmiteGenericos').checked=!!osActual.admite_genericos;
     document.getElementById('osbGenericoReceta').checked=!!osActual.generico_en_receta;
     document.getElementById('osbModificarAfiliado').checked=!!osActual.se_puede_modificar_afiliado;
+    document.getElementById('osbRecetario').value=osActual.recetario||'';
+    document.getElementById('osbRecElec').value=osActual.rec_electronicas||'';
+    document.getElementById('osbDiagnostico').value=osActual.diagnostico_requerido===null?'':String(osActual.diagnostico_requerido);
+    document.getElementById('osbVencimiento').value=osActual.vencimiento_receta||'';
+    document.getElementById('osbValidador').value=osActual.validador||'';
+    document.getElementById('osbNotasAfiliado').value=osActual.notas_afiliado||'';
     document.getElementById('osbParticularidades').value=osActual.particularidades||'';
     document.getElementById(osActual.usar_dni?'osbIdentDni':'osbIdentAfiliado').checked=true;
     abrirModal('modalOSBasico');
@@ -966,16 +1021,20 @@
     if(!nombre){ mostrarToast('El nombre es obligatorio','err'); return; }
     const usaDni = document.getElementById('osbIdentDni').checked;
     const btn=document.getElementById('btnGuardarOSBasico'); btn.disabled=true;
+    const diagVal = document.getElementById('osbDiagnostico').value;
     const body=limpiar({
       nombre,
-      telefono:document.getElementById('osbTelefono').value||null,
-      email:document.getElementById('osbEmail').value||null,
-      web:document.getElementById('osbWeb').value||null,
       admite_genericos:document.getElementById('osbAdmiteGenericos').checked,
       generico_en_receta:document.getElementById('osbGenericoReceta').checked,
       usar_dni:usaDni,
       usar_nro_afiliado:!usaDni,
       se_puede_modificar_afiliado:document.getElementById('osbModificarAfiliado').checked,
+      recetario:document.getElementById('osbRecetario').value||null,
+      rec_electronicas:document.getElementById('osbRecElec').value||null,
+      diagnostico_requerido:diagVal===''?null:diagVal==='true',
+      vencimiento_receta:document.getElementById('osbVencimiento').value||null,
+      validador:document.getElementById('osbValidador').value||null,
+      notas_afiliado:document.getElementById('osbNotasAfiliado').value||null,
       particularidades:document.getElementById('osbParticularidades').value||null,
     });
     try{
@@ -1010,12 +1069,21 @@
       `;
       activarBotonesCopiar(document.getElementById('fosDatosBasicos'));
       document.getElementById('fosValidacion').innerHTML = `
-        <div class="sub-item"><span>Admite genéricos</span><b>${os.admite_genericos?'Sí':'No'}</b></div>
-        <div class="sub-item"><span>Genérico en receta</span><b>${os.generico_en_receta?'Sí':'No'}</b></div>
+        <div class="sub-item"><span>Admite genéricos</span><b>${os.admite_genericos===null?'—':os.admite_genericos?'Sí':'No'}</b></div>
+        <div class="sub-item"><span>Genérico en receta</span><b>${os.generico_en_receta===null?'—':os.generico_en_receta?'Sí':'No'}</b></div>
         <div class="sub-item"><span>Identificación</span><b>${os.usar_dni?'DNI':'Nro afiliado'}</b></div>
-        <div class="sub-item"><span>Cambios en número de afiliado</span><b>${os.se_puede_modificar_afiliado?'Sí':'No'}</b></div>
+        <div class="sub-item"><span>Cambios en número de afiliado</span><b>${os.se_puede_modificar_afiliado===null?'—':os.se_puede_modificar_afiliado?'Sí':'No'}</b></div>
+        <div class="sub-item"><span>Diagnóstico requerido</span><b>${os.diagnostico_requerido===null?'—':os.diagnostico_requerido?'Sí':'No'}</b></div>
       `;
-      document.getElementById('fosParticularidades').textContent = os.particularidades || 'Sin notas.';
+      document.getElementById('fosRecetario').innerHTML = `
+        ${os.recetario?`<div class="sub-item"><span>Recetario</span><b>${escHtml(os.recetario)}</b></div>`:''}
+        ${os.rec_electronicas?`<div class="sub-item"><span>Rec. electrónicas</span><b>${escHtml(os.rec_electronicas)}</b></div>`:''}
+        ${os.vencimiento_receta?`<div class="sub-item"><span>Vencimiento</span><b>${escHtml(os.vencimiento_receta)}</b></div>`:''}
+        ${os.validador?`<div class="sub-item"><span>Validador</span><b>${escHtml(os.validador)}</b></div>`:''}
+        ${!os.recetario&&!os.rec_electronicas&&!os.vencimiento_receta&&!os.validador?'<div class="empty-msg">Sin datos.</div>':''}
+      `;
+      document.getElementById('fosNotasAfiliado').textContent = os.notas_afiliado || '—';
+      document.getElementById('fosParticularidades').textContent = os.particularidades || '—';
       const planesOS = planes.filter(p=>p.obra_social_id===id);
       renderPlanesOS(planesOS);
       ocultarFormPlan();
@@ -1102,6 +1170,65 @@
     dd.style.width=rect.width+'px'; dd.style.left=rect.left+'px';
     if(abajo<208 && rect.top>208){ dd.style.top=''; dd.style.bottom=(window.innerHeight-rect.top+2)+'px'; }
     else { dd.style.bottom=''; dd.style.top=(rect.bottom+2)+'px'; }
+  }
+
+  // ── Destacados ─────────────────────────────────────────────────────────
+  let destacados = JSON.parse(localStorage.getItem('riadigos_destacados') || '[]');
+
+  function renderGridDestacados(){
+    const grid = document.getElementById('gridDestacados');
+    const status = document.getElementById('statusDestacados');
+    if(!destacados.length){ grid.innerHTML=''; status.textContent='No hay clientes destacados. Usá el botón + Agregar para sumar uno.'; return; }
+    status.textContent='';
+    const lista = destacados.map(id => clientes.find(c=>c.id===id)).filter(Boolean);
+    grid.innerHTML = lista.map(c => `
+      <div class="dest-card" onclick="abrirFichaCliente('${c.id}')">
+        <button class="dest-card-remove" onclick="quitarDestacado(event,'${c.id}')" title="Quitar de destacados">×</button>
+        <div class="dest-card-nombre">${escHtml(c.nombre)}</div>
+        ${c.dni?`<div class="dest-card-info">🪪 ${escHtml(c.dni)}</div>`:''}
+        ${c.telefono?`<div class="dest-card-info">📞 ${escHtml(c.telefono)}</div>`:''}
+        ${(c.obras_nombres||[]).length?`<div class="dest-card-os">${(c.obras_nombres||[]).map(o=>`<span class="dest-badge">${escHtml(o)}</span>`).join('')}</div>`:''}
+      </div>`).join('');
+  }
+
+  function abrirAgregarDestacado(){
+    document.getElementById('destBuscarInput').value='';
+    document.getElementById('destClienteId').value='';
+    filtrarSSDestacado();
+    abrirModal('modalAgregarDestacado');
+    setTimeout(()=>document.getElementById('destBuscarInput').focus(),100);
+  }
+
+  function filtrarSSDestacado(){
+    const q = document.getElementById('destBuscarInput').value.toLowerCase();
+    const dd = document.getElementById('ssDestacado');
+    const lista = clientes.filter(c=>c.nombre.toLowerCase().includes(q)).slice(0,30);
+    dd.innerHTML='';
+    if(!lista.length){ dd.innerHTML='<div class="ss-empty">Sin resultados</div>'; }
+    lista.forEach(c=>{
+      const d=document.createElement('div'); d.className='ss-option'; d.textContent=c.nombre;
+      d.onmousedown=e=>{ e.preventDefault(); document.getElementById('destBuscarInput').value=c.nombre; document.getElementById('destClienteId').value=c.id; dd.classList.remove('open'); };
+      dd.appendChild(d);
+    });
+    posicionarDD(document.getElementById('destBuscarInput'),dd);
+    dd.classList.add('open');
+  }
+
+  function confirmarAgregarDestacado(){
+    const id = document.getElementById('destClienteId').value;
+    if(!id){ mostrarToast('Seleccioná un cliente','err'); return; }
+    if(!destacados.includes(id)) destacados.push(id);
+    localStorage.setItem('riadigos_destacados', JSON.stringify(destacados));
+    cerrarModal('modalAgregarDestacado');
+    renderGridDestacados();
+    mostrarToast('✓ Cliente agregado a destacados','ok');
+  }
+
+  function quitarDestacado(e, id){
+    e.stopPropagation();
+    destacados = destacados.filter(x=>x!==id);
+    localStorage.setItem('riadigos_destacados', JSON.stringify(destacados));
+    renderGridDestacados();
   }
   document.addEventListener('click', e => { if(!e.target.closest('.ss-wrap')) document.querySelectorAll('.ss-dropdown').forEach(d=>d.classList.remove('open')); });
 </script>
