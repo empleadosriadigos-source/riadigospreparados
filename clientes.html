@@ -185,7 +185,7 @@
     <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
       <button class="btn btn-primary btn-sm" onclick="abrirAgregarDestacado()">+ Agregar destacado</button>
     </div>
-    <div id="gridDestacados" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;"></div>
+    <div id="gridDestacados" class="dest-grid"></div>
     <div id="statusDestacados" style="color:var(--muted);font-size:14px;padding:20px 0;"></div>
   </div>
 
@@ -433,7 +433,7 @@
     <div class="modal-body" id="fichaDestBody" style="padding:16px 20px;"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="cerrarModal('modalFichaDestacado')">Cerrar</button>
-      <button class="btn btn-secondary" onclick="abrirFichaCompleta()">Ver ficha completa</button>
+      <button class="btn btn-secondary" onclick="abrirFichaCompleta()">Editar</button>
     </div>
   </div>
 </div>
@@ -1201,10 +1201,12 @@
     const lista = destacados.map(id => clientes.find(c=>c.id===id)).filter(Boolean);
     grid.innerHTML = lista.map(c => `
       <div class="dest-card" onclick="abrirFichaDestacado('${c.id}')">
-        <button class="dest-card-remove" onclick="quitarDestacado(event,'${c.id}')" title="Quitar de destacados">×</button>
-        <div class="dest-card-nombre">${escHtml(c.nombre)}</div>
-        ${c.dni?`<div class="dest-card-info">🪪 ${escHtml(c.dni)}</div>`:''}
-        ${c.telefono?`<div class="dest-card-info">📞 ${escHtml(c.telefono)}</div>`:''}
+        <div class="dest-card-header">
+          <div class="dest-card-nombre">${escHtml(c.nombre)}</div>
+          <button class="dest-card-remove" onclick="quitarDestacado(event,'${c.id}')" title="Quitar de destacados">×</button>
+        </div>
+        ${c.dni?`<div class="dest-card-info"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>${escHtml(c.dni)}</div>`:''}
+        ${c.telefono?`<div class="dest-card-info"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.29 6.29l.95-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>${escHtml(c.telefono)}</div>`:''}
         ${(c.obras_nombres||[]).length?`<div class="dest-card-os">${(c.obras_nombres||[]).map(o=>`<span class="dest-badge">${escHtml(o)}</span>`).join('')}</div>`:''}
       </div>`).join('');
   }
@@ -1239,10 +1241,10 @@
         html += '<div class="ficha-dest-section">Obras sociales</div>';
         osRows.forEach(r=>{
           html += `<div class="ficha-dest-os">
-            <div class="ficha-dest-os-nombre">${escHtml(r.obras_sociales?.nombre||'—')}${r.planes_os?.nombre?' · <span style="font-weight:400;font-size:13px;">'+escHtml(r.planes_os.nombre)+'</span>':''}</div>
-            ${r.nro_afiliado?`<div class="ficha-dest-os-row"><span>Afiliado: ${escHtml(r.nro_afiliado)}</span><button class="btn-copy-inline" onclick="copiarTexto(this,'${escHtml(r.nro_afiliado)}')">Copiar</button></div>`:''}
+            <div class="ficha-dest-os-nombre">${escHtml(r.obras_sociales?.nombre||'—')}${r.planes_os?.nombre?` <span style="font-weight:400;font-size:12px;color:var(--muted);">· ${escHtml(r.planes_os.nombre)}</span>`:''}</div>
+            ${r.nro_afiliado?`<div class="ficha-dest-os-row"><span>Afiliado: <b style="color:var(--text);">${escHtml(r.nro_afiliado)}</b></span><button class="btn-copy-inline" onclick="copiarTexto(this,'${escHtml(r.nro_afiliado)}')">Copiar</button></div>`:''}
             ${r.coseguro?`<div class="ficha-dest-os-row"><span>Coseguro: ${escHtml(r.coseguro)}</span></div>`:''}
-            ${r.token?`<div class="ficha-dest-os-row"><span>Token: ${escHtml(r.token)}</span><button class="btn-copy-inline" onclick="copiarTexto(this,'${escHtml(r.token)}')">Copiar</button></div>`:''}
+            ${r.token?`<div class="ficha-dest-os-row"><span>Token: <b style="color:var(--text);">${escHtml(r.token)}</b></span><button class="btn-copy-inline" onclick="copiarTexto(this,'${escHtml(r.token)}')">Copiar</button></div>`:''}
           </div>`;
         });
       }
@@ -1251,10 +1253,12 @@
       if(meds.length){
         html += '<div class="ficha-dest-section">Medicamentos</div>';
         meds.forEach(m=>{
-          html += `<div class="ficha-dest-row" style="flex-wrap:wrap;">
-            <span class="ficha-dest-val">${escHtml(m.nombre)}${m.marca?' · <span style="font-weight:400;color:var(--muted);">'+escHtml(m.marca)+'</span>':''}</span>
-            <span style="font-size:12px;color:var(--muted);">${[m.miligramos,m.cantidad].filter(Boolean).map(escHtml).join(' · ')}</span>
-            ${m.codigo_barras?`<div style="width:100%;display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:12px;color:var(--muted);">Cód: ${escHtml(m.codigo_barras)}<button class="btn-copy-inline" onclick="copiarTexto(this,'${escHtml(m.codigo_barras)}')">Copiar</button></div>`:''}
+          html += `<div class="ficha-dest-med">
+            <div class="ficha-dest-med-info">
+              <div class="ficha-dest-med-nombre">${escHtml(m.nombre)}${m.marca?` <span style="font-weight:400;color:var(--muted);">· ${escHtml(m.marca)}</span>`:''}</div>
+              ${[m.miligramos,m.cantidad].filter(Boolean).length?`<div class="ficha-dest-med-detalle">${[m.miligramos,m.cantidad].filter(Boolean).map(escHtml).join(' · ')}</div>`:''}
+              ${m.codigo_barras?`<div class="ficha-dest-med-detalle" style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;">Cód: ${escHtml(m.codigo_barras)}<button class="btn-copy-inline" onclick="copiarTexto(this,'${escHtml(m.codigo_barras)}')">Copiar</button></div>`:''}
+            </div>
           </div>`;
         });
       }
