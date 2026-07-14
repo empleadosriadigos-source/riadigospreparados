@@ -160,13 +160,13 @@
 
 <div class="wrap">
   <div class="tabs">
-    <button class="tab-btn active" id="tabBtnClientes" onclick="cambiarTab('clientes')">CLIENTES</button>
-    <button class="tab-btn" id="tabBtnDestacados" onclick="cambiarTab('destacados')">DESTACADOS</button>
+    <button class="tab-btn active" id="tabBtnDestacados" onclick="cambiarTab('destacados')">DESTACADOS</button>
+    <button class="tab-btn" id="tabBtnClientes" onclick="cambiarTab('clientes')">CLIENTES</button>
     <button class="tab-btn" id="tabBtnOS" onclick="cambiarTab('os')">OBRAS SOCIALES</button>
   </div>
 
   <!-- ===== TAB CLIENTES ===== -->
-  <div class="tab-panel active" id="panelClientes">
+  <div class="tab-panel" id="panelClientes">
     <div class="toolbar">
       <div class="search-wrap"><input type="text" id="buscadorClientes" placeholder="Buscar por nombre, DNI, teléfono u obra social…" oninput="filtrarClientes()"/></div>
       <button class="btn btn-primary" onclick="abrirNuevoCliente()">+ Nuevo cliente</button>
@@ -174,14 +174,14 @@
     <div id="statusClientes"><span class="spinner"></span> Cargando…</div>
     <div class="table-wrap" id="tablaClientesWrap" style="display:none;">
       <table>
-        <thead><tr><th>Nombre</th><th>DNI</th><th>Teléfono</th><th>Obra social</th><th>Tarjeta Zetti</th></tr></thead>
+        <thead><tr><th>Nombre</th><th>DNI</th><th>Teléfono</th><th>Obra social</th><th>Tarjeta de puntos</th></tr></thead>
         <tbody id="tbodyClientes"></tbody>
       </table>
     </div>
   </div>
 
   <!-- ===== TAB OBRAS SOCIALES ===== -->
-  <div class="tab-panel" id="panelDestacados">
+  <div class="tab-panel active" id="panelDestacados">
     <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
       <button class="btn btn-primary btn-sm" onclick="abrirAgregarDestacado()">+ Agregar destacado</button>
     </div>
@@ -423,6 +423,21 @@
   </div>
 </div>
 
+<!-- Modal: Ficha compacta de destacado -->
+<div class="modal-overlay" id="modalFichaDestacado">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2 id="fichaDestNombre" style="font-size:20px;font-weight:900;"></h2>
+      <button class="modal-close" onclick="cerrarModal('modalFichaDestacado')">✕</button>
+    </div>
+    <div class="modal-body" id="fichaDestBody" style="padding:16px 20px;"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalFichaDestacado')">Cerrar</button>
+      <button class="btn btn-secondary" onclick="abrirFichaCompleta()">Ver ficha completa</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Agregar destacado -->
 <div class="modal-overlay" id="modalAgregarDestacado">
   <div class="modal modal-sm">
@@ -485,13 +500,14 @@
   // ── Estado ───────────────────────────────────────────────────────────────
   let clientes = [], obrasSociales = [], planes = [];
   let clienteActual = null, osActual = null;
-  let tabActual = 'clientes';
+  let tabActual = 'destacados';
   let clienteOSRows = [], clienteMedRows = [], clienteRelRows = [], clienteProdRows = [];
   let editOSClienteId = null, editMedId = null, editRelId = null, editProdId = null;
 
   function initApp(){
     cargarClientes();
     cargarObrasSociales();
+    renderGridDestacados();
   }
 
   function cambiarTab(t){
@@ -1175,6 +1191,8 @@
   // ── Destacados ─────────────────────────────────────────────────────────
   let destacados = JSON.parse(localStorage.getItem('riadigos_destacados') || '[]');
 
+  let destClienteActual = null;
+
   function renderGridDestacados(){
     const grid = document.getElementById('gridDestacados');
     const status = document.getElementById('statusDestacados');
@@ -1182,13 +1200,82 @@
     status.textContent='';
     const lista = destacados.map(id => clientes.find(c=>c.id===id)).filter(Boolean);
     grid.innerHTML = lista.map(c => `
-      <div class="dest-card" onclick="abrirFichaCliente('${c.id}')">
+      <div class="dest-card" onclick="abrirFichaDestacado('${c.id}')">
         <button class="dest-card-remove" onclick="quitarDestacado(event,'${c.id}')" title="Quitar de destacados">×</button>
         <div class="dest-card-nombre">${escHtml(c.nombre)}</div>
         ${c.dni?`<div class="dest-card-info">🪪 ${escHtml(c.dni)}</div>`:''}
         ${c.telefono?`<div class="dest-card-info">📞 ${escHtml(c.telefono)}</div>`:''}
         ${(c.obras_nombres||[]).length?`<div class="dest-card-os">${(c.obras_nombres||[]).map(o=>`<span class="dest-badge">${escHtml(o)}</span>`).join('')}</div>`:''}
       </div>`).join('');
+  }
+
+  async function abrirFichaDestacado(id){
+    const cBase = clientes.find(c=>c.id===id);
+    if(!cBase){ mostrarToast('Cliente no encontrado','err'); return; }
+    destClienteActual = id;
+    document.getElementById('fichaDestNombre').textContent = cBase.nombre;
+    document.getElementById('fichaDestBody').innerHTML = '<div style="color:var(--muted);font-size:13px;">Cargando…</div>';
+    abrirModal('modalFichaDestacado');
+    try{
+      const [cli, osRows, meds] = await Promise.all([
+        sbGet(`clientes?id=eq.${id}&select=*`),
+        sbGet(`cliente_obras_sociales?cliente_id=eq.${id}&select=*,obras_sociales(nombre),planes_os(nombre)`),
+        sbGet(`cliente_medicamentos?cliente_id=eq.${id}&order=nombre.asc`),
+      ]);
+      const c = cli[0];
+      let html = '';
+
+      // Datos básicos
+      if(c.dni || c.telefono || c.tarjeta_zetti || c.observaciones){
+        html += '<div class="ficha-dest-section">Datos</div>';
+        if(c.dni) html += `<div class="ficha-dest-row"><span class="ficha-dest-label">DNI</span><span class="ficha-dest-val">${escHtml(c.dni)}</span><button class="btn-copy-inline" onclick="copiarTexto(this,'${escHtml(c.dni)}')">Copiar</button></div>`;
+        if(c.telefono) html += `<div class="ficha-dest-row"><span class="ficha-dest-label">Teléfono</span><span class="ficha-dest-val">${escHtml(c.telefono)}</span><button class="btn-copy-inline" onclick="copiarTexto(this,'${escHtml(c.telefono)}')">Copiar</button></div>`;
+        if(c.tarjeta_zetti) html += `<div class="ficha-dest-row"><span class="ficha-dest-label">T. puntos</span><span class="ficha-dest-val">${escHtml(c.tarjeta_zetti)}</span><button class="btn-copy-inline" onclick="copiarTexto(this,'${escHtml(c.tarjeta_zetti)}')">Copiar</button></div>`;
+        if(c.observaciones) html += `<div class="ficha-dest-row"><span class="ficha-dest-label">Notas</span><span class="ficha-dest-val" style="color:var(--muted);font-weight:400;">${escHtml(c.observaciones)}</span></div>`;
+      }
+
+      // Obras sociales
+      if(osRows.length){
+        html += '<div class="ficha-dest-section">Obras sociales</div>';
+        osRows.forEach(r=>{
+          html += `<div class="ficha-dest-os">
+            <div class="ficha-dest-os-nombre">${escHtml(r.obras_sociales?.nombre||'—')}${r.planes_os?.nombre?' · <span style="font-weight:400;font-size:13px;">'+escHtml(r.planes_os.nombre)+'</span>':''}</div>
+            ${r.nro_afiliado?`<div class="ficha-dest-os-row"><span>Afiliado: ${escHtml(r.nro_afiliado)}</span><button class="btn-copy-inline" onclick="copiarTexto(this,'${escHtml(r.nro_afiliado)}')">Copiar</button></div>`:''}
+            ${r.coseguro?`<div class="ficha-dest-os-row"><span>Coseguro: ${escHtml(r.coseguro)}</span></div>`:''}
+            ${r.token?`<div class="ficha-dest-os-row"><span>Token: ${escHtml(r.token)}</span><button class="btn-copy-inline" onclick="copiarTexto(this,'${escHtml(r.token)}')">Copiar</button></div>`:''}
+          </div>`;
+        });
+      }
+
+      // Medicamentos
+      if(meds.length){
+        html += '<div class="ficha-dest-section">Medicamentos</div>';
+        meds.forEach(m=>{
+          html += `<div class="ficha-dest-row" style="flex-wrap:wrap;">
+            <span class="ficha-dest-val">${escHtml(m.nombre)}${m.marca?' · <span style="font-weight:400;color:var(--muted);">'+escHtml(m.marca)+'</span>':''}</span>
+            <span style="font-size:12px;color:var(--muted);">${[m.miligramos,m.cantidad].filter(Boolean).map(escHtml).join(' · ')}</span>
+            ${m.codigo_barras?`<div style="width:100%;display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:12px;color:var(--muted);">Cód: ${escHtml(m.codigo_barras)}<button class="btn-copy-inline" onclick="copiarTexto(this,'${escHtml(m.codigo_barras)}')">Copiar</button></div>`:''}
+          </div>`;
+        });
+      }
+
+      if(!html) html = '<div style="color:var(--muted);font-size:14px;padding:8px 0;">Sin datos adicionales.</div>';
+      document.getElementById('fichaDestBody').innerHTML = html;
+
+    }catch(err){ document.getElementById('fichaDestBody').innerHTML = '<div style="color:var(--danger);">Error: '+err.message+'</div>'; }
+  }
+
+  function abrirFichaCompleta(){
+    cerrarModal('modalFichaDestacado');
+    if(destClienteActual) setTimeout(()=>abrirFichaCliente(destClienteActual), 150);
+  }
+
+  function copiarTexto(btn, texto){
+    navigator.clipboard.writeText(texto).then(()=>{
+      const orig = btn.textContent;
+      btn.textContent = '¡Copiado!'; btn.classList.add('copiado');
+      setTimeout(()=>{ btn.textContent = orig; btn.classList.remove('copiado'); }, 1500);
+    });
   }
 
   function abrirAgregarDestacado(){
