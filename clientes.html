@@ -475,7 +475,7 @@
     return Object.assign({'apikey':SB_KEY,'Authorization':'Bearer '+(SB_TOKEN||SB_KEY)}, extra||{});
   }
   async function iniciarSesionGoogle(){
-    await sbAuth.auth.signInWithOAuth({provider:'google',options:{redirectTo:'https://empleadosriadigos-source.github.io/riadigospreparados/index.html'}});
+    await sbAuth.auth.signInWithOAuth({provider:'google',options:{redirectTo:'https://empleadosriadigos-source.github.io/riadigospreparados/clientes.html'}});
   }
   async function cerrarSesion(){ await sbAuth.auth.signOut(); location.reload(); }
   function mostrarLogin(){ document.getElementById('loginOverlay').style.display='flex'; document.getElementById('appRoot').style.display='none'; }
