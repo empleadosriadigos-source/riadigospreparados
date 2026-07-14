@@ -474,7 +474,6 @@
   function initApp() {
     const hoy = new Date().toISOString().slice(0,10);
     document.getElementById('pFecha').value     = hoy;
-    document.getElementById('cFechaAlta').value = hoy;
     poblarSelect('pForma',  FORMAS,   true);
     poblarSelect('eForma',  FORMAS,   true);
     poblarSelect('pUnidad', UNIDADES, true);
@@ -494,7 +493,7 @@
       const [preps, drs, clis] = await Promise.all([
         sbGet('preparados_completos?estado=neq.Entregado&order=fecha_recepcion.desc'),
         sbGet('drogas?order=nombre.asc', true),
-        sbGet('clientes?order=nombre.asc&select=id,nombre,telefono'),
+        sbGet('clientes?order=nombre.asc&select=id,nombre,telefono,observaciones'),
       ]);
       drogas   = drs;
       clientes = clis;
@@ -545,7 +544,7 @@
     div.innerHTML=`
       <div class="card-top">
         <div class="card-cupon">${fmtCupon(p)}</div>
-        <button class="btn-print-card" onclick="imprimirDesdeCard(event,${p.id})" title="Imprimir cupón">🖨</button>
+        <button class="btn-print-card" onclick="imprimirDesdeCard(event,'${p.id}')" title="Imprimir cupón">🖨</button>
       </div>
       <div class="card-contact">
         <div class="card-contact-row">${svgP}<span class="card-cliente-text">${escHtml(p.cliente_nombre||'—')}</span></div>
@@ -828,7 +827,8 @@
   }
   function filtrarClientesModal(){
     const q=document.getElementById('cliBuscarInput').value.toLowerCase();
-    const fil=clientes.filter(c=>c.nombre.toLowerCase().includes(q)).slice(0,30);
+    const todos = q ? clientes.filter(c=>c.nombre.toLowerCase().includes(q)) : clientes;
+    const fil = todos.slice(0,50);
     const cont=document.getElementById('cliResultados');
     if(!fil.length){cont.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px;">Sin resultados</div>';return;}
     cont.innerHTML=fil.map(c=>`<div class="cli-item" onclick="abrirFormCliente('${c.id}')">
