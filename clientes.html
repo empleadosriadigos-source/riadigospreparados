@@ -102,8 +102,15 @@
   .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
   .ficha-section{background:var(--bg);border-radius:8px;padding:12px 14px;margin-bottom:10px;}
   .ficha-section-title{font-size:11px;font-weight:800;color:var(--brand);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
-  .sub-item{display:flex;align-items:center;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:1px solid var(--border);}
+  .sub-item{display:flex;align-items:center;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:1px solid var(--border);gap:8px;}
   .sub-item:last-child{border-bottom:none;}
+  .sub-item-info{flex:1;min-width:0;}
+  .sub-item-actions{display:flex;gap:4px;flex-shrink:0;}
+  .sub-item-btn{background:none;border:none;cursor:pointer;font-size:12px;font-weight:700;padding:2px 6px;border-radius:5px;}
+  .sub-item-btn.edit{color:var(--brand);}
+  .sub-item-btn.edit:hover{background:var(--brand-light);}
+  .sub-item-btn.del{color:var(--danger);}
+  .sub-item-btn.del:hover{background:rgba(239,68,68,0.1);}
 
   /* ── Toast ───────────────────────────────────────────────────────── */
   #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1F2937;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s;z-index:999;}
@@ -205,7 +212,7 @@
 
 <!-- Modal: Editar/Nuevo cliente -->
 <div class="modal-overlay" id="modalEditarCliente">
-  <div class="modal modal-sm">
+  <div class="modal">
     <div class="modal-header">
       <h2 id="tituloEditarCliente">Nuevo cliente</h2>
       <button class="modal-close" onclick="cerrarModal('modalEditarCliente')">✕</button>
@@ -216,12 +223,112 @@
         <div class="field-group"><label>DNI</label><input type="text" id="ecDni"/></div>
         <div class="field-group"><label>Teléfono</label><input type="text" id="ecTelefono"/></div>
       </div>
-      <div class="field-group"><label>Tarjeta de puntos</label><input type="text" id="ecZetti"/></div>
+      <div class="field-row">
+        <div class="field-group"><label>Tarjeta de puntos</label><input type="text" id="ecZetti"/></div>
+        <div class="field-group"><label>Fecha de alta</label><input type="date" id="ecFechaAlta"/></div>
+      </div>
       <div class="field-group"><label>Observaciones</label><textarea id="ecObs" rows="3"></textarea></div>
+
+      <div id="ecNota" style="display:none;color:var(--muted);font-size:12px;padding:8px 0;">Guardá el cliente primero para poder agregar obras sociales, medicamentos y productos.</div>
+
+      <div id="ecSubSecciones" style="display:none;">
+        <div class="ficha-section">
+          <div class="ficha-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Obras sociales</span>
+            <button class="btn btn-ghost btn-sm" style="padding:3px 9px;font-size:12px;" onclick="abrirNuevaClienteOS()">＋ Agregar</button>
+          </div>
+          <div id="ecOSList"></div>
+        </div>
+
+        <div class="ficha-section">
+          <div class="ficha-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Medicamentos</span>
+            <button class="btn btn-ghost btn-sm" style="padding:3px 9px;font-size:12px;" onclick="abrirNuevaClienteMed()">＋ Agregar</button>
+          </div>
+          <div id="ecMedList"></div>
+        </div>
+
+        <div class="ficha-section">
+          <div class="ficha-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Productos</span>
+            <button class="btn btn-ghost btn-sm" style="padding:3px 9px;font-size:12px;" onclick="abrirNuevaClienteProd()">＋ Agregar</button>
+          </div>
+          <div id="ecProdList"></div>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="cerrarModal('modalEditarCliente')">Cancelar</button>
       <button class="btn btn-primary" id="btnGuardarCliente" onclick="guardarCliente()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Obra social de cliente -->
+<div class="modal-overlay" id="modalClienteOS" style="z-index:300;">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2 id="tituloClienteOS">Agregar obra social</h2>
+      <button class="modal-close" onclick="cerrarModal('modalClienteOS')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group"><label>Obra social <span style="color:var(--danger)">*</span></label>
+        <select id="cosObraSocial" onchange="cargarPlanesOS()"></select>
+      </div>
+      <div class="field-group"><label>Plan</label><select id="cosPlan"></select></div>
+      <div class="field-group"><label>Titular (quien retira)</label><input type="text" id="cosTitular" placeholder="Dejar vacío si es el mismo cliente"/></div>
+      <div class="field-row">
+        <div class="field-group"><label>Nro afiliado</label><input type="text" id="cosNroAfiliado"/></div>
+        <div class="field-group"><label>Coseguro</label><input type="text" id="cosCoseguro"/></div>
+      </div>
+      <div class="field-group"><label>Token</label><input type="text" id="cosToken"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalClienteOS')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarClienteOS()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Medicamento de cliente -->
+<div class="modal-overlay" id="modalClienteMed" style="z-index:300;">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2 id="tituloClienteMed">Agregar medicamento</h2>
+      <button class="modal-close" onclick="cerrarModal('modalClienteMed')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group"><label>Nombre <span style="color:var(--danger)">*</span></label><input type="text" id="cmNombre"/></div>
+      <div class="field-row">
+        <div class="field-group"><label>Marca</label><input type="text" id="cmMarca"/></div>
+        <div class="field-group"><label>Miligramos</label><input type="text" id="cmMg"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field-group"><label>Cantidad</label><input type="text" id="cmCantidad"/></div>
+        <div class="field-group"><label>Código de barras</label><input type="text" id="cmCodigo"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalClienteMed')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarClienteMed()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Producto de cliente -->
+<div class="modal-overlay" id="modalClienteProd" style="z-index:300;">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2 id="tituloClienteProd">Agregar producto</h2>
+      <button class="modal-close" onclick="cerrarModal('modalClienteProd')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group"><label>Nombre <span style="color:var(--danger)">*</span></label><input type="text" id="cpNombre"/></div>
+      <div class="field-group"><label>Código de barras</label><input type="text" id="cpCodigo"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalClienteProd')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarClienteProd()">Guardar</button>
     </div>
   </div>
 </div>
@@ -378,7 +485,7 @@
   async function cargarTodo(){
     try{
       const [clis, cosRows, osRows, fijRows] = await Promise.all([
-        sbGet('clientes?select=id,nombre,dni,telefono,tarjeta_zetti,observaciones&order=nombre.asc'),
+        sbGet('clientes?select=id,nombre,dni,telefono,tarjeta_zetti,fecha_alta,observaciones&order=nombre.asc'),
         sbGet('cliente_obras_sociales?select=cliente_id,obras_sociales(id,nombre)'),
         sbGet('obras_sociales?order=nombre.asc'),
         sbGet('clientes_fijados?select=id,cliente_id&order=created_at.asc'),
@@ -454,7 +561,9 @@
           const nota = r.obras_sociales?.notas_afiliado;
           html += `<div class="detalle-os">
             <div class="detalle-os-nombre">${escHtml(r.obras_sociales?.nombre||'—')}${r.planes_os?.nombre?` <span style="font-weight:400;font-size:12px;color:var(--muted);">· ${escHtml(r.planes_os.nombre)}</span>`:''}</div>
+            ${r.titular?`<div class="detalle-os-row"><span>Titular: <b style="color:var(--text);">${escHtml(r.titular)}</b></span></div>`:''}
             ${r.nro_afiliado?`<div class="detalle-os-row"><span>Nro afiliado: <b style="color:var(--text);">${escHtml(r.nro_afiliado)}</b></span><button class="btn-copy" onclick="copiar(this,'${escHtml(r.nro_afiliado)}')">Copiar</button></div>`:''}
+            ${r.token?`<div class="detalle-os-row"><span>Token: <b style="color:var(--text);">${escHtml(r.token)}</b></span><button class="btn-copy" onclick="copiar(this,'${escHtml(r.token)}')">Copiar</button></div>`:''}
             ${nota?`<div class="detalle-os-row" style="color:var(--brand);font-size:12px;">⚠ ${escHtml(nota)}</div>`:''}
             ${r.coseguro?`<div class="detalle-os-row"><span>Coseguro: ${escHtml(r.coseguro)}</span></div>`:''}
           </div>`;
@@ -467,10 +576,8 @@
         meds.forEach(m=>{
           html += `<div class="detalle-med">
             <div class="detalle-med-nombre">${escHtml(m.nombre)}${m.marca?` <span style="font-weight:400;color:var(--muted);">· ${escHtml(m.marca)}</span>`:''}</div>
-            <div class="detalle-med-info">
-              <span>${[m.miligramos,m.cantidad].filter(Boolean).map(escHtml).join(' · ')||''}</span>
-              ${m.codigo_barras?`<button class="btn-copy" onclick="copiar(this,'${escHtml(m.codigo_barras)}')">Cód: ${escHtml(m.codigo_barras)}</button>`:''}
-            </div>
+            ${(m.miligramos||m.cantidad)?`<div class="detalle-med-info"><span>${[m.miligramos,m.cantidad].filter(Boolean).map(escHtml).join(' · ')}</span><span></span></div>`:''}
+            ${m.codigo_barras?`<div class="detalle-med-info"><span>Código: ${escHtml(m.codigo_barras)}</span><button class="btn-copy" onclick="copiar(this,'${escHtml(m.codigo_barras)}')">Copiar</button></div>`:''}
           </div>`;
         });
       }
@@ -481,7 +588,7 @@
         prods.forEach(p=>{
           html += `<div class="detalle-med">
             <div class="detalle-med-nombre">${escHtml(p.nombre)}</div>
-            ${p.codigo_barras?`<div class="detalle-med-info"><span></span><button class="btn-copy" onclick="copiar(this,'${escHtml(p.codigo_barras)}')">Cód: ${escHtml(p.codigo_barras)}</button></div>`:''}
+            ${p.codigo_barras?`<div class="detalle-med-info"><span>Código: ${escHtml(p.codigo_barras)}</span><button class="btn-copy" onclick="copiar(this,'${escHtml(p.codigo_barras)}')">Copiar</button></div>`:''}
           </div>`;
         });
       }
@@ -571,7 +678,9 @@
   function abrirNuevoCliente(){
     clienteEditId=null;
     document.getElementById('tituloEditarCliente').textContent='Nuevo cliente';
-    ['ecNombre','ecDni','ecTelefono','ecZetti','ecObs'].forEach(id=>document.getElementById(id).value='');
+    ['ecNombre','ecDni','ecTelefono','ecZetti','ecObs','ecFechaAlta'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('ecSubSecciones').style.display='none';
+    document.getElementById('ecNota').style.display='';
     abrirModal('modalEditarCliente');
     setTimeout(()=>document.getElementById('ecNombre').focus(),100);
   }
@@ -586,31 +695,275 @@
     document.getElementById('ecTelefono').value=c.telefono||'';
     document.getElementById('ecZetti').value=c.tarjeta_zetti||'';
     document.getElementById('ecObs').value=c.observaciones||'';
+    document.getElementById('ecFechaAlta').value=c.fecha_alta||'';
+    document.getElementById('ecNota').style.display='none';
+    document.getElementById('ecSubSecciones').style.display='';
     abrirModal('modalEditarCliente');
+    cargarSubdatosCliente(id);
   }
 
   async function guardarCliente(){
     const nombre=document.getElementById('ecNombre').value.trim();
     if(!nombre){ mostrarToast('El nombre es obligatorio','err'); return; }
     const btn=document.getElementById('btnGuardarCliente'); btn.disabled=true; btn.textContent='Guardando…';
-    const body=limpiar({nombre,dni:document.getElementById('ecDni').value||null,telefono:document.getElementById('ecTelefono').value||null,tarjeta_zetti:document.getElementById('ecZetti').value||null,observaciones:document.getElementById('ecObs').value||null});
+    const fechaAlta=document.getElementById('ecFechaAlta').value||new Date().toISOString().slice(0,10);
+    const body=limpiar({nombre,dni:document.getElementById('ecDni').value||null,telefono:document.getElementById('ecTelefono').value||null,tarjeta_zetti:document.getElementById('ecZetti').value||null,observaciones:document.getElementById('ecObs').value||null,fecha_alta:fechaAlta});
     try{
       if(clienteEditId){
         await sbPatch('clientes',clienteEditId,body);
         const idx=clientes.findIndex(c=>c.id===clienteEditId);
         if(idx>=0) clientes[idx]={...clientes[idx],...body};
         mostrarToast('✓ Cliente actualizado','ok');
+        cerrarModal('modalEditarCliente');
       } else {
-        const nuevo=await sbPost('clientes',{...body,fecha_alta:new Date().toISOString().slice(0,10)});
+        const nuevo=await sbPost('clientes',body);
         clientes.push(nuevo[0]);
         clientes.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
-        mostrarToast('✓ Cliente creado','ok');
+        mostrarToast('✓ Cliente creado — abrilo de nuevo para agregar obras sociales, medicamentos o productos','ok');
+        cerrarModal('modalEditarCliente');
       }
-      cerrarModal('modalEditarCliente');
       renderTablaClientes();
       renderFijados();
     }catch(e){ mostrarToast('Error: '+e.message,'err'); }
     btn.disabled=false; btn.textContent='Guardar';
+  }
+
+  // ══ SUBSECCIONES DEL CLIENTE: OBRAS SOCIALES / MEDICAMENTOS / PRODUCTOS ══
+  let clienteOSList=[], clienteMedList=[], clienteProdList=[];
+  let clienteOSEditId=null, clienteMedEditId=null, clienteProdEditId=null;
+
+  async function cargarSubdatosCliente(id){
+    document.getElementById('ecOSList').innerHTML='<div style="color:var(--muted);font-size:12px;">Cargando…</div>';
+    document.getElementById('ecMedList').innerHTML='';
+    document.getElementById('ecProdList').innerHTML='';
+    try{
+      const [os, meds, prods] = await Promise.all([
+        sbGet(`cliente_obras_sociales?cliente_id=eq.${id}&select=*,obras_sociales(nombre),planes_os(nombre)`),
+        sbGet(`cliente_medicamentos?cliente_id=eq.${id}&order=nombre.asc`),
+        sbGet(`cliente_productos?cliente_id=eq.${id}&order=nombre.asc`),
+      ]);
+      clienteOSList=os; clienteMedList=meds; clienteProdList=prods;
+      renderClienteOSList(); renderClienteMedList(); renderClienteProdList();
+    }catch(e){ mostrarToast('Error al cargar datos del cliente: '+e.message,'err'); }
+  }
+
+  // ── Obras sociales del cliente ──
+  function renderClienteOSList(){
+    const cont=document.getElementById('ecOSList');
+    if(!clienteOSList.length){ cont.innerHTML='<div style="color:var(--muted);font-size:12px;padding:4px 0;">Sin obras sociales.</div>'; return; }
+    cont.innerHTML=clienteOSList.map(o=>`
+      <div class="sub-item">
+        <span class="sub-item-info">${escHtml(o.obras_sociales?.nombre||'—')}${o.planes_os?.nombre?' · '+escHtml(o.planes_os.nombre):''}${o.titular?' · Titular: '+escHtml(o.titular):''}</span>
+        <span class="sub-item-actions">
+          <button class="sub-item-btn edit" onclick="abrirEditarClienteOS('${o.id}')">Editar</button>
+          <button class="sub-item-btn del" onclick="eliminarClienteOS('${o.id}')">Quitar</button>
+        </span>
+      </div>`).join('');
+  }
+
+  async function cargarPlanesOS(){
+    const osId=document.getElementById('cosObraSocial').value;
+    const sel=document.getElementById('cosPlan');
+    sel.innerHTML='<option value="">—</option>';
+    if(!osId) return;
+    try{
+      const planes=await sbGet(`planes_os?obra_social_id=eq.${osId}&order=nombre.asc`);
+      sel.innerHTML+=planes.map(p=>`<option value="${p.id}">${escHtml(p.nombre)}</option>`).join('');
+    }catch(e){}
+  }
+
+  function abrirNuevaClienteOS(){
+    if(!clienteEditId){ mostrarToast('Guardá el cliente primero','err'); return; }
+    clienteOSEditId=null;
+    document.getElementById('tituloClienteOS').textContent='Agregar obra social';
+    document.getElementById('cosObraSocial').innerHTML='<option value="">Seleccionar…</option>'+osSociales.map(o=>`<option value="${o.id}">${escHtml(o.nombre)}</option>`).join('');
+    document.getElementById('cosPlan').innerHTML='<option value="">—</option>';
+    ['cosNroAfiliado','cosCoseguro','cosToken','cosTitular'].forEach(id=>document.getElementById(id).value='');
+    abrirModal('modalClienteOS');
+  }
+
+  async function abrirEditarClienteOS(id){
+    const o=clienteOSList.find(x=>x.id===id);
+    if(!o) return;
+    clienteOSEditId=id;
+    document.getElementById('tituloClienteOS').textContent='Editar obra social';
+    document.getElementById('cosObraSocial').innerHTML='<option value="">Seleccionar…</option>'+osSociales.map(x=>`<option value="${x.id}" ${x.id===o.obra_social_id?'selected':''}>${escHtml(x.nombre)}</option>`).join('');
+    await cargarPlanesOS();
+    document.getElementById('cosPlan').value=o.plan_id||'';
+    document.getElementById('cosNroAfiliado').value=o.nro_afiliado||'';
+    document.getElementById('cosCoseguro').value=o.coseguro||'';
+    document.getElementById('cosToken').value=o.token||'';
+    document.getElementById('cosTitular').value=o.titular||'';
+    abrirModal('modalClienteOS');
+  }
+
+  async function guardarClienteOS(){
+    const obra_social_id=document.getElementById('cosObraSocial').value;
+    if(!obra_social_id){ mostrarToast('Elegí una obra social','err'); return; }
+    const body=limpiar({
+      cliente_id:clienteEditId,
+      obra_social_id,
+      plan_id:document.getElementById('cosPlan').value||null,
+      nro_afiliado:document.getElementById('cosNroAfiliado').value||null,
+      coseguro:document.getElementById('cosCoseguro').value||null,
+      token:document.getElementById('cosToken').value||null,
+      titular:document.getElementById('cosTitular').value||null,
+    });
+    try{
+      if(clienteOSEditId){
+        await sbPatch('cliente_obras_sociales',clienteOSEditId,body);
+        mostrarToast('✓ Obra social actualizada','ok');
+      } else {
+        await sbPost('cliente_obras_sociales',body);
+        mostrarToast('✓ Obra social agregada','ok');
+      }
+      cerrarModal('modalClienteOS');
+      await cargarSubdatosCliente(clienteEditId);
+      cargarTodo();
+    }catch(e){ mostrarToast('Error: '+e.message,'err'); }
+  }
+
+  async function eliminarClienteOS(id){
+    if(!confirm('¿Quitar esta obra social del cliente?')) return;
+    try{
+      await sbDelete(`cliente_obras_sociales?id=eq.${id}`);
+      clienteOSList=clienteOSList.filter(x=>x.id!==id);
+      renderClienteOSList();
+      mostrarToast('✓ Quitada','ok');
+      cargarTodo();
+    }catch(e){ mostrarToast('Error: '+e.message,'err'); }
+  }
+
+  // ── Medicamentos del cliente ──
+  function renderClienteMedList(){
+    const cont=document.getElementById('ecMedList');
+    if(!clienteMedList.length){ cont.innerHTML='<div style="color:var(--muted);font-size:12px;padding:4px 0;">Sin medicamentos.</div>'; return; }
+    cont.innerHTML=clienteMedList.map(m=>`
+      <div class="sub-item">
+        <span class="sub-item-info">${escHtml(m.nombre)}${m.marca?' · '+escHtml(m.marca):''}${m.miligramos?' · '+escHtml(m.miligramos):''}${m.cantidad?' · '+escHtml(m.cantidad):''}</span>
+        <span class="sub-item-actions">
+          <button class="sub-item-btn edit" onclick="abrirEditarClienteMed('${m.id}')">Editar</button>
+          <button class="sub-item-btn del" onclick="eliminarClienteMed('${m.id}')">Quitar</button>
+        </span>
+      </div>`).join('');
+  }
+
+  function abrirNuevaClienteMed(){
+    if(!clienteEditId){ mostrarToast('Guardá el cliente primero','err'); return; }
+    clienteMedEditId=null;
+    document.getElementById('tituloClienteMed').textContent='Agregar medicamento';
+    ['cmNombre','cmMarca','cmMg','cmCantidad','cmCodigo'].forEach(id=>document.getElementById(id).value='');
+    abrirModal('modalClienteMed');
+  }
+
+  function abrirEditarClienteMed(id){
+    const m=clienteMedList.find(x=>x.id===id);
+    if(!m) return;
+    clienteMedEditId=id;
+    document.getElementById('tituloClienteMed').textContent='Editar medicamento';
+    document.getElementById('cmNombre').value=m.nombre||'';
+    document.getElementById('cmMarca').value=m.marca||'';
+    document.getElementById('cmMg').value=m.miligramos||'';
+    document.getElementById('cmCantidad').value=m.cantidad||'';
+    document.getElementById('cmCodigo').value=m.codigo_barras||'';
+    abrirModal('modalClienteMed');
+  }
+
+  async function guardarClienteMed(){
+    const nombre=document.getElementById('cmNombre').value.trim();
+    if(!nombre){ mostrarToast('El nombre es obligatorio','err'); return; }
+    const body=limpiar({
+      cliente_id:clienteEditId,
+      nombre,
+      marca:document.getElementById('cmMarca').value||null,
+      miligramos:document.getElementById('cmMg').value||null,
+      cantidad:document.getElementById('cmCantidad').value||null,
+      codigo_barras:document.getElementById('cmCodigo').value||null,
+    });
+    try{
+      if(clienteMedEditId){
+        await sbPatch('cliente_medicamentos',clienteMedEditId,body);
+        mostrarToast('✓ Medicamento actualizado','ok');
+      } else {
+        await sbPost('cliente_medicamentos',body);
+        mostrarToast('✓ Medicamento agregado','ok');
+      }
+      cerrarModal('modalClienteMed');
+      await cargarSubdatosCliente(clienteEditId);
+    }catch(e){ mostrarToast('Error: '+e.message,'err'); }
+  }
+
+  async function eliminarClienteMed(id){
+    if(!confirm('¿Quitar este medicamento del cliente?')) return;
+    try{
+      await sbDelete(`cliente_medicamentos?id=eq.${id}`);
+      clienteMedList=clienteMedList.filter(x=>x.id!==id);
+      renderClienteMedList();
+      mostrarToast('✓ Quitado','ok');
+    }catch(e){ mostrarToast('Error: '+e.message,'err'); }
+  }
+
+  // ── Productos del cliente ──
+  function renderClienteProdList(){
+    const cont=document.getElementById('ecProdList');
+    if(!clienteProdList.length){ cont.innerHTML='<div style="color:var(--muted);font-size:12px;padding:4px 0;">Sin productos.</div>'; return; }
+    cont.innerHTML=clienteProdList.map(p=>`
+      <div class="sub-item">
+        <span class="sub-item-info">${escHtml(p.nombre)}${p.codigo_barras?' · '+escHtml(p.codigo_barras):''}</span>
+        <span class="sub-item-actions">
+          <button class="sub-item-btn edit" onclick="abrirEditarClienteProd('${p.id}')">Editar</button>
+          <button class="sub-item-btn del" onclick="eliminarClienteProd('${p.id}')">Quitar</button>
+        </span>
+      </div>`).join('');
+  }
+
+  function abrirNuevaClienteProd(){
+    if(!clienteEditId){ mostrarToast('Guardá el cliente primero','err'); return; }
+    clienteProdEditId=null;
+    document.getElementById('tituloClienteProd').textContent='Agregar producto';
+    ['cpNombre','cpCodigo'].forEach(id=>document.getElementById(id).value='');
+    abrirModal('modalClienteProd');
+  }
+
+  function abrirEditarClienteProd(id){
+    const p=clienteProdList.find(x=>x.id===id);
+    if(!p) return;
+    clienteProdEditId=id;
+    document.getElementById('tituloClienteProd').textContent='Editar producto';
+    document.getElementById('cpNombre').value=p.nombre||'';
+    document.getElementById('cpCodigo').value=p.codigo_barras||'';
+    abrirModal('modalClienteProd');
+  }
+
+  async function guardarClienteProd(){
+    const nombre=document.getElementById('cpNombre').value.trim();
+    if(!nombre){ mostrarToast('El nombre es obligatorio','err'); return; }
+    const body=limpiar({
+      cliente_id:clienteEditId,
+      nombre,
+      codigo_barras:document.getElementById('cpCodigo').value||null,
+    });
+    try{
+      if(clienteProdEditId){
+        await sbPatch('cliente_productos',clienteProdEditId,body);
+        mostrarToast('✓ Producto actualizado','ok');
+      } else {
+        await sbPost('cliente_productos',body);
+        mostrarToast('✓ Producto agregado','ok');
+      }
+      cerrarModal('modalClienteProd');
+      await cargarSubdatosCliente(clienteEditId);
+    }catch(e){ mostrarToast('Error: '+e.message,'err'); }
+  }
+
+  async function eliminarClienteProd(id){
+    if(!confirm('¿Quitar este producto del cliente?')) return;
+    try{
+      await sbDelete(`cliente_productos?id=eq.${id}`);
+      clienteProdList=clienteProdList.filter(x=>x.id!==id);
+      renderClienteProdList();
+      mostrarToast('✓ Quitado','ok');
+    }catch(e){ mostrarToast('Error: '+e.message,'err'); }
   }
 
   // ══ OBRAS SOCIALES ════════════════════════════════════════════════
