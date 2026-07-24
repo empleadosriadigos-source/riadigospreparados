@@ -239,16 +239,13 @@
           <label>Nro Cupón <span style="color:var(--danger)">*</span></label>
           <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
             <label style="font-size:12px;font-weight:500;display:flex;align-items:center;gap:4px;cursor:pointer;">
-              <input type="radio" name="tipoCupon" value="nuevo" id="tipoCuponNuevo" checked onchange="toggleTipoCupon()"> Nuevo (automático)
+              <input type="radio" name="tipoCupon" value="nuevo" id="tipoCuponNuevo" checked onchange="toggleTipoCupon()"> Nuevo
             </label>
             <label style="font-size:12px;font-weight:500;display:flex;align-items:center;gap:4px;cursor:pointer;">
-              <input type="radio" name="tipoCupon" value="viejo" id="tipoCuponViejo" onchange="toggleTipoCupon()"> Cupón físico existente
+              <input type="radio" name="tipoCupon" value="viejo" id="tipoCuponViejo" onchange="toggleTipoCupon()"> Talonario
             </label>
           </div>
-          <div id="cuponNuevoWrap" style="color:var(--muted);font-size:13px;padding:8px;background:var(--bg);border-radius:6px;border:1px solid var(--border);">
-            Se asignará automáticamente al guardar
-          </div>
-          <input type="number" id="pCupon" placeholder="Ingresá el número de cupón físico" style="display:none;"/>
+          <input type="number" id="pCupon" placeholder="Número de talonario" style="display:none;"/>
         </div>
         <div class="field-group"><label>Nro Receta</label><input type="number" id="pReceta"/></div>
       </div>
@@ -718,7 +715,6 @@
   function abrirModalPreparado(){limpiarFormPreparado();abrirModal('modalPreparado');}
   function toggleTipoCupon(){
     const nuevo = document.getElementById('tipoCuponNuevo').checked;
-    document.getElementById('cuponNuevoWrap').style.display = nuevo ? '' : 'none';
     document.getElementById('pCupon').style.display = nuevo ? 'none' : '';
     if(nuevo) document.getElementById('pCupon').value='';
   }
@@ -790,6 +786,8 @@
     document.getElementById('pFecha').value=new Date().toISOString().slice(0,10);
     document.getElementById('pEstado').value='Asignar precio';
     document.getElementById('compRowsNuevo').innerHTML='';
+    document.getElementById('tipoCuponNuevo').checked=true;
+    toggleTipoCupon();
   }
 
   // ── Modal clientes unificado ───────────────────────────────────────────
