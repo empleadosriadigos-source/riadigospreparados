@@ -134,10 +134,6 @@
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
     Volver al inicio
   </a>
-  <a class="nav-btn nav-btn-dark" href="clientes.html">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-    Clientes
-  </a>
   <div class="topbar-right">
     <button class="btn-act" onclick="abrirModalFusionar()" title="Herramienta temporal para corregir clientes duplicados">🔧 Fusionar clientes</button>
     <span class="user-chip" id="userNombre"></span>
@@ -215,7 +211,23 @@
   <div class="modal modal-sm">
     <div class="modal-header"><h2>Repetir preparado</h2><button class="modal-close" onclick="cerrarModal('modalRepetir')">✕</button></div>
     <div class="modal-body">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Se copiará con fecha de hoy. El número de cupón se asignará automáticamente.</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Se copiará con fecha de hoy.</p>
+      <div class="field-group">
+        <label>Tipo de cupón</label>
+        <div style="display:flex;gap:14px;font-size:13px;">
+          <label style="display:flex;align-items:center;gap:5px;font-weight:normal;"><input type="radio" name="rTipoCupon" value="nuevo" checked onchange="toggleTipoCuponRepetir()"/> Nuevo (automático)</label>
+          <label style="display:flex;align-items:center;gap:5px;font-weight:normal;"><input type="radio" name="rTipoCupon" value="viejo" onchange="toggleTipoCuponRepetir()"/> Talonario (viejo)</label>
+        </div>
+      </div>
+      <div class="field-group" id="rCuponViejoWrap" style="display:none;"><label>Número de talonario</label><input type="number" id="rCuponViejo" min="1"/></div>
+      <div class="field-group">
+        <label>¿Mismo cliente?</label>
+        <div style="display:flex;gap:14px;font-size:13px;">
+          <label style="display:flex;align-items:center;gap:5px;font-weight:normal;"><input type="radio" name="rMismoCliente" value="si" checked onchange="toggleMismoClienteRepetir()"/> Sí</label>
+          <label style="display:flex;align-items:center;gap:5px;font-weight:normal;"><input type="radio" name="rMismoCliente" value="no" onchange="toggleMismoClienteRepetir()"/> No</label>
+        </div>
+      </div>
+      <div class="field-group" id="rClienteWrap" style="display:none;"><label>Cliente</label><div class="ss-wrap"><input type="text" id="rClienteInput" placeholder="Buscar cliente…" oninput="filtrarSSClienteR()" onfocus="abrirSSClienteR()" autocomplete="off"/><div class="ss-dropdown" id="ssClienteR"></div><input type="hidden" id="rClienteId"/></div></div>
       <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="rPrecio" min="0"/></div>
       <div class="field-group"><label>Observaciones</label><textarea id="rObs" rows="2"></textarea></div>
     </div>
@@ -530,7 +542,7 @@
     try{
       const cliId=document.getElementById('eClienteId').value;
       await sbPatch('preparados',prepActual.id,limpiar({// nro_cupon_nuevo nunca se edita
-        nro_cupon:prepActual.nro_cupon_nuevo==null?(parseInt(document.getElementById('eCupon').value)||null):prepActual.nro_cupon,nro_receta:parseInt(document.getElementById('eReceta').value)||null,cliente_id:cliId||null,fecha_recepcion:document.getElementById('eFecha').value||null,estado:document.getElementById('eEstado').value||null,forma_farmaceutica:document.getElementById('eForma').value||null,cantidad_total:parseFloat(document.getElementById('eCantTotal').value)||null,unidad:document.getElementById('eUnidad').value||null,precio_venta:parseFloat(document.getElementById('ePrecio').value)||null,observaciones:document.getElementById('eObs').value||null}));
+        nro_cupon:prepActual.nro_cupon_nuevo==null?(parseInt(document.getElementById('eCupon').value)||null):prepActual.nro_cupon,nro_receta:parseInt(document.getElementById('eReceta').value)||null,cliente_id:cliId||null,fecha_recepcion:document.getElementById('eFecha').value||null,estado:document.getElementById('eEstado').value||null,forma_farmaceutica:document.getElementById('eForma').value||null,cantidad_total:parseFloat(document.getElementById('eCantTotal').value)||null,unidad:document.getElementById('eUnidad').value||null,precio_venta:parseFloat(document.getElementById('ePrecio').value)||null,observaciones:document.getElementById('eObs').value}));
       const rows=document.querySelectorAll('#compRowsEditar .comp-row');
       const viejosIds=prepActual.componentes.map(c=>c.id);const nuevosIds=[];
       for(const row of rows){
@@ -546,22 +558,67 @@
     btn.disabled=false;btn.textContent='Guardar cambios';
   }
 
-  function abrirRepetir(id){prepActual=resultadosFiltrados.find(x=>x.id===id);if(!prepActual)return;document.getElementById('rPrecio').value='';document.getElementById('rObs').value=prepActual.observaciones??'';abrirModal('modalRepetir');}
+  function abrirRepetir(id){
+    prepActual=resultadosFiltrados.find(x=>x.id===id);if(!prepActual)return;
+    document.getElementById('rPrecio').value='';
+    document.getElementById('rObs').value='';
+    document.querySelector('input[name="rTipoCupon"][value="nuevo"]').checked=true;
+    document.getElementById('rCuponViejo').value='';
+    document.getElementById('rCuponViejoWrap').style.display='none';
+    document.querySelector('input[name="rMismoCliente"][value="si"]').checked=true;
+    document.getElementById('rClienteInput').value='';
+    document.getElementById('rClienteId').value='';
+    document.getElementById('rClienteWrap').style.display='none';
+    abrirModal('modalRepetir');
+  }
+  function toggleTipoCuponRepetir(){const viejo=document.querySelector('input[name="rTipoCupon"]:checked').value==='viejo';document.getElementById('rCuponViejoWrap').style.display=viejo?'':'none';}
+  function toggleMismoClienteRepetir(){const distinto=document.querySelector('input[name="rMismoCliente"]:checked').value==='no';document.getElementById('rClienteWrap').style.display=distinto?'':'none';}
+  function filtrarSSClienteR(){const input=document.getElementById('rClienteInput');const dd=document.getElementById('ssClienteR');renderSSClienteR(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),input.value);posicionarDD(input,dd);dd.classList.add('open');}
+  function abrirSSClienteR(){const input=document.getElementById('rClienteInput');const dd=document.getElementById('ssClienteR');renderSSClienteR(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),input.value);posicionarDD(input,dd);dd.classList.add('open');}
+  function renderSSClienteR(dd,fil,texto){dd.innerHTML='';fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById('rClienteInput').value=c.nombre;document.getElementById('rClienteId').value=c.id;dd.classList.remove('open');};dd.appendChild(d);});if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}}
 
   async function confirmarRepetir(){
-    // Obtener número de cupón automático
-    let cupon;
-    try{
-      const h=getAuthHeaders();h['Content-Type']='application/json';
-      const resp=await fetch(`${SB_URL}/rpc/next_cupon_nuevo`,{method:'POST',headers:h,body:'null'});
-      if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||'HTTP '+resp.status);}
-      cupon=await resp.json();
-      if(!cupon && cupon!==0){mostrarToast('Error al obtener número de cupón','err');return;}
-    }catch(e){mostrarToast('Error al obtener número de cupón: '+e.message,'err');return;}
+    const tipoCupon=document.querySelector('input[name="rTipoCupon"]:checked').value;
+    const mismoCliente=document.querySelector('input[name="rMismoCliente"]:checked').value==='si';
+
+    let cuponViejo=null;
+    if(tipoCupon==='viejo'){
+      cuponViejo=parseInt(document.getElementById('rCuponViejo').value)||null;
+      if(!cuponViejo){mostrarToast('Ingresá el número de talonario','err');return;}
+    }
+
+    let clienteId=prepActual.cliente_id;
+    if(!mismoCliente){
+      clienteId=document.getElementById('rClienteId').value;
+      if(!clienteId){mostrarToast('Elegí un cliente','err');return;}
+    }
+
+    let cupon=null;
+    if(tipoCupon==='nuevo'){
+      try{
+        const h=getAuthHeaders();h['Content-Type']='application/json';
+        const resp=await fetch(`${SB_URL}/rpc/next_cupon_nuevo`,{method:'POST',headers:h,body:'null'});
+        if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||'HTTP '+resp.status);}
+        cupon=await resp.json();
+        if(!cupon && cupon!==0){mostrarToast('Error al obtener número de cupón','err');return;}
+      }catch(e){mostrarToast('Error al obtener número de cupón: '+e.message,'err');return;}
+    }
+
     const btn=document.getElementById('btnRepetirConfirm');btn.disabled=true;btn.textContent='Creando…';
     try{
       const p=prepActual;const hoy=new Date().toISOString().slice(0,10);
-      const nuevo=await sbPost('preparados',limpiar({nro_cupon_nuevo:cupon,cliente_id:p.cliente_id,fecha_recepcion:hoy,estado:'Asignar precio',forma_farmaceutica:p.forma_farmaceutica,cantidad_total:p.cantidad_total,unidad:p.unidad,precio_venta:parseFloat(document.getElementById('rPrecio').value)||null,observaciones:document.getElementById('rObs').value||null}));
+      const nuevo=await sbPost('preparados',limpiar({
+        nro_cupon_nuevo:tipoCupon==='nuevo'?cupon:null,
+        nro_cupon:tipoCupon==='viejo'?cuponViejo:null,
+        cliente_id:clienteId,
+        fecha_recepcion:hoy,
+        estado:'Asignar precio',
+        forma_farmaceutica:p.forma_farmaceutica,
+        cantidad_total:p.cantidad_total,
+        unidad:p.unidad,
+        precio_venta:parseFloat(document.getElementById('rPrecio').value)||null,
+        observaciones:document.getElementById('rObs').value||null
+      }));
       const prepId=nuevo[0].id;
       for(const c of p.componentes){await sbPost('componentes',limpiar({preparado_id:prepId,droga_id:c.droga_id,cantidad:c.cantidad,unidad:c.unidad}));}
       mostrarToast('✓ Preparado creado','ok');cerrarModal('modalRepetir');await cargarTodo();
