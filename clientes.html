@@ -411,34 +411,11 @@
 
 <div id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-shared.js"></script>
 <script>
-  const SB_URL = 'https://zmxkazlpliapedsgbzhb.supabase.co/rest/v1';
-  const SB_URL_BASE = 'https://zmxkazlpliapedsgbzhb.supabase.co';
-  const SB_KEY = 'sb_publishable_7iSVOhG4YHUC9rFegjdJ4A_1GL4DTlV';
-  let SB_TOKEN = null;
-  const sbAuth = supabase.createClient(SB_URL_BASE, SB_KEY);
-
-  function getH(extra){ return Object.assign({'apikey':SB_KEY,'Authorization':'Bearer '+(SB_TOKEN||SB_KEY)},extra||{}); }
-
-  async function sbGet(path){
-    const r=await fetch(`${SB_URL}/${path}`,{headers:getH({'Range-Unit':'items','Range':'0-4999'})});
-    if(!r.ok) throw new Error(await r.text());
-    return r.json();
-  }
-  async function sbPost(table,body){
-    const r=await fetch(`${SB_URL}/${table}`,{method:'POST',headers:getH({'Content-Type':'application/json','Prefer':'return=representation'}),body:JSON.stringify(body)});
-    if(!r.ok) throw new Error(await r.text());
-    return r.json();
-  }
-  async function sbPatch(table,id,body){
-    const r=await fetch(`${SB_URL}/${table}?id=eq.${id}`,{method:'PATCH',headers:getH({'Content-Type':'application/json'}),body:JSON.stringify(body)});
-    if(!r.ok) throw new Error(await r.text());
-  }
-  async function sbDelete(path){
-    const r=await fetch(`${SB_URL}/${path}`,{method:'DELETE',headers:getH()});
-    if(!r.ok) throw new Error(await r.text());
-  }
+  // SB_URL, SB_KEY, sbAuth, SB_TOKEN, getAuthHeaders, sbGet/sbPost/sbPatch/sbDelete
+  // vienen de supabase-shared.js. El login de esta pagina (auto-redirect sin
+  // pantalla intermedia) es distinto a las demas y se mantiene como estaba.
 
   function limpiar(o){ return Object.fromEntries(Object.entries(o).filter(([,v])=>v!=null&&v!=='')); }
   function escHtml(s){ const d=document.createElement('div');d.textContent=s??'';return d.innerHTML; }
@@ -477,7 +454,7 @@
     }
   });
 
-  async function cerrarSesion(){ await sbAuth.auth.signOut(); location.reload(); }
+  // cerrarSesion viene de supabase-shared.js
 
   // ── Datos ─────────────────────────────────────────────────────────
   let clientes=[], osSociales=[], fijados=[], clienteOSMap={};
@@ -485,10 +462,10 @@
   async function cargarTodo(){
     try{
       const [clis, cosRows, osRows, fijRows] = await Promise.all([
-        sbGet('clientes?select=id,nombre,dni,telefono,tarjeta_zetti,fecha_alta,observaciones&order=nombre.asc'),
-        sbGet('cliente_obras_sociales?select=cliente_id,obras_sociales(id,nombre)'),
-        sbGet('obras_sociales?order=nombre.asc'),
-        sbGet('clientes_fijados?select=id,cliente_id&order=created_at.asc'),
+        sbGet('clientes?select=id,nombre,dni,telefono,tarjeta_zetti,fecha_alta,observaciones&order=nombre.asc', true),
+        sbGet('cliente_obras_sociales?select=cliente_id,obras_sociales(id,nombre)', true),
+        sbGet('obras_sociales?order=nombre.asc', true),
+        sbGet('clientes_fijados?select=id,cliente_id&order=created_at.asc', true),
       ]);
       clientes = clis;
       osSociales = osRows;
