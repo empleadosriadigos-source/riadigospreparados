@@ -164,21 +164,10 @@
 
 </div><!-- /appRoot -->
 
+<script src="supabase-shared.js"></script>
 <script>
-  const SB_URL = 'https://zmxkazlpliapedsgbzhb.supabase.co/rest/v1';
-  const SB_URL_BASE = 'https://zmxkazlpliapedsgbzhb.supabase.co';
-  const SB_KEY = 'sb_publishable_7iSVOhG4YHUC9rFegjdJ4A_1GL4DTlV';
-
-  // ── Autenticación (Supabase Auth + Google OAuth) ────────────────────────
-  const sbAuth = supabase.createClient(SB_URL_BASE, SB_KEY);
-  let SB_TOKEN = null;
-  function getAuthHeaders(extra){
-    return Object.assign({'apikey':SB_KEY,'Authorization':'Bearer '+(SB_TOKEN||SB_KEY)}, extra||{});
-  }
-  async function iniciarSesionGoogle(){
-    await sbAuth.auth.signInWithOAuth({provider:'google',options:{redirectTo:'https://empleadosriadigos-source.github.io/riadigospreparados/index.html'}});
-  }
-  async function cerrarSesion(){ await sbAuth.auth.signOut(); location.reload(); }
+  // SB_URL, SB_KEY, sbAuth, SB_TOKEN, getAuthHeaders, sbGet/sbPost/sbPatch/sbDelete,
+  // iniciarSesionGoogle y cerrarSesion vienen de supabase-shared.js
   function mostrarLogin(){ document.getElementById('loginOverlay').style.display='flex'; document.getElementById('appRoot').style.display='none'; }
   let appIniciada = false;
   function mostrarApp(session){
@@ -199,19 +188,12 @@
   });
 
   let todos=[], seleccion=new Set();
+  const TOPE_RESULTADOS = 500; // limite de seguridad para esta pantalla, que no pagina
 
-  function initApp(){ cargarTodo(); }
+  function initApp(){ filtrar(); }
 
-  async function cargarTodo(){
-    setStatus('<span class="spinner"></span> Cargando preparados…');
-    document.getElementById('tablaWrap').style.display='none';
-    todos=[];seleccion.clear();actualizarContador();
-    try{
-      const preps = await sbGet('preparados_completos?order=fecha_recepcion.desc', true);
-      todos=preps.map(p=>({...p,componentes:[]}));
-      setStatus('');await filtrar();
-    }catch(err){setStatus('Error al cargar: '+err.message,true);}
-  }
+  // Se mantiene como alias para no romper el resto de las llamadas existentes
+  async function cargarTodo(){ seleccion.clear();actualizarContador(); await filtrar(); }
 
   let _etFiltrarTimeout=null;
   function filtrar(){
@@ -222,49 +204,42 @@
   }
 
   async function _filtrarExec(){
-    const q=document.getElementById('buscador').value.toLowerCase().trim();
+    const q=document.getElementById('buscador').value.trim();
     const estado=document.getElementById('filtroEstado').value;
 
-    // Cargar componentes de los preparados del estado actual si no están cargados
-    const sinComps = todos.filter(p=>(!estado||p.estado===estado)&&p.componentes.length===0);
-    if(sinComps.length > 0){
+    setStatus('<span class="spinner"></span> Buscando…');
+    let res, totalCount;
+    try{
+      const h=getAuthHeaders();h['Content-Type']='application/json';
+      const resp=await fetch(`${SB_URL}/rpc/buscar_preparados`,{
+        method:'POST',headers:h,
+        body:JSON.stringify({termino:q||null,filtro_estado:estado||null,pagina:1,por_pagina:TOPE_RESULTADOS})
+      });
+      if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
+      const filas=await resp.json();
+      totalCount = filas.length ? Number(filas[0].total_count) : 0;
+      res = filas.map(p=>({...p,componentes:[]}));
+    }catch(err){setStatus('Error al buscar: '+err.message,true);return;}
+
+    todos = res;
+
+    // Cargar componentes de los preparados encontrados, para mostrarlos en la tabla
+    if(res.length > 0){
       setStatus('<span class="spinner"></span> Cargando componentes…');
-      const ids = sinComps.map(p=>p.id).join(',');
+      const ids = res.map(p=>p.id).join(',');
       try{
         const comps = await sbGet('componentes_con_droga?preparado_id=in.('+ids+')');
         const cm={};comps.forEach(c=>{if(!cm[c.preparado_id])cm[c.preparado_id]=[];cm[c.preparado_id].push(c);});
-        sinComps.forEach(p=>{ p.componentes=cm[p.id]||[]; });
-      }catch(e){}
-    }
-
-    let res=todos.filter(p=>{
-      if(estado&&p.estado!==estado) return false;
-      if(!q) return true;
-      const campos=[String(p.nro_cupon??''),String(p.nro_cupon_nuevo??''),p.cliente_nombre||'',p.forma_farmaceutica||'',...p.componentes.map(c=>c.droga_nombre||'')];
-      return campos.some(v=>v.toLowerCase().includes(q));
-    });
-
-    // Buscar por droga en Supabase si hay query y pocos resultados
-    if(q.length > 1){
-      try{
-        const drogasMatch = await sbGet('drogas?nombre=ilike.*'+encodeURIComponent(q)+'*&select=id');
-        if(drogasMatch.length > 0){
-          const dIds = drogasMatch.map(d=>d.id).join(',');
-          const compIds = await sbGet('componentes?droga_id=in.('+dIds+')&select=preparado_id');
-          const prepIds = [...new Set(compIds.map(c=>c.preparado_id))];
-          const yaEnRes = new Set(res.map(p=>p.id));
-          prepIds.forEach(id=>{
-            if(!yaEnRes.has(id)){
-              const p=todos.find(x=>x.id===id);
-              if(p&&(!estado||p.estado===estado)) res.push(p);
-            }
-          });
-        }
+        res.forEach(p=>{ p.componentes=cm[p.id]||[]; });
       }catch(e){}
     }
 
     setStatus('');
     renderTabla(res);
+
+    if(totalCount > TOPE_RESULTADOS){
+      setStatus(`Mostrando los primeros ${TOPE_RESULTADOS} de ${totalCount} resultados — escribí en el buscador para acotar.`);
+    }
   }
 
   function renderTabla(preparados){
@@ -403,22 +378,7 @@
     btn.disabled=false;btn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar Word`;
   }
 
-  async function sbGet(path,all=false){
-    const h=getAuthHeaders();
-    if(!all){
-      const resp=await fetch(`${SB_URL}/${path}`,{headers:h});
-      if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
-      return resp.json();
-    }
-    const pageSize=1000;let offset=0,out=[],page;
-    do{
-      const resp=await fetch(`${SB_URL}/${path}`,{headers:{...h,'Range-Unit':'items','Range':`${offset}-${offset+pageSize-1}`}});
-      if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
-      page=await resp.json();out=out.concat(page);offset+=pageSize;
-    }while(page.length===pageSize);
-    return out;
-  }
-
+  // sbGet viene de supabase-shared.js
 
   function fmtCupon(p) {
     if (p.nro_cupon_nuevo != null) {
