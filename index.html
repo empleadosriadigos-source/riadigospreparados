@@ -28,11 +28,24 @@
     .drop-zone{position:fixed;top:60px;right:16px;z-index:60;width:120px;height:34px;background:#3a3a3a;border:2px dashed #666;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:6px;color:#aaa;font-size:12px;font-weight:600;transition:background 0.2s,border-color 0.2s,color 0.2s;cursor:default;user-select:none;}
     .drop-zone.drag-active{background:#1A5C3A;border-color:var(--accent);color:#fff;}
     .drop-zone.drag-over{background:var(--accent);border-color:#fff;color:#fff;transform:scale(1.05);}
-    .kanban-wrap{padding:68px 20px 20px;}
+    .kanban-wrap{padding:122px 20px 20px;}
+    .kanban-toolbar{position:sticky;top:52px;z-index:45;background:var(--bg,#F4F1EA);margin:0 -20px;padding:10px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--border);box-shadow:0 2px 6px rgba(0,0,0,0.05);}
+    .kanban-search{flex:1;min-width:200px;position:relative;display:flex;align-items:center;}
+    .kanban-search svg{position:absolute;left:11px;pointer-events:none;opacity:0.5;}
+    .kanban-search input{width:100%;padding:9px 12px 9px 34px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface);}
+    .kanban-search input:focus{outline:none;border-color:var(--accent2);}
+    .kanban-results-count{font-size:12px;color:var(--muted);white-space:nowrap;}
+    .view-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0;}
+    .view-toggle button{border:none;background:var(--surface);padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);}
+    .view-toggle button.active{background:var(--accent2);color:#fff;}
+    .btn-demorados{border:1px solid var(--border);background:var(--surface);padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);display:flex;align-items:center;gap:6px;flex-shrink:0;}
+    .btn-demorados.active{background:#B91C1C;border-color:#B91C1C;color:#fff;}
+    .btn-demorados .dot-demorado{width:8px;height:8px;border-radius:50%;background:linear-gradient(90deg,#F5C518,#B91C1C);}
+    mark.kb-hl{background:#FDE68A;color:inherit;border-radius:2px;padding:0 1px;}
     .kanban-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:stretch;}
-    @media(max-width:800px){.kanban-cols{grid-template-columns:1fr;}}
+    @media(max-width:800px){.kanban-cols{grid-template-columns:1fr;}.kanban-toolbar{position:static;}}
     .col{background:#E8E4DA;border-radius:var(--radius);border:1px solid var(--border);min-height:200px;display:flex;flex-direction:column;}
-    .col-header{padding:12px 14px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);}
+    .col-header{padding:12px 14px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:106px;z-index:40;background:#E8E4DA;border-radius:var(--radius) var(--radius) 0 0;}
     .col-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;}
     .col-dot{width:10px;height:10px;border-radius:50%;}
     .dot-asignar{background:#D97706;}.dot-lab{background:#2563EB;}.dot-retirar{background:var(--accent);}
@@ -41,6 +54,21 @@
     .col-body.drag-over{background:rgba(104,169,204,0.12);border-radius:6px;}
     .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:grab;box-shadow:var(--shadow);transition:box-shadow 0.15s,transform 0.1s;user-select:none;}
     .card:hover{box-shadow:0 4px 14px rgba(0,0,0,0.13);}
+    .card.antig-amarillo{border:2px solid #F5C518;}
+    .card.antig-naranja{border:2px solid #EA7B2C;}
+    .card.antig-rojo{border:2px solid #DC2626;}
+    .card.antig-bordo{border:2px solid #7C1D2E;}
+    .card.card-hidden{display:none!important;}
+    .kanban-cols.view-collapsed .card{padding:10px 14px;}
+    .kanban-cols.view-collapsed .card-contact-row:nth-child(2),
+    .kanban-cols.view-collapsed .card-contact-row:nth-child(3),
+    .kanban-cols.view-collapsed .card-divider,
+    .kanban-cols.view-collapsed .card-receta-header,
+    .kanban-cols.view-collapsed .card-drogas,
+    .kanban-cols.view-collapsed .card-bottom,
+    .kanban-cols.view-collapsed .card-actions{display:none;}
+    .kanban-cols.view-collapsed .card-top{margin-bottom:0;}
+    .kanban-cols.view-collapsed .card-contact{margin-bottom:0;}
     .card.dragging{opacity:0.45;transform:rotate(1.5deg);cursor:grabbing;}
     .card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;}
 
@@ -201,6 +229,20 @@
 
 <div class="kanban-wrap">
   <div id="kanbanStatus"></div>
+  <div class="kanban-toolbar">
+    <div class="kanban-search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="kanbanSearch" placeholder="Buscar por cupón, cliente, teléfono, droga, receta, forma u observaciones..." oninput="renderKanban()">
+    </div>
+    <span class="kanban-results-count" id="kanbanResultsCount"></span>
+    <button class="btn-demorados" id="btnDemorados" onclick="toggleDemorados()">
+      <span class="dot-demorado"></span> Demorados
+    </button>
+    <div class="view-toggle">
+      <button id="btnVistaExpandida" class="active" onclick="setVistaKanban('expandida')">Expandida</button>
+      <button id="btnVistaColapsada" onclick="setVistaKanban('colapsada')">Colapsada</button>
+    </div>
+  </div>
   <div class="kanban-cols" id="kanbanCols" style="display:none;">
     <div class="col">
       <div class="col-header">
@@ -486,25 +528,90 @@
     }
   }
 
+  // ── Búsqueda / vista / antigüedad ────────────────────────────────────
+  let vistaKanban = 'expandida';
+  let soloDemorados = false;
+
+  function setVistaKanban(v) {
+    vistaKanban = v;
+    document.getElementById('kanbanCols').classList.toggle('view-collapsed', v==='colapsada');
+    document.getElementById('btnVistaExpandida').classList.toggle('active', v==='expandida');
+    document.getElementById('btnVistaColapsada').classList.toggle('active', v==='colapsada');
+  }
+
+  function toggleDemorados() {
+    soloDemorados = !soloDemorados;
+    document.getElementById('btnDemorados').classList.toggle('active', soloDemorados);
+    renderKanban();
+  }
+
+  // Antigüedad en días desde el último cambio de estado, y clase de color asociada
+  function antiguedadInfo(p) {
+    const base = p.fecha_cambio_estado || p.fecha_recepcion;
+    if(!base) return {dias:0, clase:null};
+    const ahora = new Date();
+    const fc = new Date(base);
+    const dias = Math.floor((ahora - fc) / 86400000);
+    let clase = null;
+    if(dias>=15) clase='antig-bordo';
+    else if(dias>=10) clase='antig-rojo';
+    else if(dias>=6) clase='antig-naranja';
+    else if(dias>=3) clase='antig-amarillo';
+    return {dias, clase};
+  }
+
+  function normalizar(s){ return String(s??'').toLowerCase(); }
+
+  function coincideBusqueda(p, termino) {
+    if(!termino) return true;
+    const t = normalizar(termino);
+    const campos = [
+      p.nro_cupon, p.nro_cupon_nuevo, p.cliente_nombre, p.cliente_telefono,
+      p.nro_receta, p.forma_farmaceutica, p.observaciones
+    ].map(normalizar);
+    if(campos.some(c => c.includes(t))) return true;
+    return (p.componentes||[]).some(c => normalizar(c.droga_nombre).includes(t));
+  }
+
+  function resaltar(texto, termino) {
+    const s = String(texto??'');
+    if(!termino) return escHtml(s);
+    const t = termino.trim();
+    if(!t) return escHtml(s);
+    const idx = normalizar(s).indexOf(normalizar(t));
+    if(idx===-1) return escHtml(s);
+    return escHtml(s.slice(0,idx)) + '<mark class="kb-hl">' + escHtml(s.slice(idx,idx+t.length)) + '</mark>' + escHtml(s.slice(idx+t.length));
+  }
+
   // ── Render kanban ──────────────────────────────────────────────────────
   function renderKanban() {
     ESTADOS_KANBAN.forEach(e => { document.getElementById(COL_BODY[e]).innerHTML=''; });
     const counts = {'Asignar precio':0,'En laboratorio':0,'Para retirar':0};
+    const termino = document.getElementById('kanbanSearch')?.value.trim() || '';
+    let visibles = 0, total = 0;
     preparados.forEach(p => {
       if(!ESTADOS_KANBAN.includes(p.estado)) return;
+      total++;
+      const {dias, clase} = antiguedadInfo(p);
+      if(soloDemorados && dias<3) return;
+      if(!coincideBusqueda(p, termino)) return;
+      visibles++;
       counts[p.estado]++;
-      document.getElementById(COL_BODY[p.estado]).appendChild(crearTarjeta(p));
+      document.getElementById(COL_BODY[p.estado]).appendChild(crearTarjeta(p, termino, clase, dias));
     });
     ESTADOS_KANBAN.forEach(e => { document.getElementById(COL_COUNT[e]).textContent=counts[e]; });
+    const elCount = document.getElementById('kanbanResultsCount');
+    if(elCount) elCount.textContent = (termino || soloDemorados) ? `${visibles} de ${total}` : '';
     document.getElementById('kanbanCols').style.display='grid';
     initSortable();
   }
 
-  function crearTarjeta(p) {
+  function crearTarjeta(p, termino='', antigClase=null, dias=0) {
     const div = document.createElement('div');
-    div.className='card'; div.draggable=true; div.dataset.id=p.id;
+    div.className='card'+(antigClase?' '+antigClase:''); div.draggable=true; div.dataset.id=p.id;
+    if(antigClase) div.title = `En este estado hace ${dias} día${dias===1?'':'s'}`;
     const drogasHtml = p.componentes.length
-      ? p.componentes.map(c=>`<div class="card-droga-row"><span class="card-droga-nom">${escHtml(c.droga_nombre||'')}</span><span class="card-droga-cant">${c.cantidad||''} ${c.unidad||''}</span></div>`).join('')
+      ? p.componentes.map(c=>`<div class="card-droga-row"><span class="card-droga-nom">${resaltar(c.droga_nombre||'',termino)}</span><span class="card-droga-cant">${c.cantidad||''} ${c.unidad||''}</span></div>`).join('')
       : '<div class="card-droga-row" style="color:var(--muted)">Sin componentes</div>';
     const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:''].filter(Boolean);
     const precio = p.precio_venta?`$${Number(p.precio_venta).toLocaleString('es-AR',{minimumFractionDigits:2})}`:'';
@@ -521,16 +628,16 @@
         <button class="btn-print-card" onclick="imprimirDesdeCard(event,'${p.id}')" title="Imprimir cupón">🖨</button>
       </div>
       <div class="card-contact">
-        <div class="card-contact-row">${svgP}<span class="card-cliente-text">${escHtml(p.cliente_nombre||'—')}</span></div>
-        <div class="card-contact-row">${svgT}<span class="card-tel-text">${escHtml(p.cliente_telefono||'')}</span></div>
+        <div class="card-contact-row">${svgP}<span class="card-cliente-text">${resaltar(p.cliente_nombre||'—',termino)}</span></div>
+        <div class="card-contact-row">${svgT}<span class="card-tel-text">${resaltar(p.cliente_telefono||'',termino)}</span></div>
         <div class="card-contact-row">${svgC}<span class="card-fecha-text">${fmtFecha(p.fecha_recepcion)}</span></div>
       </div>
       <hr class="card-divider"/>
-      ${p.nro_receta?`<div class="card-receta-header"><span class="card-receta-label">Receta</span><span class="card-receta-num"># ${p.nro_receta}</span></div>`:''}
+      ${p.nro_receta?`<div class="card-receta-header"><span class="card-receta-label">Receta</span><span class="card-receta-num"># ${resaltar(p.nro_receta,termino)}</span></div>`:''}
       <div class="card-drogas">${drogasHtml}</div>
       <hr class="card-divider"/>
       <div class="card-bottom">
-        <div class="card-meta">${partes.join(' · ')}</div>
+        <div class="card-meta">${escHtml(partes.join(' · '))}</div>
         <div class="card-precio">${precio}</div>
       </div>
       <div class="card-actions">
@@ -574,11 +681,9 @@
           try {
             await sbPatch('preparados', id, {estado: nuevoEstado});
             p.estado = nuevoEstado;
+            p.fecha_cambio_estado = new Date().toISOString();
             mostrarToast(`✓ Movido a ${nuevoEstado}`, 'ok');
-            // Actualizar contadores
-            const counts = {'Asignar precio':0,'En laboratorio':0,'Para retirar':0};
-            preparados.forEach(x => { if(counts[x.estado]!==undefined) counts[x.estado]++; });
-            ESTADOS_KANBAN.forEach(e => { document.getElementById(COL_COUNT[e]).textContent = counts[e]; });
+            renderKanban();
           } catch(err) {
             mostrarToast('Error: ' + err.message, 'err');
             // Revertir visualmente
@@ -1166,3 +1271,4 @@
   </script>
 </body>
 </html>
+
