@@ -1058,7 +1058,7 @@
       const BOLD_OFF  = [0x1B,0x45,0x00];      // negrita off
       const CENTER    = [0x1B,0x61,0x01];      // centrar
       const LEFT      = [0x1B,0x61,0x00];      // izquierda
-      const CUT       = [0x1D,0x56,0x42,0x00]; // corte
+      const CUT       = [0x1D,0x56,0x00];      // corte total (formato clásico GS V 0, más compatible con clones)
       const LF        = [0x0A];                // salto de línea
       const LINE      = '________________________________';
       // Fuente doble alto para título
@@ -1115,7 +1115,7 @@
         ...((forma||cant) ? linea(forma+(forma&&cant?' - ':'')+cant) : []),
         ...(compsCorto ? linea(compsCorto) : []),
         ...sep(),
-        ...LF,
+        ...LF,...LF,...LF,...LF,
         ...CUT,
       ];
 
@@ -1153,8 +1153,11 @@
         return btoa(String.fromCharCode(...bytes));
       }
 
-      const todosLosDatos = [...datosCli, ...datosFarm];
-      await qz.print(config, [{type:'raw', format:'base64', data: toB64(todosLosDatos)}]);
+      // Se imprimen como dos trabajos separados (en vez de uno solo concatenado)
+      // para darle tiempo al motor del cutter a completar el corte entre cupón y cupón.
+      await qz.print(config, [{type:'raw', format:'base64', data: toB64(datosCli)}]);
+      await new Promise(r => setTimeout(r, 400));
+      await qz.print(config, [{type:'raw', format:'base64', data: toB64(datosFarm)}]);
       mostrarToast('✓ Cupones impresos','ok');
     }catch(e){
       mostrarToast('Error al imprimir: '+e.message,'err');
