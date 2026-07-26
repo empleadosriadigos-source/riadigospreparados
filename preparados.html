@@ -222,15 +222,16 @@
   <div class="modal modal-sm">
     <div class="modal-header"><h2>Repetir preparado</h2><button class="modal-close" onclick="cerrarModal('modalRepetir')">✕</button></div>
     <div class="modal-body">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Se copiará con fecha de hoy.</p>
-      <div class="field-group">
+      <div class="cupon-box">
         <label>Tipo de cupón</label>
-        <div style="display:flex;gap:14px;font-size:13px;">
-          <label style="display:flex;align-items:center;gap:5px;font-weight:normal;"><input type="radio" name="rTipoCupon" value="nuevo" checked onchange="toggleTipoCuponRepetir()"/> Nuevo</label>
-          <label style="display:flex;align-items:center;gap:5px;font-weight:normal;"><input type="radio" name="rTipoCupon" value="viejo" onchange="toggleTipoCuponRepetir()"/> Talonario</label>
+        <div class="cupon-toggle">
+          <label><input type="radio" name="rTipoCupon" value="nuevo" checked onchange="toggleTipoCuponRepetir()"/> Nuevo</label>
+          <label><input type="radio" name="rTipoCupon" value="viejo" onchange="toggleTipoCuponRepetir()"/> Talonario</label>
         </div>
+        <input type="number" id="rCuponViejo" class="cupon-input" placeholder="Número de talonario" min="1" style="display:none;"/>
       </div>
-      <div class="field-group" id="rCuponViejoWrap" style="display:none;"><label>Número de talonario</label><input type="number" id="rCuponViejo" min="1"/></div>
+      <div class="modal-sep"></div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Se copiará con fecha de hoy.</p>
       <div class="field-group">
         <label>¿Mismo cliente?</label>
         <div style="display:flex;gap:14px;font-size:13px;">
@@ -596,7 +597,7 @@
     document.getElementById('rObs').value='';
     document.querySelector('input[name="rTipoCupon"][value="nuevo"]').checked=true;
     document.getElementById('rCuponViejo').value='';
-    document.getElementById('rCuponViejoWrap').style.display='none';
+    document.getElementById('rCuponViejo').style.display='none';
     document.querySelector('input[name="rMismoCliente"][value="si"]').checked=true;
     document.getElementById('rClienteInput').value='';
     document.getElementById('rClienteId').value='';
@@ -606,7 +607,7 @@
     document.getElementById('rTelefonoWrap').style.display='none';
     abrirModal('modalRepetir');
   }
-  function toggleTipoCuponRepetir(){const viejo=document.querySelector('input[name="rTipoCupon"]:checked').value==='viejo';document.getElementById('rCuponViejoWrap').style.display=viejo?'':'none';}
+  function toggleTipoCuponRepetir(){const viejo=document.querySelector('input[name="rTipoCupon"]:checked').value==='viejo';document.getElementById('rCuponViejo').style.display=viejo?'':'none';if(!viejo)document.getElementById('rCuponViejo').value='';}
   function toggleMismoClienteRepetir(){const distinto=document.querySelector('input[name="rMismoCliente"]:checked').value==='no';document.getElementById('rClienteWrap').style.display=distinto?'':'none';document.getElementById('rTelefonoWrap').style.display=distinto?'':'none';}
   function filtrarSSClienteR(){const input=document.getElementById('rClienteInput');const dd=document.getElementById('ssClienteR');renderSSClienteR(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),input.value);posicionarDD(input,dd);dd.classList.add('open');}
   function abrirSSClienteR(){const input=document.getElementById('rClienteInput');const dd=document.getElementById('ssClienteR');renderSSClienteR(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),input.value);posicionarDD(input,dd);dd.classList.add('open');}
