@@ -1275,11 +1275,8 @@
         return btoa(String.fromCharCode(...bytes));
       }
 
-      // Se imprimen como dos trabajos separados (en vez de uno solo concatenado)
-      // para darle tiempo al motor del cutter a completar el corte entre cupón y cupón.
-      await qz.print(config, [{type:'raw', format:'base64', data: toB64(datosCli)}]);
-      await new Promise(r => setTimeout(r, 400));
-      await qz.print(config, [{type:'raw', format:'base64', data: toB64(datosFarm)}]);
+      const todosLosDatos = [...datosCli, ...datosFarm];
+      await qz.print(config, [{type:'raw', format:'base64', data: toB64(todosLosDatos)}]);
       mostrarToast('✓ Cupones impresos','ok');
     }catch(e){
       mostrarToast('Error al imprimir: '+e.message,'err');
