@@ -68,7 +68,10 @@
     .field-group input:focus,.field-group select:focus,.field-group textarea:focus{border-color:var(--accent2);background:#fff;}
     .field-group textarea{resize:vertical;}
     .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-    @media(max-width:500px){.field-row{grid-template-columns:1fr;}}
+    .field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+    @media(max-width:500px){.field-row{grid-template-columns:1fr;}.field-row-3{grid-template-columns:1fr;}}
+    .field-invalid{border-color:var(--danger)!important;}
+    .sec-title-sep{border-top:1px solid var(--border);padding-top:16px;margin-top:18px;}
     .ss-wrap{position:relative;}
     .ss-dropdown{display:none;position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.15);z-index:500;max-height:200px;overflow-y:auto;min-width:200px;}
     .ss-dropdown.open{display:block;}
@@ -106,6 +109,7 @@
       .nav-btn,.btn,.btn-act,.btn-logout,.act-btn{min-height:44px;}
       .modal{width:100%;height:100%;max-width:100%;max-height:100%;border-radius:0;}
       .field-row{grid-template-columns:1fr!important;}
+      .field-row-3{grid-template-columns:1fr!important;}
       .comp-editor-header,.comp-row{grid-template-columns:1fr 70px 80px 28px;}
       table{min-width:700px;}
     }
@@ -180,27 +184,31 @@
   <div class="modal">
     <div class="modal-header"><h2 id="editarTitulo">Editar preparado</h2><button class="modal-close" onclick="cerrarModal('modalEditar')">✕</button></div>
     <div class="modal-body">
+      <div class="sec-title">Cliente y entrega</div>
+      <div class="field-row">
+        <div class="field-group"><label>Cliente</label><div class="ss-wrap"><input type="text" id="eClienteInput" placeholder="Buscar cliente…" oninput="filtrarSSCliente()" onfocus="abrirSSCliente()" autocomplete="off"/><div class="ss-dropdown" id="ssCliente"></div><input type="hidden" id="eClienteId"/></div></div>
+        <div class="field-group"><label>Teléfono <span style="color:var(--danger)">*</span></label><input type="text" id="eTelefono" placeholder="Teléfono del cliente" oninput="this.classList.remove('field-invalid')"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field-group"><label>Fecha de recepción</label><input type="date" id="eFecha"/></div>
+        <div class="field-group"><label>Estado</label><select id="eEstado" style="width:100%"></select></div>
+      </div>
+      <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="ePrecio" min="0" step="any"/></div>
+      <div class="field-group"><label>Observaciones</label><textarea id="eObs" rows="2"></textarea></div>
+
+      <div class="sec-title sec-title-sep">Datos del preparado</div>
       <div class="field-row">
         <div class="field-group" id="eCuponWrap"><label>Nro Cupón (talonario)</label><input type="number" id="eCupon"/></div>
         <div class="field-group"><label>Nro Receta</label><input type="number" id="eReceta"/></div>
       </div>
-      <div class="field-row">
-        <div class="field-group"><label>Cliente</label><div class="ss-wrap"><input type="text" id="eClienteInput" placeholder="Buscar cliente…" oninput="filtrarSSCliente()" onfocus="abrirSSCliente()" autocomplete="off"/><div class="ss-dropdown" id="ssCliente"></div><input type="hidden" id="eClienteId"/></div></div>
-        <div class="field-group"><label>Fecha de recepción</label><input type="date" id="eFecha"/></div>
-      </div>
-      <div class="field-row">
-        <div class="field-group"><label>Forma farmacéutica</label><select id="eForma" style="width:100%" onchange="onFormaChange()"><option value="">— Sin especificar —</option></select></div>
-        <div class="field-group"><label>Estado</label><select id="eEstado" style="width:100%"></select></div>
-      </div>
-      <div class="field-row">
-        <div class="field-group"><label>Cantidad total</label><input type="number" id="eCantTotal" step="any" min="0"/><div class="unidad-hint" id="eUnidadHint"></div></div>
-        <div class="field-group"><label>Unidad</label><select id="eUnidad" style="width:100%"><option value="">— Sin especificar —</option></select></div>
-      </div>
-      <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="ePrecio" min="0" step="any"/></div>
-      <div class="field-group"><label>Observaciones</label><textarea id="eObs" rows="2"></textarea></div>
       <div class="sec-title">Componentes</div>
       <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div>Unidad</div><div></div></div><div id="compRowsEditar"></div></div>
       <button class="btn btn-ghost btn-sm" onclick="agregarCompRow('compRowsEditar')">+ Agregar componente</button>
+      <div class="field-row-3" style="margin-top:14px;">
+        <div class="field-group"><label>Forma farmacéutica</label><select id="eForma" style="width:100%" onchange="onFormaChange()"><option value="">— Sin especificar —</option></select></div>
+        <div class="field-group"><label>Cantidad total</label><input type="number" id="eCantTotal" step="any" min="0"/><div class="unidad-hint" id="eUnidadHint"></div></div>
+        <div class="field-group"><label>Unidad</label><select id="eUnidad" style="width:100%"><option value="">— Sin especificar —</option></select></div>
+      </div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal('modalEditar')">Cancelar</button><button class="btn btn-primary" id="btnGuardarEditar" onclick="guardarEdicion()">Guardar cambios</button></div>
   </div>
@@ -227,7 +235,14 @@
           <label style="display:flex;align-items:center;gap:5px;font-weight:normal;"><input type="radio" name="rMismoCliente" value="no" onchange="toggleMismoClienteRepetir()"/> No</label>
         </div>
       </div>
-      <div class="field-group" id="rClienteWrap" style="display:none;"><label>Cliente</label><div class="ss-wrap"><input type="text" id="rClienteInput" placeholder="Buscar cliente…" oninput="filtrarSSClienteR()" onfocus="abrirSSClienteR()" autocomplete="off"/><div class="ss-dropdown" id="ssClienteR"></div><input type="hidden" id="rClienteId"/></div></div>
+      <div class="field-group" id="rClienteWrap" style="display:none;">
+        <label>Cliente</label>
+        <div class="ss-wrap"><input type="text" id="rClienteInput" placeholder="Buscar cliente…" oninput="filtrarSSClienteR()" onfocus="abrirSSClienteR()" autocomplete="off"/><div class="ss-dropdown" id="ssClienteR"></div><input type="hidden" id="rClienteId"/></div>
+      </div>
+      <div class="field-group" id="rTelefonoWrap" style="display:none;">
+        <label>Teléfono <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="rTelefono" placeholder="Teléfono del cliente" oninput="this.classList.remove('field-invalid')"/>
+      </div>
       <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="rPrecio" min="0"/></div>
       <div class="field-group"><label>Observaciones</label><textarea id="rObs" rows="2"></textarea></div>
     </div>
@@ -530,6 +545,8 @@
     document.getElementById('eUnidadHint').textContent='';
     document.getElementById('eClienteInput').value=p.cliente_nombre??'';
     document.getElementById('eClienteId').value=p.cliente_id??'';
+    document.getElementById('eTelefono').value=p.cliente_telefono??'';
+    document.getElementById('eTelefono').classList.remove('field-invalid');
     const cont=document.getElementById('compRowsEditar');cont.innerHTML='<div style="color:var(--muted);padding:8px;font-size:13px;">Cargando componentes…</div>';
     abrirModal('modalEditar');
     await cargarComponentes(p);
@@ -538,9 +555,20 @@
   }
 
   async function guardarEdicion(){
+    const cliId=document.getElementById('eClienteId').value;
+    const telInput=document.getElementById('eTelefono');
+    const telVal=telInput.value.trim();
+    if(cliId && !telVal){telInput.classList.add('field-invalid');mostrarToast('Completá el teléfono del cliente','err');return;}
+    telInput.classList.remove('field-invalid');
     const btn=document.getElementById('btnGuardarEditar');btn.disabled=true;btn.textContent='Guardando…';
     try{
-      const cliId=document.getElementById('eClienteId').value;
+      if(cliId){
+        const cliActual=clientes.find(c=>c.id===cliId);
+        if(cliActual && (cliActual.telefono||'')!==telVal){
+          await sbPatch('clientes',cliId,{telefono:telVal});
+          cliActual.telefono=telVal;
+        }
+      }
       await sbPatch('preparados',prepActual.id,limpiar({// nro_cupon_nuevo nunca se edita
         nro_cupon:prepActual.nro_cupon_nuevo==null?(parseInt(document.getElementById('eCupon').value)||null):prepActual.nro_cupon,nro_receta:parseInt(document.getElementById('eReceta').value)||null,cliente_id:cliId||null,fecha_recepcion:document.getElementById('eFecha').value||null,estado:document.getElementById('eEstado').value||null,forma_farmaceutica:document.getElementById('eForma').value||null,cantidad_total:parseFloat(document.getElementById('eCantTotal').value)||null,unidad:document.getElementById('eUnidad').value||null,precio_venta:parseFloat(document.getElementById('ePrecio').value)||null,observaciones:document.getElementById('eObs').value}));
       const rows=document.querySelectorAll('#compRowsEditar .comp-row');
@@ -569,13 +597,16 @@
     document.getElementById('rClienteInput').value='';
     document.getElementById('rClienteId').value='';
     document.getElementById('rClienteWrap').style.display='none';
+    document.getElementById('rTelefono').value='';
+    document.getElementById('rTelefono').classList.remove('field-invalid');
+    document.getElementById('rTelefonoWrap').style.display='none';
     abrirModal('modalRepetir');
   }
   function toggleTipoCuponRepetir(){const viejo=document.querySelector('input[name="rTipoCupon"]:checked').value==='viejo';document.getElementById('rCuponViejoWrap').style.display=viejo?'':'none';}
-  function toggleMismoClienteRepetir(){const distinto=document.querySelector('input[name="rMismoCliente"]:checked').value==='no';document.getElementById('rClienteWrap').style.display=distinto?'':'none';}
+  function toggleMismoClienteRepetir(){const distinto=document.querySelector('input[name="rMismoCliente"]:checked').value==='no';document.getElementById('rClienteWrap').style.display=distinto?'':'none';document.getElementById('rTelefonoWrap').style.display=distinto?'':'none';}
   function filtrarSSClienteR(){const input=document.getElementById('rClienteInput');const dd=document.getElementById('ssClienteR');renderSSClienteR(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),input.value);posicionarDD(input,dd);dd.classList.add('open');}
   function abrirSSClienteR(){const input=document.getElementById('rClienteInput');const dd=document.getElementById('ssClienteR');renderSSClienteR(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),input.value);posicionarDD(input,dd);dd.classList.add('open');}
-  function renderSSClienteR(dd,fil,texto){dd.innerHTML='';fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById('rClienteInput').value=c.nombre;document.getElementById('rClienteId').value=c.id;dd.classList.remove('open');};dd.appendChild(d);});if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}}
+  function renderSSClienteR(dd,fil,texto){dd.innerHTML='';fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById('rClienteInput').value=c.nombre;document.getElementById('rClienteId').value=c.id;const t=document.getElementById('rTelefono');t.value=c.telefono||'';t.classList.remove('field-invalid');dd.classList.remove('open');};dd.appendChild(d);});if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}}
 
   async function confirmarRepetir(){
     const tipoCupon=document.querySelector('input[name="rTipoCupon"]:checked').value;
@@ -588,9 +619,14 @@
     }
 
     let clienteId=prepActual.cliente_id;
+    let telVal=null;
     if(!mismoCliente){
       clienteId=document.getElementById('rClienteId').value;
       if(!clienteId){mostrarToast('Elegí un cliente','err');return;}
+      const telInput=document.getElementById('rTelefono');
+      telVal=telInput.value.trim();
+      if(!telVal){telInput.classList.add('field-invalid');mostrarToast('Completá el teléfono del cliente','err');return;}
+      telInput.classList.remove('field-invalid');
     }
 
     let cupon=null;
@@ -606,6 +642,13 @@
 
     const btn=document.getElementById('btnRepetirConfirm');btn.disabled=true;btn.textContent='Creando…';
     try{
+      if(!mismoCliente && telVal){
+        const cliActual=clientes.find(c=>c.id===clienteId);
+        if(cliActual && (cliActual.telefono||'')!==telVal){
+          await sbPatch('clientes',clienteId,{telefono:telVal});
+          cliActual.telefono=telVal;
+        }
+      }
       const p=prepActual;const hoy=new Date().toISOString().slice(0,10);
       const nuevo=await sbPost('preparados',limpiar({
         nro_cupon_nuevo:tipoCupon==='nuevo'?cupon:null,
@@ -680,7 +723,7 @@
 
   function filtrarSSCliente(){const input=document.getElementById('eClienteInput');const dd=document.getElementById('ssCliente');renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),input.value);posicionarDD(input,dd);dd.classList.add('open');}
   function abrirSSCliente(){const input=document.getElementById('eClienteInput');const dd=document.getElementById('ssCliente');renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),input.value);posicionarDD(input,dd);dd.classList.add('open');}
-  function renderSSCliente(dd,fil,texto){dd.innerHTML='';fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById('eClienteInput').value=c.nombre;document.getElementById('eClienteId').value=c.id;dd.classList.remove('open');};dd.appendChild(d);});if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}}
+  function renderSSCliente(dd,fil,texto){dd.innerHTML='';fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById('eClienteInput').value=c.nombre;document.getElementById('eClienteId').value=c.id;const t=document.getElementById('eTelefono');t.value=c.telefono||'';t.classList.remove('field-invalid');dd.classList.remove('open');};dd.appendChild(d);});if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}}
   function filtrarSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
   function abrirSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
   function renderSSComp(dd,fil,idx,texto){dd.innerHTML='';fil.forEach(d=>{const div=document.createElement('div');div.className='ss-option';div.textContent=d.nombre;div.onmousedown=e=>{e.preventDefault();const inp=document.querySelector(`.ss-input[data-idx="${idx}"]`);const hid=document.querySelector(`.comp-drug-id[data-idx="${idx}"]`);if(inp)inp.value=d.nombre;if(hid)hid.value=d.id;dd.classList.remove('open');};dd.appendChild(div);});if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}const act=document.createElement('div');act.className='ss-action';act.textContent='＋ Crear droga nueva';act.onmousedown=e=>{e.preventDefault();dd.classList.remove('open');cbDrogaIdx=idx;document.getElementById('dNombre').value=texto;abrirModal('modalDroga');};dd.appendChild(act);}
@@ -778,3 +821,4 @@
 </script>
 </body>
 </html>
+
