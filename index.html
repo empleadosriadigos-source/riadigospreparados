@@ -125,7 +125,12 @@
     .field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
     @media(max-width:500px){.field-row{grid-template-columns:1fr;}.field-row-3{grid-template-columns:1fr;}}
     .field-invalid{border-color:var(--danger)!important;}
-    .sec-title-sep{border-top:1px solid var(--border);padding-top:16px;margin-top:18px;}
+    .modal-sep{border-top:1px solid var(--border);margin:20px 0;}
+    .cupon-box{text-align:center;}
+    .cupon-box label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px;}
+    .cupon-toggle{display:flex;justify-content:center;gap:18px;margin-bottom:10px;}
+    .cupon-toggle label{font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--text);text-transform:none;letter-spacing:normal;margin-bottom:0;}
+    .cupon-input{max-width:180px;margin:0 auto;text-align:center;font-size:16px;font-weight:700;}
     .ss-wrap{position:relative;}
     .ss-dropdown{display:none;position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.15);z-index:500;max-height:200px;overflow-y:auto;min-width:200px;}
     .ss-dropdown.open{display:block;}
@@ -276,7 +281,15 @@
       <button class="modal-close" onclick="cerrarModal('modalPreparado')">✕</button>
     </div>
     <div class="modal-body">
-      <div class="sec-title">Cliente y entrega</div>
+      <div class="cupon-box">
+        <label>Nro Cupón <span style="color:var(--danger)">*</span></label>
+        <div class="cupon-toggle">
+          <label><input type="radio" name="tipoCupon" value="nuevo" id="tipoCuponNuevo" checked onchange="toggleTipoCupon()"> Nuevo</label>
+          <label><input type="radio" name="tipoCupon" value="viejo" id="tipoCuponViejo" onchange="toggleTipoCupon()"> Talonario</label>
+        </div>
+        <input type="number" id="pCupon" class="cupon-input" placeholder="Número de talonario" style="display:none;"/>
+      </div>
+      <div class="modal-sep"></div>
       <div class="field-row">
         <div class="field-group">
           <label>Cliente <span style="color:var(--danger)">*</span></label>
@@ -301,22 +314,8 @@
       <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="pPrecio" min="0" step="any"/></div>
       <div class="field-group"><label>Observaciones</label><textarea id="pObs" rows="2"></textarea></div>
 
-      <div class="sec-title sec-title-sep">Datos del preparado</div>
-      <div class="field-row">
-        <div class="field-group">
-          <label>Nro Cupón <span style="color:var(--danger)">*</span></label>
-          <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
-            <label style="font-size:12px;font-weight:500;display:flex;align-items:center;gap:4px;cursor:pointer;">
-              <input type="radio" name="tipoCupon" value="nuevo" id="tipoCuponNuevo" checked onchange="toggleTipoCupon()"> Nuevo
-            </label>
-            <label style="font-size:12px;font-weight:500;display:flex;align-items:center;gap:4px;cursor:pointer;">
-              <input type="radio" name="tipoCupon" value="viejo" id="tipoCuponViejo" onchange="toggleTipoCupon()"> Talonario
-            </label>
-          </div>
-          <input type="number" id="pCupon" placeholder="Número de talonario" style="display:none;"/>
-        </div>
-        <div class="field-group"><label>Nro Receta</label><input type="number" id="pReceta"/></div>
-      </div>
+      <div class="modal-sep"></div>
+      <div class="field-group"><label>Nro Receta</label><input type="number" id="pReceta"/></div>
       <div class="sec-title">Componentes</div>
       <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div>Unidad</div><div></div></div><div id="compRowsNuevo"></div></div>
       <button class="btn btn-ghost btn-sm" onclick="agregarCompRow('compRowsNuevo')">+ Agregar componente</button>
@@ -424,7 +423,10 @@
       <button class="modal-close" onclick="cerrarModal('modalEditar')">✕</button>
     </div>
     <div class="modal-body">
-      <div class="sec-title">Cliente y entrega</div>
+      <div class="cupon-box" id="eCuponBox">
+        <div class="field-group" id="eCuponWrap" style="margin-bottom:0;"><label>Nro Cupón (talonario)</label><input type="number" id="eCupon" class="cupon-input"/></div>
+      </div>
+      <div class="modal-sep" id="eCuponSep"></div>
       <div class="field-row">
         <div class="field-group">
           <label>Cliente</label>
@@ -449,11 +451,8 @@
       <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="ePrecio" min="0" step="any"/></div>
       <div class="field-group"><label>Observaciones</label><textarea id="eObs" rows="2"></textarea></div>
 
-      <div class="sec-title sec-title-sep">Datos del preparado</div>
-      <div class="field-row">
-        <div class="field-group" id="eCuponWrap"><label>Nro Cupón (talonario)</label><input type="number" id="eCupon"/></div>
-        <div class="field-group"><label>Nro Receta</label><input type="number" id="eReceta"/></div>
-      </div>
+      <div class="modal-sep"></div>
+      <div class="field-group"><label>Nro Receta</label><input type="number" id="eReceta"/></div>
       <div class="sec-title">Componentes</div>
       <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div>Unidad</div><div></div></div><div id="compRowsEditar"></div></div>
       <button class="btn btn-ghost btn-sm" onclick="agregarCompRow('compRowsEditar')">+ Agregar componente</button>
@@ -783,7 +782,8 @@
     document.getElementById('editarTitulo').textContent=`Editar preparado ${p.nro_cupon_nuevo!=null?'#'+p.nro_cupon_nuevo:'T'+p.nro_cupon}`;
     document.getElementById('eCupon').value=p.nro_cupon??'';
     const esCuponNuevo = p.nro_cupon_nuevo != null;
-    document.getElementById('eCuponWrap').style.display = esCuponNuevo ? 'none' : '';
+    document.getElementById('eCuponBox').style.display = esCuponNuevo ? 'none' : '';
+    document.getElementById('eCuponSep').style.display = esCuponNuevo ? 'none' : '';
     document.getElementById('eCupon').readOnly = esCuponNuevo;
     document.getElementById('eReceta').value=p.nro_receta??'';
     document.getElementById('eFecha').value=p.fecha_recepcion??'';
@@ -1126,9 +1126,6 @@
     dd.innerHTML='';
     fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById(`${pref}ClienteInput`).value=c.nombre;document.getElementById(`${pref}ClienteId`).value=c.id;aplicarTelefonoCliente(pref,c.telefono);dd.classList.remove('open');};dd.appendChild(d);});
     if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}
-    const act=document.createElement('div');act.className='ss-action';act.textContent='＋ Crear cliente nuevo';
-    act.onmousedown=e=>{e.preventDefault();dd.classList.remove('open');document.getElementById('cNombre').value=texto;clienteCB=cli=>{document.getElementById(`${pref}ClienteInput`).value=cli.nombre;document.getElementById(`${pref}ClienteId`).value=cli.id;aplicarTelefonoCliente(pref,cli.telefono);};abrirFormCliente(null);abrirModal('modalClientes');};
-    dd.appendChild(act);
   }
   function aplicarTelefonoCliente(pref,telefono){
     const telInp=document.getElementById(`${pref}Telefono`);
