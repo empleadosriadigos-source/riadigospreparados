@@ -206,10 +206,6 @@
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     Cargar preparado
   </button>
-  <button class="nav-btn nav-btn-blue" onclick="abrirModalClientes()">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-    Clientes
-  </button>
   <div class="topbar-sep"></div>
   <a class="nav-btn nav-btn-dark" href="reporte.html">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
@@ -428,34 +424,44 @@
       <button class="modal-close" onclick="cerrarModal('modalEditar')">✕</button>
     </div>
     <div class="modal-body">
+      <div class="sec-title">Cliente y entrega</div>
+      <div class="field-row">
+        <div class="field-group">
+          <label>Cliente</label>
+          <div style="display:flex;gap:6px;">
+            <div class="ss-wrap" style="flex:1;">
+              <input type="text" id="eClienteInput" placeholder="Buscar cliente…" oninput="filtrarSSCliente('e')" onfocus="abrirSSCliente('e')" autocomplete="off"/>
+              <div class="ss-dropdown" id="ssCliente_e"></div>
+              <input type="hidden" id="eClienteId"/>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm" style="white-space:nowrap;" onclick="abrirNuevoClienteDesdePrep('e')">＋ Nuevo</button>
+          </div>
+        </div>
+        <div class="field-group">
+          <label>Teléfono <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="eTelefono" placeholder="Teléfono del cliente" oninput="this.classList.remove('field-invalid')"/>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-group"><label>Fecha de recepción</label><input type="date" id="eFecha"/></div>
+        <div class="field-group"><label>Estado</label><select id="eEstado"></select></div>
+      </div>
+      <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="ePrecio" min="0" step="any"/></div>
+      <div class="field-group"><label>Observaciones</label><textarea id="eObs" rows="2"></textarea></div>
+
+      <div class="sec-title sec-title-sep">Datos del preparado</div>
       <div class="field-row">
         <div class="field-group" id="eCuponWrap"><label>Nro Cupón (talonario)</label><input type="number" id="eCupon"/></div>
         <div class="field-group"><label>Nro Receta</label><input type="number" id="eReceta"/></div>
       </div>
-      <div class="field-row">
-        <div class="field-group">
-          <label>Cliente</label>
-          <div class="ss-wrap">
-            <input type="text" id="eClienteInput" placeholder="Buscar cliente…" oninput="filtrarSSCliente('e')" onfocus="abrirSSCliente('e')" autocomplete="off"/>
-            <div class="ss-dropdown" id="ssCliente_e"></div>
-            <input type="hidden" id="eClienteId"/>
-          </div>
-        </div>
-        <div class="field-group"><label>Fecha de recepción</label><input type="date" id="eFecha"/></div>
-      </div>
-      <div class="field-row">
-        <div class="field-group"><label>Forma farmacéutica</label><select id="eForma" onchange="onFormaChange('e')"><option value="">— Sin especificar —</option></select></div>
-        <div class="field-group"><label>Estado</label><select id="eEstado"></select></div>
-      </div>
-      <div class="field-row">
-        <div class="field-group"><label>Cantidad total</label><input type="number" id="eCantTotal" step="any" min="0"/><div class="unidad-hint" id="eUnidadHint"></div></div>
-        <div class="field-group"><label>Unidad</label><select id="eUnidad"><option value="">— Sin especificar —</option></select></div>
-      </div>
-      <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="ePrecio" min="0" step="any"/></div>
-      <div class="field-group"><label>Observaciones</label><textarea id="eObs" rows="2"></textarea></div>
       <div class="sec-title">Componentes</div>
       <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div>Unidad</div><div></div></div><div id="compRowsEditar"></div></div>
       <button class="btn btn-ghost btn-sm" onclick="agregarCompRow('compRowsEditar')">+ Agregar componente</button>
+      <div class="field-row-3" style="margin-top:14px;">
+        <div class="field-group"><label>Forma farmacéutica</label><select id="eForma" onchange="onFormaChange('e')"><option value="">— Sin especificar —</option></select></div>
+        <div class="field-group"><label>Cantidad total</label><input type="number" id="eCantTotal" step="any" min="0"/><div class="unidad-hint" id="eUnidadHint"></div></div>
+        <div class="field-group"><label>Unidad</label><select id="eUnidad"><option value="">— Sin especificar —</option></select></div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="cerrarModal('modalEditar')">Cancelar</button>
@@ -790,6 +796,8 @@
     document.getElementById('eUnidadHint').textContent='';
     document.getElementById('eClienteInput').value=p.cliente_nombre??'';
     document.getElementById('eClienteId').value=p.cliente_id??'';
+    document.getElementById('eTelefono').value=p.cliente_telefono??'';
+    document.getElementById('eTelefono').classList.remove('field-invalid');
     const cont=document.getElementById('compRowsEditar');cont.innerHTML='<div style="color:var(--muted);padding:8px;font-size:13px;">Cargando componentes…</div>';
     abrirModal('modalEditar');
     await cargarComponentes(p);
@@ -813,9 +821,21 @@
   }
 
   async function guardarEdicion(){
+    const cliId=document.getElementById('eClienteId').value;
+    const telInput=document.getElementById('eTelefono');
+    const telVal=telInput.value.trim();
+    if(cliId && !telVal){telInput.classList.add('field-invalid');mostrarToast('Completá el teléfono del cliente','err');return;}
+    telInput.classList.remove('field-invalid');
     const btn=document.getElementById('btnGuardarEditar');btn.disabled=true;btn.textContent='Guardando…';
     try{
-      const cliId=document.getElementById('eClienteId').value;
+      if(cliId){
+        const cliActual=clientes.find(c=>c.id===cliId);
+        if(cliActual && (cliActual.telefono||'')!==telVal){
+          await sbPatch('clientes',cliId,{telefono:telVal});
+          cliActual.telefono=telVal;
+          preparados.filter(p=>p.cliente_id===cliId).forEach(p=>{p.cliente_telefono=telVal;});
+        }
+      }
       await sbPatch('preparados',prepActual.id,limpiar({
         nro_cupon:prepActual.nro_cupon_nuevo==null?(parseInt(document.getElementById('eCupon').value)||null):prepActual.nro_cupon,
         nro_receta:parseInt(document.getElementById('eReceta').value)||null,
