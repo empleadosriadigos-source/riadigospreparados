@@ -122,7 +122,10 @@
     .field-group input:focus,.field-group select:focus,.field-group textarea:focus{border-color:var(--accent2);background:#fff;}
     .field-group textarea{resize:vertical;}
     .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-    @media(max-width:500px){.field-row{grid-template-columns:1fr;}}
+    .field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+    @media(max-width:500px){.field-row{grid-template-columns:1fr;}.field-row-3{grid-template-columns:1fr;}}
+    .field-invalid{border-color:var(--danger)!important;}
+    .sec-title-sep{border-top:1px solid var(--border);padding-top:16px;margin-top:18px;}
     .ss-wrap{position:relative;}
     .ss-dropdown{display:none;position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.15);z-index:500;max-height:200px;overflow-y:auto;min-width:200px;}
     .ss-dropdown.open{display:block;}
@@ -169,6 +172,7 @@
       .nav-btn,.btn,#btnActualizar,.btn-logout{min-height:44px;}
       .modal{width:100%;height:100%;max-width:100%;max-height:100%;border-radius:0;}
       .field-row{grid-template-columns:1fr!important;}
+      .field-row-3{grid-template-columns:1fr!important;}
       .comp-editor-header,.comp-row{grid-template-columns:1fr 70px 80px 28px;}
     }
   </style>
@@ -276,6 +280,32 @@
       <button class="modal-close" onclick="cerrarModal('modalPreparado')">✕</button>
     </div>
     <div class="modal-body">
+      <div class="sec-title">Cliente y entrega</div>
+      <div class="field-row">
+        <div class="field-group">
+          <label>Cliente <span style="color:var(--danger)">*</span></label>
+          <div style="display:flex;gap:6px;">
+            <div class="ss-wrap" style="flex:1;">
+              <input type="text" id="pClienteInput" placeholder="Buscar cliente…" oninput="filtrarSSCliente('p')" onfocus="abrirSSCliente('p')" autocomplete="off"/>
+              <div class="ss-dropdown" id="ssCliente_p"></div>
+              <input type="hidden" id="pClienteId"/>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm" style="white-space:nowrap;" onclick="abrirNuevoClienteDesdePrep('p')">＋ Nuevo</button>
+          </div>
+        </div>
+        <div class="field-group">
+          <label>Teléfono <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="pTelefono" placeholder="Teléfono del cliente" oninput="this.classList.remove('field-invalid')"/>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-group"><label>Fecha de recepción <span style="color:var(--danger)">*</span></label><input type="date" id="pFecha"/></div>
+        <div class="field-group"><label>Estado inicial</label><select id="pEstado"></select></div>
+      </div>
+      <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="pPrecio" min="0" step="any"/></div>
+      <div class="field-group"><label>Observaciones</label><textarea id="pObs" rows="2"></textarea></div>
+
+      <div class="sec-title sec-title-sep">Datos del preparado</div>
       <div class="field-row">
         <div class="field-group">
           <label>Nro Cupón <span style="color:var(--danger)">*</span></label>
@@ -291,22 +321,11 @@
         </div>
         <div class="field-group"><label>Nro Receta</label><input type="number" id="pReceta"/></div>
       </div>
-      <div class="field-row">
-        <div class="field-group">
-          <label>Cliente <span style="color:var(--danger)">*</span></label>
-          <div class="ss-wrap">
-            <input type="text" id="pClienteInput" placeholder="Buscar cliente…" oninput="filtrarSSCliente('p')" onfocus="abrirSSCliente('p')" autocomplete="off"/>
-            <div class="ss-dropdown" id="ssCliente_p"></div>
-            <input type="hidden" id="pClienteId"/>
-          </div>
-        </div>
-        <div class="field-group"><label>Fecha de recepción <span style="color:var(--danger)">*</span></label><input type="date" id="pFecha"/></div>
-      </div>
-      <div class="field-row">
+      <div class="sec-title">Componentes</div>
+      <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div>Unidad</div><div></div></div><div id="compRowsNuevo"></div></div>
+      <button class="btn btn-ghost btn-sm" onclick="agregarCompRow('compRowsNuevo')">+ Agregar componente</button>
+      <div class="field-row-3" style="margin-top:14px;">
         <div class="field-group"><label>Forma farmacéutica</label><select id="pForma" onchange="onFormaChange('p')"><option value="">— Sin especificar —</option></select></div>
-        <div class="field-group"><label>Estado inicial</label><select id="pEstado"></select></div>
-      </div>
-      <div class="field-row">
         <div class="field-group">
           <label>Cantidad total</label>
           <input type="number" id="pCantTotal" step="any" min="0"/>
@@ -314,11 +333,6 @@
         </div>
         <div class="field-group"><label>Unidad</label><select id="pUnidad"><option value="">— Sin especificar —</option></select></div>
       </div>
-      <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="pPrecio" min="0" step="any"/></div>
-      <div class="field-group"><label>Observaciones</label><textarea id="pObs" rows="2"></textarea></div>
-      <div class="sec-title">Componentes</div>
-      <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div>Unidad</div><div></div></div><div id="compRowsNuevo"></div></div>
-      <button class="btn btn-ghost btn-sm" onclick="agregarCompRow('compRowsNuevo')">+ Agregar componente</button>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="cerrarModal('modalPreparado')">Cancelar</button>
@@ -861,8 +875,18 @@
     }
     const cliId=document.getElementById('pClienteId').value;
     if(!cliId){mostrarToast('Seleccioná un cliente','err');return;}
+    const telInput=document.getElementById('pTelefono');
+    const telVal=telInput.value.trim();
+    if(!telVal){telInput.classList.add('field-invalid');mostrarToast('Completá el teléfono del cliente','err');return;}
+    telInput.classList.remove('field-invalid');
     const btn=document.getElementById('btnGuardarPrep');btn.disabled=true;btn.textContent='Guardando…';
     try{
+      const cliActual=clientes.find(c=>c.id===cliId);
+      if(cliActual && (cliActual.telefono||'')!==telVal){
+        await sbPatch('clientes',cliId,{telefono:telVal});
+        cliActual.telefono=telVal;
+        preparados.filter(p=>p.cliente_id===cliId).forEach(p=>{p.cliente_telefono=telVal;});
+      }
       const nuevoPrep=await sbPost('preparados',limpiar({
         nro_cupon_nuevo:tipoNuevo?cupon:null,
         nro_cupon:tipoNuevo?null:cupon,
@@ -903,6 +927,7 @@
   function limpiarFormPreparado(){
     ['pCupon','pReceta','pCantTotal','pPrecio','pObs'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('pClienteInput').value='';document.getElementById('pClienteId').value='';
+    document.getElementById('pTelefono').value='';document.getElementById('pTelefono').classList.remove('field-invalid');
     document.getElementById('pForma').value='';document.getElementById('pUnidad').value='';
     document.getElementById('pUnidadHint').textContent='';
     document.getElementById('pFecha').value=new Date().toISOString().slice(0,10);
@@ -1079,11 +1104,27 @@
   function abrirSSCliente(pref){const input=document.getElementById(`${pref}ClienteInput`);const dd=document.getElementById(`ssCliente_${pref}`);renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),pref,input.value);posicionarDD(input,dd);dd.classList.add('open');}
   function renderSSCliente(dd,fil,pref,texto){
     dd.innerHTML='';
-    fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById(`${pref}ClienteInput`).value=c.nombre;document.getElementById(`${pref}ClienteId`).value=c.id;dd.classList.remove('open');};dd.appendChild(d);});
+    fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById(`${pref}ClienteInput`).value=c.nombre;document.getElementById(`${pref}ClienteId`).value=c.id;aplicarTelefonoCliente(pref,c.telefono);dd.classList.remove('open');};dd.appendChild(d);});
     if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}
     const act=document.createElement('div');act.className='ss-action';act.textContent='＋ Crear cliente nuevo';
-    act.onmousedown=e=>{e.preventDefault();dd.classList.remove('open');document.getElementById('cNombre').value=texto;clienteCB=cli=>{document.getElementById(`${pref}ClienteInput`).value=cli.nombre;document.getElementById(`${pref}ClienteId`).value=cli.id;};abrirFormCliente(null);};
+    act.onmousedown=e=>{e.preventDefault();dd.classList.remove('open');document.getElementById('cNombre').value=texto;clienteCB=cli=>{document.getElementById(`${pref}ClienteInput`).value=cli.nombre;document.getElementById(`${pref}ClienteId`).value=cli.id;aplicarTelefonoCliente(pref,cli.telefono);};abrirFormCliente(null);abrirModal('modalClientes');};
     dd.appendChild(act);
+  }
+  function aplicarTelefonoCliente(pref,telefono){
+    const telInp=document.getElementById(`${pref}Telefono`);
+    if(!telInp) return;
+    telInp.value=telefono||'';
+    telInp.classList.remove('field-invalid');
+  }
+  function abrirNuevoClienteDesdePrep(pref){
+    document.getElementById('cNombre').value='';
+    clienteCB=cli=>{
+      document.getElementById(`${pref}ClienteInput`).value=cli.nombre;
+      document.getElementById(`${pref}ClienteId`).value=cli.id;
+      aplicarTelefonoCliente(pref,cli.telefono);
+    };
+    abrirFormCliente(null);
+    abrirModal('modalClientes');
   }
   function filtrarSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);if(!input.value.trim()){dd.classList.remove('open');return;}renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())).slice(0,50),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
   function abrirSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);if(!input.value.trim()){dd.classList.remove('open');return;}renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
@@ -1285,4 +1326,5 @@
   </script>
 </body>
 </html>
+
 
