@@ -148,6 +148,10 @@
     .comp-row input,.comp-row select{padding:5px 8px;font-size:12px;border:1px solid var(--border);border-radius:5px;background:var(--bg);outline:none;width:100%;}
     .comp-row input:focus,.comp-row select:focus{border-color:var(--accent2);}
     .btn-del-comp{background:none;border:none;color:var(--danger);cursor:pointer;font-size:18px;line-height:1;padding:2px;}
+    .comp-cant-cell{display:flex;flex-direction:column;gap:3px;}
+    .csp-opts{display:none;gap:3px;}
+    .csp-btn{flex:1;font-size:10px;padding:3px 0;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--muted);cursor:pointer;line-height:1.2;}
+    .csp-btn.active{background:var(--accent2);color:#fff;border-color:var(--accent2);}
     .unidad-hint{font-size:11px;color:var(--accent2);margin-top:3px;}
     .btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;}
     .btn:hover:not(:disabled){opacity:0.85;}
@@ -804,11 +808,6 @@
     cont.innerHTML='';
     p.componentes.forEach(c=>{
       agregarCompRow('compRowsEditar',c.id,c.droga_nombre||'',c.droga_id,c.cantidad??'',c.unidad??'');
-      if(c.unidad==='c.s.p'){
-        const rows=document.querySelectorAll('#compRowsEditar .comp-row');
-        const last=rows[rows.length-1];
-        if(last){const ci=last.querySelector('.comp-cant');ci.readOnly=true;ci.style.opacity='0.6';}
-      }
     });
   }
 
@@ -1086,20 +1085,33 @@
   function onUnidadCompChange(sel){
     const row = sel.closest('.comp-row');
     const cantInput = row.querySelector('.comp-cant');
+    const opts = row.querySelector('.csp-opts');
     if(sel.value === 'c.s.p'){
-      // Obtener cantidad total del preparado según el modal activo
-      const contId = row.closest('[id]').id;
-      const pref = contId.includes('Nuevo') ? 'p' : 'p';
-      const cantTotal = contId.includes('Nuevo')
-        ? parseFloat(document.getElementById('pCantTotal').value) || ''
-        : parseFloat(document.getElementById('eCantTotal').value) || '';
-      cantInput.value = cantTotal;
+      opts.style.display = 'flex';
+      Array.from(opts.children).forEach(b=>b.classList.remove('active'));
+      cantInput.value = '';
       cantInput.readOnly = true;
       cantInput.style.opacity = '0.6';
     } else {
+      opts.style.display = 'none';
+      Array.from(opts.children).forEach(b=>b.classList.remove('active'));
       cantInput.readOnly = false;
       cantInput.style.opacity = '';
     }
+  }
+  function elegirCsp(btn, tipo){
+    const row = btn.closest('.comp-row');
+    const cantInput = row.querySelector('.comp-cant');
+    const opts = row.querySelector('.csp-opts');
+    const contId = row.closest('[id]').id;
+    if(tipo === '100'){
+      cantInput.value = 100;
+    } else {
+      const cantTotal = obtenerCantTotalDeContenedor(contId);
+      cantInput.value = cantTotal;
+    }
+    Array.from(opts.children).forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
   }
   function agregarCompRow(contId,recId='',dNom='',dId='',cant='',unid=''){
     const cont=document.getElementById(contId);
@@ -1113,10 +1125,33 @@
         <div class="ss-dropdown" id="ssComp_${idx}"></div>
         <input type="hidden" class="comp-drug-id" data-idx="${idx}" value="${dId}"/>
       </div>
-      <input type="number" class="comp-cant" value="${cant}" placeholder="Cant." step="any" min="0"/>
+      <div class="comp-cant-cell">
+        <input type="number" class="comp-cant" value="${cant}" placeholder="Cant." step="any" min="0"/>
+        <div class="csp-opts">
+          <button type="button" class="csp-btn" onclick="elegirCsp(this,'100')">100</button>
+          <button type="button" class="csp-btn" onclick="elegirCsp(this,'total')">Total</button>
+        </div>
+      </div>
       <select class="comp-unid" onchange="onUnidadCompChange(this)">${unidOpts}</select>
       <button class="btn-del-comp" onclick="this.closest('.comp-row').remove()">×</button>`;
     cont.appendChild(div);
+    if(unid==='c.s.p'){
+      const cantInput=div.querySelector('.comp-cant');
+      const opts=div.querySelector('.csp-opts');
+      opts.style.display='flex';
+      cantInput.readOnly=true;cantInput.style.opacity='0.6';
+      const cantTotal=obtenerCantTotalDeContenedor(contId);
+      const valNum=parseFloat(cant);
+      const btn100=opts.children[0],btnTotal=opts.children[1];
+      if(cantTotal!=='' && valNum===cantTotal){btnTotal.classList.add('active');}
+      else if(valNum===100){btn100.classList.add('active');}
+    }
+  }
+  function obtenerCantTotalDeContenedor(contId){
+    const esNuevo=contId.includes('Nuevo');
+    const el=document.getElementById(esNuevo?'pCantTotal':'eCantTotal');
+    const v=el?parseFloat(el.value):NaN;
+    return isNaN(v)?'':v;
   }
 
   // ── Searchable selects ─────────────────────────────────────────────────

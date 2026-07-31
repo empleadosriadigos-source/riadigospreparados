@@ -301,7 +301,17 @@
         const rec=f.nro_receta?`RECETA: ${f.nro_receta}`:'';
         const compLines=p.componentes.map(c=>{
           const nom=c.droga_nombre||'';const cant=c.cantidad??'';const uni=c.unidad||'';
-          if(uni==='c.s.p'){const ct=f.cantidad_total!=null?f.cantidad_total:'';const ut=f.unidad||'';return {nom,cantStr:`c.s.p ${ct} ${ut}`.trim()};}
+          if(uni==='c.s.p'){
+            const ct=f.cantidad_total!=null?f.cantidad_total:'';
+            const ut=f.unidad||'';
+            let mCant=ct,mUni=ut;
+            if(cant!==''){
+              if(ct!=='' && Number(cant)===Number(ct)){mCant=cant;mUni=ut;}
+              else if(Number(cant)===100){mCant=100;mUni='%';}
+              else{mCant=cant;mUni=ut;}
+            }
+            return {nom,cantStr:`c.s.p ${mCant} ${mUni}`.trim()};
+          }
           return {nom,cantStr:cant!==''?String(cant)+(uni?' '+uni:''):''};
         });
         const forma=f.forma_farmaceutica?f.forma_farmaceutica.toUpperCase():'';
