@@ -24,13 +24,14 @@
   .btn-logout:hover{background:#444;}
   #btnActualizar{background:none;border:1px solid #555;color:#ccc;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;}
   .kanban-wrap{padding:16px 20px 90px;}
-  .kanban-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:stretch;}
-  @media(max-width:800px){.kanban-cols{grid-template-columns:1fr;}}
+  .kanban-cols{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:stretch;}
+  @media(max-width:1000px){.kanban-cols{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:560px){.kanban-cols{grid-template-columns:1fr;}}
   .col{background:#E8E4DA;border-radius:var(--radius);border:1px solid var(--border);min-height:200px;display:flex;flex-direction:column;}
   .col-header{padding:12px 14px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:52px;z-index:40;background:#E8E4DA;border-radius:var(--radius) var(--radius) 0 0;}
   .col-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;}
   .col-dot{width:10px;height:10px;border-radius:50%;}
-  .dot-peticion{background:#D97706;}.dot-aceptado{background:#68A9CC;}.dot-prep{background:#2563EB;}
+  .dot-peticion{background:#D97706;}.dot-aceptado{background:#68A9CC;}.dot-prep{background:#2563EB;}.dot-retirar{background:#75A63D;}
   .col-count{font-size:12px;color:var(--muted);background:var(--surface);border-radius:20px;padding:2px 8px;font-weight:600;}
   .col-body{padding:10px;display:flex;flex-direction:column;gap:8px;flex:1;min-height:200px;}
   .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow);}
@@ -178,6 +179,13 @@
           <div class="col-count" id="count-prep">0</div>
         </div>
         <div class="col-body" id="body-prep"></div>
+      </div>
+      <div class="col">
+        <div class="col-header">
+          <div class="col-title"><div class="col-dot dot-retirar"></div>Para retirar</div>
+          <div class="col-count" id="count-retirar">0</div>
+        </div>
+        <div class="col-body" id="body-retirar"></div>
       </div>
     </div>
   </div>
@@ -367,23 +375,28 @@ function nombreCliente(id){ const c = clientes.find(x=>x.id===id); return c ? c.
 
 const ESTADOS_PETICION = ['Petición sucursal','Rechazado sucursal'];
 const ESTADOS_ACEPTADO = ['Esperando confirmación sucursal','Cancelado sucursal'];
-const ESTADOS_PREP = ['Asignar precio','En laboratorio','Para retirar'];
+const ESTADOS_PREP = ['Asignar precio','En laboratorio'];
+const ESTADOS_RETIRAR = ['Para retirar'];
 
 function renderKanban(){
-  const bP = document.getElementById('body-peticion'), bA = document.getElementById('body-aceptado'), bPr = document.getElementById('body-prep');
-  bP.innerHTML=''; bA.innerHTML=''; bPr.innerHTML='';
-  let cP=0, cA=0, cPr=0;
+  const bP = document.getElementById('body-peticion'), bA = document.getElementById('body-aceptado'),
+        bPr = document.getElementById('body-prep'), bR = document.getElementById('body-retirar');
+  bP.innerHTML=''; bA.innerHTML=''; bPr.innerHTML=''; bR.innerHTML='';
+  let cP=0, cA=0, cPr=0, cR=0;
   preparados.forEach(p=>{
     if(ESTADOS_PETICION.includes(p.estado)){ bP.appendChild(crearTarjeta(p)); cP++; }
     else if(ESTADOS_ACEPTADO.includes(p.estado)){ bA.appendChild(crearTarjeta(p)); cA++; }
     else if(ESTADOS_PREP.includes(p.estado)){ bPr.appendChild(crearTarjeta(p)); cPr++; }
+    else if(ESTADOS_RETIRAR.includes(p.estado)){ bR.appendChild(crearTarjeta(p)); cR++; }
   });
   document.getElementById('count-peticion').textContent = cP;
   document.getElementById('count-aceptado').textContent = cA;
   document.getElementById('count-prep').textContent = cPr;
+  document.getElementById('count-retirar').textContent = cR;
   if(!cP) bP.innerHTML = '<p class="empty-msg">Sin solicitudes.</p>';
   if(!cA) bA.innerHTML = '<p class="empty-msg">Nada esperando confirmación.</p>';
   if(!cPr) bPr.innerHTML = '<p class="empty-msg">Nada en preparación.</p>';
+  if(!cR) bR.innerHTML = '<p class="empty-msg">Nada para retirar.</p>';
 }
 
 function drogasHtml(p){
