@@ -7,81 +7,123 @@
 <style>
   :root{
     --bg:#F0EDE4;--surface:#FAFAF7;--border:#DDD8CC;--accent:#75A63D;
-    --accent2:#68A9CC;--text:#1C2128;--muted:#6B7685;--danger:#C0392B;--radius:8px;
-    --shadow:0 2px 8px rgba(0,0,0,0.09);
+    --accent2:#68A9CC;--text:#1C2128;--muted:#6B7685;--danger:#C0392B;
+    --cliente:#3D7A8A;--radius:8px;--shadow:0 2px 8px rgba(0,0,0,0.09);
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
   .topbar{background:#2C2C2C;padding:0 20px;display:flex;align-items:center;gap:10px;height:52px;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.18);}
   .topbar-brand{color:#fff;font-size:15px;font-weight:700;}
   .topbar-brand span{color:var(--accent);}
+  .topbar-sep{width:1px;height:24px;background:#444;margin:0 4px;flex-shrink:0;}
+  .nav-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;color:#fff;}
+  .nav-btn-green{background:var(--accent);}
   .topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
   .user-chip{font-size:12px;color:#ccc;}
   .btn-logout{background:none;border:1px solid #555;color:#ccc;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;}
   .btn-logout:hover{background:#444;}
-  .wrap{max-width:900px;margin:0 auto;padding:20px 16px 90px;}
-  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:20px;}
-  .panel h2{font-size:15px;font-weight:700;margin-bottom:14px;}
-  .field-group{margin-bottom:14px;}
-  .field-group label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px;}
-  .field-group input,.field-group select,.field-group textarea{width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;}
-  .field-group textarea{resize:vertical;}
-  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-  .field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
-  @media(max-width:560px){.field-row,.field-row-3{grid-template-columns:1fr;}}
-  .btn{display:inline-flex;align-items:center;gap:5px;padding:9px 18px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s;}
-  .btn:hover:not(:disabled){opacity:.85;}
-  .btn:disabled{opacity:.5;cursor:not-allowed;}
-  .btn-primary{background:var(--accent);color:#fff;}
-  .btn-danger{background:var(--danger);color:#fff;}
-  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
-  .btn-sm{padding:5px 10px;font-size:12px;}
-  .ss-wrap{position:relative;}
-  .ss-dropdown{display:none;position:absolute;left:0;right:0;top:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.15);z-index:60;max-height:200px;overflow-y:auto;}
-  .ss-dropdown.open{display:block;}
-  .ss-option{padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);}
-  .ss-option:hover{background:var(--accent2);color:#fff;}
-  .ss-empty{padding:8px 12px;font-size:13px;color:var(--muted);}
-  .cliente-chip{display:inline-flex;align-items:center;gap:8px;background:#E8F4FB;border:1px solid #C0DFF0;border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;color:#2C5F73;}
-  .cliente-chip button{background:none;border:none;cursor:pointer;color:var(--danger);font-size:14px;}
-  .comp-editor{border:1px solid var(--border);border-radius:6px;margin-bottom:8px;}
-  .comp-editor-header{display:grid;grid-template-columns:1fr 90px 100px 32px;gap:6px;padding:7px 10px;background:#EDEAE0;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);border-radius:6px 6px 0 0;}
-  .comp-row{display:grid;grid-template-columns:1fr 90px 100px 32px;gap:6px;padding:8px 10px;border-top:1px solid var(--border);align-items:center;}
-  @media(max-width:560px){.comp-editor-header,.comp-row{grid-template-columns:1fr 60px 70px 26px;}}
-  .comp-row input,.comp-row select{padding:5px 8px;font-size:12px;border:1px solid var(--border);border-radius:5px;background:var(--bg);width:100%;}
-  .btn-del-comp{background:none;border:none;color:var(--danger);cursor:pointer;font-size:18px;}
-  .pedido-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);}
-  .pedido-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;}
-  .pedido-cliente{font-weight:700;font-size:14px;}
-  .pedido-fecha{font-size:12px;color:var(--muted);}
-  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}
+  #btnActualizar{background:none;border:1px solid #555;color:#ccc;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;}
+  .kanban-wrap{padding:16px 20px 90px;}
+  .kanban-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:stretch;}
+  @media(max-width:800px){.kanban-cols{grid-template-columns:1fr;}}
+  .col{background:#E8E4DA;border-radius:var(--radius);border:1px solid var(--border);min-height:200px;display:flex;flex-direction:column;}
+  .col-header{padding:12px 14px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:52px;z-index:40;background:#E8E4DA;border-radius:var(--radius) var(--radius) 0 0;}
+  .col-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;}
+  .col-dot{width:10px;height:10px;border-radius:50%;}
+  .dot-peticion{background:#D97706;}.dot-aceptado{background:#68A9CC;}.dot-prep{background:#2563EB;}
+  .col-count{font-size:12px;color:var(--muted);background:var(--surface);border-radius:20px;padding:2px 8px;font-weight:600;}
+  .col-body{padding:10px;display:flex;flex-direction:column;gap:8px;flex:1;min-height:200px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow);}
+  .card.card-rechazado{border:2px solid var(--danger);}
+  .card.card-cancelado{border:2px solid #999;opacity:0.75;}
+  .card.card-retirar{border:2px solid var(--accent);}
+  .card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;}
+  .card-cupon{font-size:20px;font-weight:800;color:#5BA8D4;}
+  .card-contact{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+  .card-cliente-text{font-size:14px;font-weight:700;color:var(--cliente);}
+  .card-tel-text{font-size:12px;color:var(--muted);}
+  .card-divider{border:none;border-top:1px solid var(--border);margin:8px 0;}
+  .card-drogas{display:flex;flex-direction:column;margin-bottom:6px;}
+  .card-droga-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px dotted #CCC;font-size:13px;}
+  .card-droga-row:last-child{border-bottom:none;}
+  .card-meta{font-size:12px;color:var(--muted);}
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;margin-top:4px;}
   .badge-espera{background:#FDF3D8;color:#966B0B;}
   .badge-precio{background:#E8F4FB;color:#2C5F73;}
   .badge-prep{background:#E5EEFA;color:#2563EB;}
   .badge-retirar{background:#EAF6E4;color:#3D7A2A;}
   .badge-rechazo{background:#FDECEA;color:var(--danger);}
   .badge-cancel{background:#EFEFEF;color:#666;}
-  .pedido-detalle{font-size:13px;color:var(--text);margin:4px 0;}
-  .pedido-mensaje{font-size:13px;background:var(--bg);border-radius:6px;padding:8px 10px;margin-top:8px;border-left:3px solid var(--accent2);}
-  .pedido-precio{font-size:17px;font-weight:800;color:var(--accent);margin-top:6px;}
-  .pedido-acciones{display:flex;gap:8px;margin-top:10px;}
-  .empty-msg{color:var(--muted);font-size:13px;padding:10px 0;}
-  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:11px 24px;border-radius:8px;font-size:14px;font-weight:500;color:#fff;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;}
+  .card-mensaje{font-size:12px;background:var(--bg);border-radius:6px;padding:7px 9px;margin-top:8px;border-left:3px solid var(--accent2);}
+  .card-precio{font-size:20px;font-weight:800;color:var(--accent);margin:8px 0;}
+  .card-acciones{display:flex;gap:8px;margin-top:10px;}
+  .card-acciones .btn{flex:1;}
+  .empty-msg{color:var(--muted);font-size:13px;padding:14px 4px;}
+  .btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-danger{background:var(--danger);color:#fff;}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
+  .btn-sm{padding:5px 10px;font-size:12px;}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center;padding:16px;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,0.2);width:100%;max-width:700px;max-height:92vh;overflow-y:auto;}
+  .modal-sm{max-width:420px;}
+  .modal-header{padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:2;}
+  .modal-header h2{font-size:16px;font-weight:700;}
+  .modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted);}
+  .modal-body{padding:20px;}
+  .modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--surface);}
+  .field-group{margin-bottom:14px;}
+  .field-group label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px;}
+  .field-group input,.field-group select,.field-group textarea{width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;}
+  .field-group textarea{resize:vertical;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  @media(max-width:500px){.field-row,.field-row-3{grid-template-columns:1fr;}}
+  .field-invalid{border-color:var(--danger)!important;}
+  .modal-sep{border-top:1px solid var(--border);margin:20px 0;}
+  .ss-wrap{position:relative;}
+  .ss-dropdown{display:none;position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.15);z-index:500;max-height:200px;overflow-y:auto;min-width:200px;}
+  .ss-dropdown.open{display:block;}
+  .ss-option{padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);}
+  .ss-option:last-child{border-bottom:none;}
+  .ss-option:hover{background:var(--accent2);color:#fff;}
+  .ss-action{padding:8px 12px;cursor:pointer;font-size:13px;color:var(--accent);font-weight:600;border-top:1px solid var(--border);background:#F0FAF0;}
+  .ss-action:hover{background:var(--accent);color:#fff;}
+  .ss-empty{padding:8px 12px;font-size:13px;color:var(--muted);}
+  .sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px;margin-top:4px;}
+  .comp-editor{border:1px solid var(--border);border-radius:6px;overflow:visible;margin-bottom:8px;}
+  .comp-editor-header{display:grid;grid-template-columns:1fr 90px 100px 32px;gap:6px;padding:7px 10px;background:#EDEAE0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);border-bottom:1px solid var(--border);border-radius:6px 6px 0 0;}
+  .comp-row{display:grid;grid-template-columns:1fr 90px 100px 32px;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);align-items:center;}
+  .comp-row:last-child{border-bottom:none;}
+  .comp-row input,.comp-row select{padding:5px 8px;font-size:12px;border:1px solid var(--border);border-radius:5px;background:var(--bg);outline:none;width:100%;}
+  .comp-cant-cell{position:relative;}
+  .csp-opts{display:none;gap:4px;margin-top:3px;}
+  .csp-btn{font-size:10px;padding:2px 6px;border:1px solid var(--border);background:var(--surface);border-radius:4px;cursor:pointer;}
+  .csp-btn.active{background:var(--accent2);color:#fff;}
+  .btn-del-comp{background:none;border:none;color:var(--danger);cursor:pointer;font-size:18px;line-height:1;padding:2px;}
+  .cli-item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);}
+  .cli-item:hover{background:var(--bg);}
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:11px 24px;border-radius:8px;font-size:14px;font-weight:500;color:#fff;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;white-space:nowrap;}
   #toast.show{opacity:1;}#toast.ok{background:var(--accent);}#toast.err{background:var(--danger);}
   .login-overlay{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;}
-  .login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,.15);padding:40px 36px;max-width:360px;width:100%;text-align:center;}
+  .login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,0.15);padding:40px 36px;max-width:360px;width:100%;text-align:center;}
   .login-logo{font-size:20px;font-weight:800;margin-bottom:4px;}
   .login-logo span{color:var(--accent);}
   .login-sub{font-size:13px;color:var(--muted);margin-bottom:28px;}
   .btn-google{display:inline-flex;align-items:center;gap:10px;justify-content:center;width:100%;padding:11px 16px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;}
   .btn-google:hover{box-shadow:0 2px 8px rgba(0,0,0,.12);}
-  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;padding:16px;}
-  .modal-overlay.open{display:flex;}
   .popup{background:var(--surface);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,.25);max-width:380px;width:100%;padding:26px 24px;text-align:center;}
   .popup h3{font-size:16px;margin-bottom:10px;}
   .popup .precio-grande{font-size:28px;font-weight:800;color:var(--accent);margin:12px 0;}
   .popup-acciones{display:flex;gap:10px;margin-top:18px;}
   .popup-acciones .btn{flex:1;}
+  @media (max-width:640px){
+    html{font-size:14px;}
+    .modal{width:100%;height:100%;max-width:100%;max-height:100%;border-radius:0;}
+    .comp-editor-header,.comp-row{grid-template-columns:1fr 70px 80px 28px;}
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -101,63 +143,141 @@
 <div id="appRoot" style="display:none;">
   <div class="topbar">
     <div class="topbar-brand">Riadigos <span>·</span> Constitución</div>
+    <div class="topbar-sep"></div>
+    <button class="nav-btn nav-btn-green" onclick="abrirModalPedido()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Cargar preparado
+    </button>
     <div class="topbar-right">
       <span class="user-chip" id="userNombre"></span>
       <button class="btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
+      <button id="btnActualizar" onclick="cargarTodo()">↺ Actualizar</button>
     </div>
   </div>
 
-  <div class="wrap">
-
-    <div class="panel">
-      <h2>Nuevo pedido de preparado</h2>
-
-      <div class="field-group ss-wrap">
-        <label>Cliente</label>
-        <div id="clienteChipWrap" style="display:none;margin-bottom:8px;"></div>
-        <input type="text" id="clienteBuscar" placeholder="Buscar cliente por nombre o teléfono..." oninput="filtrarClientes()" onfocus="filtrarClientes()">
-        <div class="ss-dropdown" id="clienteDropdown"></div>
-      </div>
-      <div class="field-row" id="clienteNuevoRow" style="display:none;">
-        <div class="field-group"><label>Nombre del cliente nuevo</label><input type="text" id="clienteNuevoNombre"></div>
-        <div class="field-group"><label>Teléfono</label><input type="text" id="clienteNuevoTelefono"></div>
-      </div>
-
-      <div class="field-row-3">
-        <div class="field-group">
-          <label>Forma farmacéutica</label>
-          <select id="pForma" onchange="onFormaChange()"><option value="">— Elegir —</option></select>
+  <div class="kanban-wrap">
+    <div id="kanbanStatus" style="color:var(--muted);font-size:13px;margin-bottom:8px;"></div>
+    <div class="kanban-cols">
+      <div class="col">
+        <div class="col-header">
+          <div class="col-title"><div class="col-dot dot-peticion"></div>Petición</div>
+          <div class="col-count" id="count-peticion">0</div>
         </div>
+        <div class="col-body" id="body-peticion"></div>
+      </div>
+      <div class="col">
+        <div class="col-header">
+          <div class="col-title"><div class="col-dot dot-aceptado"></div>Aceptado</div>
+          <div class="col-count" id="count-aceptado">0</div>
+        </div>
+        <div class="col-body" id="body-aceptado"></div>
+      </div>
+      <div class="col">
+        <div class="col-header">
+          <div class="col-title"><div class="col-dot dot-prep"></div>En preparación</div>
+          <div class="col-count" id="count-prep">0</div>
+        </div>
+        <div class="col-body" id="body-prep"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Cargar preparado -->
+<div class="modal-overlay" id="modalPedido">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Cargar preparado</h2>
+      <button class="modal-close" onclick="cerrarModal('modalPedido')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field-group">
+          <label>Cliente <span style="color:var(--danger)">*</span></label>
+          <div style="display:flex;gap:6px;">
+            <div class="ss-wrap" style="flex:1;">
+              <input type="text" id="pClienteInput" placeholder="Buscar cliente…" oninput="filtrarSSCliente('p')" onfocus="abrirSSCliente('p')" autocomplete="off"/>
+              <div class="ss-dropdown" id="ssCliente_p"></div>
+              <input type="hidden" id="pClienteId"/>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm" style="white-space:nowrap;" onclick="abrirNuevoClienteDesdePrep('p')">＋ Nuevo</button>
+          </div>
+        </div>
+        <div class="field-group">
+          <label>Teléfono <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="pTelefono" placeholder="Teléfono del cliente" oninput="this.classList.remove('field-invalid')"/>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-group"><label>Fecha de recepción <span style="color:var(--danger)">*</span></label><input type="date" id="pFecha"/></div>
+        <div class="field-group"><label>Nro Receta</label><input type="number" id="pReceta"/></div>
+      </div>
+      <div class="field-group"><label>Observaciones para Riadigos</label><textarea id="pObs" rows="2"></textarea></div>
+
+      <div class="modal-sep"></div>
+      <div class="sec-title">Componentes</div>
+      <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div>Unidad</div><div></div></div><div id="compRowsNuevo"></div></div>
+      <button class="btn btn-ghost btn-sm" onclick="agregarCompRow('compRowsNuevo')">+ Agregar componente</button>
+      <div class="field-row-3" style="margin-top:14px;">
+        <div class="field-group"><label>Forma farmacéutica</label><select id="pForma" onchange="onFormaChange('p')"><option value="">— Sin especificar —</option></select></div>
         <div class="field-group">
           <label>Cantidad total</label>
-          <input type="number" id="pCantTotal" step="any" min="0">
+          <input type="number" id="pCantTotal" step="any" min="0"/>
         </div>
-        <div class="field-group">
-          <label>Unidad</label>
-          <select id="pUnidad"><option value="">—</option></select>
+        <div class="field-group"><label>Unidad</label><select id="pUnidad"><option value="">— Sin especificar —</option></select></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalPedido')">Cancelar</button>
+      <button class="btn btn-primary" id="btnGuardarPrep" onclick="guardarPedido()">Enviar a Riadigos</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Cliente -->
+<div class="modal-overlay" id="modalClientes">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2 id="modalClientesTitulo">Clientes</h2>
+      <button class="modal-close" onclick="cerrarModal('modalClientes')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="cliVistaLista">
+        <div class="field-group" style="margin-bottom:10px;">
+          <input type="text" id="cliBuscarInput" placeholder="Buscar cliente…" oninput="filtrarClientesModal()" autocomplete="off"/>
+        </div>
+        <div id="cliResultados" style="max-height:260px;overflow-y:auto;"></div>
+        <div style="margin-top:12px;">
+          <button class="btn btn-primary btn-sm" onclick="abrirFormCliente(null)">＋ Nuevo cliente</button>
         </div>
       </div>
-
-      <div class="sec-title" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Componentes</div>
-      <div class="comp-editor">
-        <div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div>Unidad</div><div></div></div>
-        <div id="compRows"></div>
+      <div id="cliVistaForm" style="display:none;">
+        <div style="margin-bottom:10px;"><button class="btn btn-ghost btn-sm" onclick="volverListaClientes()">← Volver</button></div>
+        <div class="field-group"><label>Nombre <span style="color:var(--danger)">*</span></label><input type="text" id="cNombre"/></div>
+        <div class="field-group"><label>Teléfono</label><input type="text" id="cTelefono"/></div>
+        <div class="field-group"><label>Observaciones</label><textarea id="cObs" rows="2"></textarea></div>
+        <input type="hidden" id="cClienteId"/>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="agregarCompRow()">+ Agregar componente</button>
-
-      <div class="field-group" style="margin-top:14px;">
-        <label>Observaciones para Riadigos</label>
-        <textarea id="pObs" rows="2" placeholder="Cualquier aclaración sobre el pedido..."></textarea>
-      </div>
-
-      <button class="btn btn-primary" id="btnEnviar" onclick="enviarPedido()">Enviar solicitud a Riadigos</button>
     </div>
-
-    <div class="panel">
-      <h2>Mis pedidos</h2>
-      <div id="listaPedidos"><p class="empty-msg">Cargando...</p></div>
+    <div class="modal-footer" id="cliFooter">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalClientes')">Cerrar</button>
+      <button class="btn btn-primary" id="btnGuardarCliente" style="display:none;" onclick="guardarClienteModal()">Guardar</button>
     </div>
+  </div>
+</div>
 
+<!-- Modal Droga -->
+<div class="modal-overlay" id="modalDroga">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h2>Nueva droga</h2><button class="modal-close" onclick="cerrarModal('modalDroga')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Revisá el nombre antes de crear.</p>
+      <div class="field-group"><label>Nombre <span style="color:var(--danger)">*</span></label><input type="text" id="dNombre"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalDroga')">Cancelar</button>
+      <button class="btn btn-primary" id="btnGuardarDroga" onclick="guardarDroga()">Crear droga</button>
+    </div>
   </div>
 </div>
 
@@ -181,7 +301,7 @@
 <script>
 const SUCURSAL_NOMBRE = 'Constitución';
 
-// ── Auth (mismo patrón que index.html) ─────────────────────────────
+// ── Auth ──────────────────────────────────────────────────────────
 function mostrarLogin(){ document.getElementById('loginOverlay').style.display='flex'; document.getElementById('appRoot').style.display='none'; }
 let appIniciada = false;
 function mostrarApp(session){
@@ -199,240 +319,124 @@ document.addEventListener('DOMContentLoaded', ()=>{
 });
 
 // ── Estado local ─────────────────────────────────────────────────
-let clientes = [], drogas = [];
-let clienteSeleccionado = null; // {id,nombre} o null si es cliente nuevo
-let compIdx = 0;
+let clientes = [], drogas = [], preparados = [];
+let clienteCB = null, cbDrogaIdx = null;
 
 function mostrarToast(msg,tipo=''){ const t=document.getElementById('toast'); t.textContent=msg; t.className='show '+tipo; setTimeout(()=>t.className='',3500); }
-function poblarSelect(id,opts,conBlanco){ const sel=document.getElementById(id); const val=sel.value; sel.innerHTML=''; if(conBlanco) sel.innerHTML='<option value="">— Elegir —</option>'; opts.forEach(o=>{const op=document.createElement('option'); op.value=o; op.textContent=o; sel.appendChild(op);}); if(val) sel.value=val; }
+function limpiar(obj){ const r={}; for(const [k,v] of Object.entries(obj)) if(v!==null&&v!==undefined) r[k]=v; return r; }
+function abrirModal(id){ document.getElementById(id).classList.add('open'); }
+function cerrarModal(id){ document.getElementById(id).classList.remove('open'); }
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtFecha(iso){ if(!iso) return '—'; const [y,m,d]=iso.slice(0,10).split('-'); return `${d}/${m}/${y}`; }
+function poblarSelect(id,opts,conBlanco){ const sel=document.getElementById(id); if(!sel) return; const val=sel.value; sel.innerHTML=''; if(conBlanco) sel.innerHTML='<option value="">— Sin especificar —</option>'; opts.forEach(o=>{const op=document.createElement('option'); op.value=o; op.textContent=o; sel.appendChild(op);}); if(val) sel.value=val; }
 
 async function initApp(){
   poblarSelect('pForma', FORMAS, true);
-  agregarCompRow();
+  document.getElementById('pFecha').value = new Date().toISOString().slice(0,10);
   try{
     [clientes, drogas] = await Promise.all([
       sbGet('clientes?order=nombre.asc&select=id,nombre,telefono'),
       sbGet('drogas?order=nombre.asc', true)
     ]);
   }catch(err){ mostrarToast('Error cargando datos: '+err.message,'err'); }
-  cargarMisPedidos();
+  cargarTodo();
   suscribirRealtime();
 }
+document.addEventListener('click', e => { if(!e.target.closest('.ss-wrap')) cerrarTodasSS(); });
 
-// ── Búsqueda de cliente ─────────────────────────────────────────
-function filtrarClientes(){
-  const q = document.getElementById('clienteBuscar').value.trim().toLowerCase();
-  const dd = document.getElementById('clienteDropdown');
-  if(!q){ dd.classList.remove('open'); return; }
-  const matches = clientes.filter(c => c.nombre.toLowerCase().includes(q) || (c.telefono||'').includes(q)).slice(0,8);
-  dd.innerHTML = '';
-  matches.forEach(c=>{
-    const div = document.createElement('div');
-    div.className='ss-option';
-    div.textContent = c.nombre + (c.telefono? ' — '+c.telefono : '');
-    div.onclick = ()=> seleccionarCliente(c);
-    dd.appendChild(div);
-  });
-  const nuevo = document.createElement('div');
-  nuevo.className='ss-option'; nuevo.style.color='var(--accent)'; nuevo.style.fontWeight='600';
-  nuevo.textContent = '+ Crear cliente nuevo: "'+document.getElementById('clienteBuscar').value.trim()+'"';
-  nuevo.onclick = ()=> crearClienteNuevo(document.getElementById('clienteBuscar').value.trim());
-  dd.appendChild(nuevo);
-  dd.classList.add('open');
-}
-function seleccionarCliente(c){
-  clienteSeleccionado = c;
-  document.getElementById('clienteNuevoRow').style.display='none';
-  document.getElementById('clienteBuscar').style.display='none';
-  document.getElementById('clienteDropdown').classList.remove('open');
-  const wrap = document.getElementById('clienteChipWrap');
-  wrap.style.display='block';
-  wrap.innerHTML = `<span class="cliente-chip">${c.nombre}${c.telefono?' — '+c.telefono:''} <button onclick="limpiarCliente()">✕</button></span>`;
-}
-function crearClienteNuevo(nombre){
-  clienteSeleccionado = 'nuevo';
-  document.getElementById('clienteBuscar').style.display='none';
-  document.getElementById('clienteDropdown').classList.remove('open');
-  document.getElementById('clienteNuevoRow').style.display='grid';
-  document.getElementById('clienteNuevoNombre').value = nombre;
-  const wrap = document.getElementById('clienteChipWrap');
-  wrap.style.display='block';
-  wrap.innerHTML = `<span class="cliente-chip">Cliente nuevo <button onclick="limpiarCliente()">✕</button></span>`;
-}
-function limpiarCliente(){
-  clienteSeleccionado = null;
-  document.getElementById('clienteChipWrap').style.display='none';
-  document.getElementById('clienteChipWrap').innerHTML='';
-  document.getElementById('clienteNuevoRow').style.display='none';
-  document.getElementById('clienteBuscar').style.display='';
-  document.getElementById('clienteBuscar').value='';
-}
-document.addEventListener('click', e=>{ if(!e.target.closest('.ss-wrap')) document.getElementById('clienteDropdown').classList.remove('open'); });
-
-// ── Forma farmacéutica → unidad ──────────────────────────────────
-function onFormaChange(){
-  const forma = document.getElementById('pForma').value;
-  const selUnidad = document.getElementById('pUnidad');
-  if(FORMA_UNIDAD_BLOQUEADA.includes(forma)){
-    poblarSelect('pUnidad',[FORMA_UNIDAD[forma]],false);
-    selUnidad.disabled = true;
-  } else if(FORMA_UNIDAD_OPCIONES[forma]){
-    poblarSelect('pUnidad', FORMA_UNIDAD_OPCIONES[forma], false);
-    selUnidad.disabled = false;
-  } else {
-    poblarSelect('pUnidad', UNIDADES, true);
-    selUnidad.disabled = false;
-  }
-}
-
-// ── Componentes ───────────────────────────────────────────────────
-function agregarCompRow(){
-  compIdx++;
-  const id = 'comp'+compIdx;
-  const div = document.createElement('div');
-  div.className='comp-row'; div.id=id;
-  div.innerHTML = `
-    <div class="ss-wrap">
-      <input type="text" placeholder="Buscar droga..." oninput="filtrarDrogas('${id}')" data-drogaid="">
-      <div class="ss-dropdown" id="${id}-dd"></div>
-    </div>
-    <input type="number" step="any" min="0" placeholder="Cant.">
-    <select>${UNID_COMP.map(u=>`<option value="${u}">${u}</option>`).join('')}</select>
-    <button class="btn-del-comp" onclick="document.getElementById('${id}').remove()">✕</button>`;
-  document.getElementById('compRows').appendChild(div);
-}
-function filtrarDrogas(rowId){
-  const row = document.getElementById(rowId);
-  const input = row.querySelector('input[type=text]');
-  const dd = document.getElementById(rowId+'-dd');
-  const q = input.value.trim().toLowerCase();
-  input.dataset.drogaid = '';
-  if(!q){ dd.classList.remove('open'); return; }
-  const matches = drogas.filter(d=>d.nombre.toLowerCase().includes(q)).slice(0,8);
-  dd.innerHTML = matches.length ? '' : '<div class="ss-empty">Sin resultados</div>';
-  matches.forEach(d=>{
-    const op = document.createElement('div');
-    op.className='ss-option'; op.textContent=d.nombre;
-    op.onclick = ()=>{ input.value=d.nombre; input.dataset.drogaid=d.id; dd.classList.remove('open'); };
-    dd.appendChild(op);
-  });
-  dd.classList.add('open');
-}
-
-// ── Enviar pedido ────────────────────────────────────────────────
-async function enviarPedido(){
-  if(!clienteSeleccionado){ mostrarToast('Elegí o creá un cliente','err'); return; }
-  const forma = document.getElementById('pForma').value;
-  if(!forma){ mostrarToast('Elegí la forma farmacéutica','err'); return; }
-  const filas = [...document.querySelectorAll('#compRows .comp-row')];
-  const comps = filas.map(f=>{
-    const [inputDroga, inputCant] = f.querySelectorAll('input');
-    const sel = f.querySelector('select');
-    return { drogaId: inputDroga.dataset.drogaid, drogaNombre: inputDroga.value.trim(), cantidad: inputCant.value, unidad: sel.value };
-  }).filter(c=>c.drogaNombre);
-  if(comps.length===0){ mostrarToast('Agregá al menos un componente','err'); return; }
-  if(comps.some(c=>!c.drogaId)){ mostrarToast('Elegí cada droga de la lista (no queda cargada si no la seleccionás del desplegable)','err'); return; }
-
-  const btn = document.getElementById('btnEnviar');
-  btn.disabled = true; btn.textContent = 'Enviando...';
-  try{
-    let clienteId;
-    if(clienteSeleccionado === 'nuevo'){
-      const nombre = document.getElementById('clienteNuevoNombre').value.trim();
-      const telefono = document.getElementById('clienteNuevoTelefono').value.trim();
-      if(!nombre) throw new Error('Falta el nombre del cliente nuevo');
-      const nuevo = await sbPost('clientes', {nombre, telefono: telefono||null});
-      clienteId = nuevo[0].id;
-    } else {
-      clienteId = clienteSeleccionado.id;
-    }
-
-    const prep = await sbPost('preparados', {
-      cliente_id: clienteId,
-      fecha_recepcion: new Date().toISOString().slice(0,10),
-      estado: 'Petición sucursal',
-      origen_sucursal: SUCURSAL_NOMBRE,
-      forma_farmaceutica: forma,
-      cantidad_total: document.getElementById('pCantTotal').value || null,
-      unidad: document.getElementById('pUnidad').value || null,
-      observaciones: document.getElementById('pObs').value.trim() || null
-    });
-    const prepId = prep[0].id;
-
-    for(const c of comps){
-      await sbPost('componentes', { preparado_id: prepId, droga_id: c.drogaId, cantidad: c.cantidad||null, unidad: c.unidad });
-    }
-
-    mostrarToast('Pedido enviado a Riadigos','ok');
-    limpiarFormulario();
-    cargarMisPedidos();
-  }catch(err){
-    mostrarToast('Error: '+err.message, 'err');
-  }finally{
-    btn.disabled=false; btn.textContent='Enviar solicitud a Riadigos';
-  }
-}
-function limpiarFormulario(){
-  limpiarCliente();
-  document.getElementById('pForma').value='';
-  document.getElementById('pCantTotal').value='';
-  poblarSelect('pUnidad', UNIDADES, true);
-  document.getElementById('pObs').value='';
-  document.getElementById('compRows').innerHTML='';
-  compIdx=0; agregarCompRow();
-}
-
-// ── Mis pedidos ──────────────────────────────────────────────────
-const ESTADO_LABEL = {
-  'Petición sucursal': {txt:'Esperando respuesta', cls:'badge-espera'},
-  'Rechazado sucursal': {txt:'Rechazado', cls:'badge-rechazo'},
-  'Esperando confirmación sucursal': {txt:'Precio propuesto', cls:'badge-precio'},
-  'Asignar precio': {txt:'En preparación', cls:'badge-prep'},
-  'En laboratorio': {txt:'En preparación', cls:'badge-prep'},
-  'Para retirar': {txt:'Para retirar', cls:'badge-retirar'},
-  'Cancelado sucursal': {txt:'Cancelado', cls:'badge-cancel'}
-};
-
-async function cargarMisPedidos(){
+// ── Cargar y renderizar kanban ──────────────────────────────────
+async function cargarTodo(){
+  document.getElementById('kanbanStatus').textContent = 'Cargando…';
   try{
     const preps = await sbGet(`preparados?origen_sucursal=eq.${encodeURIComponent(SUCURSAL_NOMBRE)}&estado=neq.Entregado&order=created_at.desc`);
-    renderPedidos(preps);
+    const compMap = {};
+    if(preps.length>0){
+      const ids = preps.map(p=>p.id).join(',');
+      const comps = await sbGet('componentes_con_droga?preparado_id=in.('+ids+')');
+      comps.forEach(c=>{ if(!compMap[c.preparado_id]) compMap[c.preparado_id]=[]; compMap[c.preparado_id].push(c); });
+    }
+    preparados = preps.map(p=>({...p, componentes: compMap[p.id]||[]}));
+    document.getElementById('kanbanStatus').textContent = '';
+    renderKanban();
   }catch(err){
-    document.getElementById('listaPedidos').innerHTML = '<p class="empty-msg">Error al cargar: '+err.message+'</p>';
+    document.getElementById('kanbanStatus').textContent = 'Error al cargar: '+err.message;
   }
 }
+
 function nombreCliente(id){ const c = clientes.find(x=>x.id===id); return c ? c.nombre : '(cliente)'; }
 
-function renderPedidos(preps){
-  const cont = document.getElementById('listaPedidos');
-  if(preps.length===0){ cont.innerHTML = '<p class="empty-msg">Todavía no enviaste ningún pedido.</p>'; return; }
-  cont.innerHTML = '';
-  preps.forEach(p=>{
-    const info = ESTADO_LABEL[p.estado] || {txt:p.estado, cls:'badge-cancel'};
-    const div = document.createElement('div');
-    div.className='pedido-card';
-    let html = `
-      <div class="pedido-top">
-        <div>
-          <div class="pedido-cliente">${nombreCliente(p.cliente_id)}</div>
-          <div class="pedido-fecha">${p.forma_farmaceutica||''} ${p.cantidad_total?('· '+p.cantidad_total+' '+(p.unidad||'')):''}</div>
-        </div>
-        <span class="badge ${info.cls}">${info.txt}</span>
-      </div>`;
-    if(p.estado==='Rechazado sucursal' && p.mensaje_sucursal){
-      html += `<div class="pedido-mensaje">Motivo: ${p.mensaje_sucursal}</div>`;
-    }
-    if(p.estado==='Esperando confirmación sucursal'){
-      html += `<div class="pedido-precio">$${p.precio_venta ?? '—'}</div>`;
-      if(p.mensaje_sucursal) html += `<div class="pedido-mensaje">${p.mensaje_sucursal}</div>`;
-      html += `<div class="pedido-acciones">
-        <button class="btn btn-ghost btn-sm" onclick="cancelarPedido('${p.id}')">Cancelar</button>
-        <button class="btn btn-primary btn-sm" onclick="confirmarPedido('${p.id}','${p.precio_venta!=null}')">Confirmar</button>
-      </div>`;
-    }
-    div.innerHTML = html;
-    cont.appendChild(div);
+const ESTADOS_PETICION = ['Petición sucursal','Rechazado sucursal'];
+const ESTADOS_ACEPTADO = ['Esperando confirmación sucursal','Cancelado sucursal'];
+const ESTADOS_PREP = ['Asignar precio','En laboratorio','Para retirar'];
+
+function renderKanban(){
+  const bP = document.getElementById('body-peticion'), bA = document.getElementById('body-aceptado'), bPr = document.getElementById('body-prep');
+  bP.innerHTML=''; bA.innerHTML=''; bPr.innerHTML='';
+  let cP=0, cA=0, cPr=0;
+  preparados.forEach(p=>{
+    if(ESTADOS_PETICION.includes(p.estado)){ bP.appendChild(crearTarjeta(p)); cP++; }
+    else if(ESTADOS_ACEPTADO.includes(p.estado)){ bA.appendChild(crearTarjeta(p)); cA++; }
+    else if(ESTADOS_PREP.includes(p.estado)){ bPr.appendChild(crearTarjeta(p)); cPr++; }
   });
+  document.getElementById('count-peticion').textContent = cP;
+  document.getElementById('count-aceptado').textContent = cA;
+  document.getElementById('count-prep').textContent = cPr;
+  if(!cP) bP.innerHTML = '<p class="empty-msg">Sin solicitudes.</p>';
+  if(!cA) bA.innerHTML = '<p class="empty-msg">Nada esperando confirmación.</p>';
+  if(!cPr) bPr.innerHTML = '<p class="empty-msg">Nada en preparación.</p>';
+}
+
+function drogasHtml(p){
+  return p.componentes.length
+    ? p.componentes.map(c=>`<div class="card-droga-row"><span>${escHtml(c.droga_nombre||'')}</span><span style="color:var(--muted);">${c.cantidad||''} ${c.unidad||''}</span></div>`).join('')
+    : '<div class="card-droga-row" style="color:var(--muted)">Sin componentes</div>';
+}
+
+function crearTarjeta(p){
+  const div = document.createElement('div');
+  let claseExtra = '';
+  if(p.estado==='Rechazado sucursal') claseExtra=' card-rechazado';
+  else if(p.estado==='Cancelado sucursal') claseExtra=' card-cancelado';
+  else if(p.estado==='Para retirar') claseExtra=' card-retirar';
+  div.className = 'card'+claseExtra;
+  const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:''].filter(Boolean);
+
+  let cuerpo = `
+    <div class="card-top">
+      <div class="card-cupon">${p.nro_cupon_nuevo!=null?'#'+p.nro_cupon_nuevo:''}</div>
+    </div>
+    <div class="card-contact">
+      <span class="card-cliente-text">${escHtml(p.cliente_nombre||nombreCliente(p.cliente_id))}</span>
+      <span class="card-tel-text">${escHtml(p.cliente_telefono||'')}</span>
+      <span class="card-tel-text">${fmtFecha(p.fecha_recepcion)}</span>
+    </div>
+    <hr class="card-divider"/>
+    <div class="card-meta" style="margin-bottom:6px;">${escHtml(partes.join(' · '))}</div>
+    <div class="card-drogas">${drogasHtml(p)}</div>`;
+
+  if(p.estado==='Petición sucursal'){
+    cuerpo += `<span class="badge badge-espera">Esperando respuesta</span>`;
+  } else if(p.estado==='Rechazado sucursal'){
+    cuerpo += `<span class="badge badge-rechazo">Rechazado</span>`;
+    if(p.mensaje_sucursal) cuerpo += `<div class="card-mensaje">Motivo: ${escHtml(p.mensaje_sucursal)}</div>`;
+  } else if(p.estado==='Esperando confirmación sucursal'){
+    cuerpo += `<span class="badge badge-precio">Precio propuesto</span>`;
+    cuerpo += `<div class="card-precio">${p.precio_venta!=null?'$'+p.precio_venta:'A confirmar'}</div>`;
+    if(p.mensaje_sucursal) cuerpo += `<div class="card-mensaje">${escHtml(p.mensaje_sucursal)}</div>`;
+    cuerpo += `<div class="card-acciones">
+      <button class="btn btn-ghost btn-sm" onclick="cancelarPedido('${p.id}')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="confirmarPedido('${p.id}','${p.precio_venta!=null}')">Confirmar</button>
+    </div>`;
+  } else if(p.estado==='Cancelado sucursal'){
+    cuerpo += `<span class="badge badge-cancel">Cancelado</span>`;
+  } else if(p.estado==='Para retirar'){
+    cuerpo += `<span class="badge badge-retirar">Para retirar</span>`;
+  } else {
+    cuerpo += `<span class="badge badge-prep">En preparación</span>`;
+  }
+
+  div.innerHTML = cuerpo;
+  return div;
 }
 
 async function confirmarPedido(id, tienePrecioStr){
@@ -440,7 +444,7 @@ async function confirmarPedido(id, tienePrecioStr){
   try{
     await sbPatch('preparados', id, { estado: tienePrecio ? 'En laboratorio' : 'Asignar precio' });
     mostrarToast('Pedido confirmado','ok');
-    cargarMisPedidos();
+    cargarTodo();
   }catch(err){ mostrarToast('Error: '+err.message,'err'); }
 }
 async function cancelarPedido(id){
@@ -448,8 +452,232 @@ async function cancelarPedido(id){
   try{
     await sbPatch('preparados', id, { estado: 'Cancelado sucursal' });
     mostrarToast('Pedido cancelado','ok');
-    cargarMisPedidos();
+    cargarTodo();
   }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+}
+
+// ── Cargar preparado (modal, idéntico en espíritu al de index.html) ─────
+function abrirModalPedido(){ limpiarFormPedido(); abrirModal('modalPedido'); }
+function limpiarFormPedido(){
+  ['pReceta','pCantTotal','pObs'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('pClienteInput').value=''; document.getElementById('pClienteId').value='';
+  document.getElementById('pTelefono').value=''; document.getElementById('pTelefono').classList.remove('field-invalid');
+  document.getElementById('pForma').value=''; document.getElementById('pUnidad').value='';
+  document.getElementById('pFecha').value = new Date().toISOString().slice(0,10);
+  document.getElementById('compRowsNuevo').innerHTML='';
+}
+
+async function guardarPedido(){
+  if(!document.getElementById('pForma').value){ mostrarToast('Seleccioná una forma farmacéutica','err'); return; }
+  const cliId = document.getElementById('pClienteId').value;
+  if(!cliId){ mostrarToast('Seleccioná un cliente','err'); return; }
+  const telInput = document.getElementById('pTelefono');
+  const telVal = telInput.value.trim();
+  if(!telVal){ telInput.classList.add('field-invalid'); mostrarToast('Completá el teléfono del cliente','err'); return; }
+  telInput.classList.remove('field-invalid');
+
+  const btn = document.getElementById('btnGuardarPrep');
+  btn.disabled=true; btn.textContent='Enviando…';
+  try{
+    const cupon = await sbRpc('next_cupon_nuevo');
+
+    const cliActual = clientes.find(c=>c.id===cliId);
+    if(cliActual && (cliActual.telefono||'')!==telVal){
+      await sbPatch('clientes', cliId, {telefono: telVal});
+      cliActual.telefono = telVal;
+    }
+
+    const nuevoPrep = await sbPost('preparados', limpiar({
+      nro_cupon_nuevo: cupon,
+      nro_receta: parseInt(document.getElementById('pReceta').value) || null,
+      cliente_id: cliId,
+      fecha_recepcion: document.getElementById('pFecha').value || null,
+      estado: 'Petición sucursal',
+      origen_sucursal: SUCURSAL_NOMBRE,
+      forma_farmaceutica: document.getElementById('pForma').value || null,
+      cantidad_total: parseFloat(document.getElementById('pCantTotal').value) || null,
+      unidad: document.getElementById('pUnidad').value || null,
+      observaciones: document.getElementById('pObs').value || null,
+    }));
+    const prepId = nuevoPrep[0].id;
+    const rows = document.querySelectorAll('#compRowsNuevo .comp-row');
+    for(const row of rows){
+      const drugId = row.querySelector('.comp-drug-id').value;
+      const cant = parseFloat(row.querySelector('.comp-cant').value) || null;
+      const unid = row.querySelector('.comp-unid').value || null;
+      if(!drugId) continue;
+      await sbPost('componentes', limpiar({preparado_id: prepId, droga_id: drugId, cantidad: cant, unidad: unid}));
+    }
+    mostrarToast('✓ Pedido enviado a Riadigos','ok');
+    cerrarModal('modalPedido');
+    await cargarTodo();
+  }catch(err){
+    mostrarToast('Error: '+err.message,'err');
+  }
+  btn.disabled=false; btn.textContent='Enviar a Riadigos';
+}
+
+// ── Forma farmacéutica → unidad (idéntico a index.html) ─────────
+function onFormaChange(pref){
+  const forma=document.getElementById(`${pref}Forma`).value;
+  const sel=document.getElementById(`${pref}Unidad`);
+  if(!sel) return;
+  const bloqueada = FORMA_UNIDAD_BLOQUEADA.includes(forma);
+  const opcionesRestr = FORMA_UNIDAD_OPCIONES[forma];
+  const uniAuto = FORMA_UNIDAD[forma];
+  sel.innerHTML='';
+  if(bloqueada){
+    sel.innerHTML=`<option value="${uniAuto}">${uniAuto}</option>`;
+    sel.disabled=true; sel.value=uniAuto;
+  } else if(opcionesRestr){
+    sel.innerHTML='<option value="">— Sin especificar —</option>'+opcionesRestr.map(o=>`<option value="${o}">${o}</option>`).join('');
+    sel.disabled=false;
+  } else {
+    sel.innerHTML='<option value="">— Sin especificar —</option>'+UNIDADES.map(o=>`<option value="${o}">${o}</option>`).join('');
+    sel.disabled=false;
+  }
+}
+
+// ── Componentes (idéntico a index.html, sin c.s.p ya que acá no hay cantidad total confirmada) ─
+function agregarCompRow(contId){
+  const cont=document.getElementById(contId);
+  const idx=Date.now()+Math.random();
+  const div=document.createElement('div');
+  div.className='comp-row';
+  const unidOpts=['<option value="">—</option>',...UNID_COMP.map(o=>`<option value="${o}">${o}</option>`)].join('');
+  div.innerHTML=`
+    <div class="ss-wrap">
+      <input type="text" class="ss-input" data-idx="${idx}" placeholder="Buscar droga…" oninput="filtrarSSComp(this)" onfocus="abrirSSComp(this)" autocomplete="off"/>
+      <div class="ss-dropdown" id="ssComp_${idx}"></div>
+      <input type="hidden" class="comp-drug-id" data-idx="${idx}" value=""/>
+    </div>
+    <div class="comp-cant-cell"><input type="number" class="comp-cant" placeholder="Cant." step="any" min="0"/></div>
+    <select class="comp-unid">${unidOpts}</select>
+    <button class="btn-del-comp" onclick="this.closest('.comp-row').remove()">×</button>`;
+  cont.appendChild(div);
+}
+function filtrarSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);if(!input.value.trim()){dd.classList.remove('open');return;}renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())).slice(0,50),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
+function abrirSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);if(!input.value.trim()){dd.classList.remove('open');return;}renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
+function renderSSComp(dd,fil,idx,texto){
+  dd.innerHTML='';
+  fil.forEach(d=>{const div=document.createElement('div');div.className='ss-option';div.textContent=d.nombre;div.onmousedown=e=>{e.preventDefault();const inp=document.querySelector(`.ss-input[data-idx="${idx}"]`);const hid=document.querySelector(`.comp-drug-id[data-idx="${idx}"]`);if(inp)inp.value=d.nombre;if(hid)hid.value=d.id;dd.classList.remove('open');};dd.appendChild(div);});
+  if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}
+  const act=document.createElement('div');act.className='ss-action';act.textContent='＋ Crear droga nueva';
+  act.onmousedown=e=>{e.preventDefault();dd.classList.remove('open');cbDrogaIdx=idx;document.getElementById('dNombre').value=texto;abrirModal('modalDroga');};
+  dd.appendChild(act);
+}
+function posicionarDD(input,dd){const rect=input.getBoundingClientRect();const abajo=window.innerHeight-rect.bottom;dd.style.width=rect.width+'px';dd.style.left=rect.left+'px';if(abajo<208&&rect.top>208){dd.style.top='';dd.style.bottom=(window.innerHeight-rect.top+2)+'px';}else{dd.style.bottom='';dd.style.top=(rect.bottom+2)+'px';}}
+function cerrarTodasSS(){document.querySelectorAll('.ss-dropdown').forEach(d=>d.classList.remove('open'));}
+
+async function guardarDroga(){
+  const nombre=document.getElementById('dNombre').value.trim();
+  if(!nombre){mostrarToast('El nombre es obligatorio','err');return;}
+  const btn=document.getElementById('btnGuardarDroga');btn.disabled=true;btn.textContent='Creando…';
+  try{
+    const nuevo=await sbPost('drogas',{nombre});
+    drogas.push({id:nuevo[0].id,nombre});drogas.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+    if(cbDrogaIdx!==null){
+      const inp=document.querySelector(`.ss-input[data-idx="${cbDrogaIdx}"]`);
+      const hid=document.querySelector(`.comp-drug-id[data-idx="${cbDrogaIdx}"]`);
+      if(inp) inp.value=nombre; if(hid) hid.value=nuevo[0].id; cbDrogaIdx=null;
+    }
+    mostrarToast('✓ Droga creada','ok');cerrarModal('modalDroga');document.getElementById('dNombre').value='';
+  }catch(err){mostrarToast('Error: '+err.message,'err');}
+  btn.disabled=false;btn.textContent='Crear droga';
+}
+
+// ── Búsqueda de cliente (idéntico a index.html) ──────────────────
+function filtrarSSCliente(pref){const input=document.getElementById(`${pref}ClienteInput`);const dd=document.getElementById(`ssCliente_${pref}`);renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),pref);posicionarDD(input,dd);dd.classList.add('open');}
+function abrirSSCliente(pref){const input=document.getElementById(`${pref}ClienteInput`);const dd=document.getElementById(`ssCliente_${pref}`);renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),pref);posicionarDD(input,dd);dd.classList.add('open');}
+function renderSSCliente(dd,fil,pref){
+  dd.innerHTML='';
+  fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById(`${pref}ClienteInput`).value=c.nombre;document.getElementById(`${pref}ClienteId`).value=c.id;aplicarTelefonoCliente(pref,c.telefono);dd.classList.remove('open');};dd.appendChild(d);});
+  if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}
+}
+function aplicarTelefonoCliente(pref,telefono){
+  const telInp=document.getElementById(`${pref}Telefono`);
+  if(!telInp) return;
+  telInp.value=telefono||''; telInp.classList.remove('field-invalid');
+}
+function abrirNuevoClienteDesdePrep(pref){
+  document.getElementById('cNombre').value='';
+  clienteCB=cli=>{
+    document.getElementById(`${pref}ClienteInput`).value=cli.nombre;
+    document.getElementById(`${pref}ClienteId`).value=cli.id;
+    aplicarTelefonoCliente(pref,cli.telefono);
+  };
+  abrirFormCliente(null);
+  abrirModal('modalClientes');
+}
+function abrirModalClientes(){
+  document.getElementById('cliBuscarInput').value='';
+  filtrarClientesModal();
+  document.getElementById('cliVistaLista').style.display='';
+  document.getElementById('cliVistaForm').style.display='none';
+  document.getElementById('btnGuardarCliente').style.display='none';
+  abrirModal('modalClientes');
+}
+function filtrarClientesModal(){
+  const q=document.getElementById('cliBuscarInput').value.toLowerCase();
+  const fil=(q?clientes.filter(c=>c.nombre.toLowerCase().includes(q)):clientes).slice(0,50);
+  const cont=document.getElementById('cliResultados');
+  if(!fil.length){cont.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px;">Sin resultados</div>';return;}
+  cont.innerHTML=fil.map(c=>`<div class="cli-item" onclick="abrirFormCliente('${c.id}')"><span>${escHtml(c.nombre)}</span><span style="color:var(--muted);font-size:12px;">${c.telefono||''}</span></div>`).join('');
+}
+function abrirFormCliente(id){
+  document.getElementById('cliVistaLista').style.display='none';
+  document.getElementById('cliVistaForm').style.display='';
+  document.getElementById('btnGuardarCliente').style.display='';
+  document.getElementById('cClienteId').value=id||'';
+  if(id){
+    const cli=clientes.find(c=>c.id===id);
+    document.getElementById('cNombre').value=cli?.nombre||'';
+    document.getElementById('cTelefono').value=cli?.telefono||'';
+    document.getElementById('cObs').value=cli?.observaciones||'';
+    document.getElementById('modalClientesTitulo').textContent='Editar cliente';
+  } else {
+    ['cNombre','cTelefono','cObs'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('modalClientesTitulo').textContent='Nuevo cliente';
+  }
+}
+function volverListaClientes(){
+  document.getElementById('cliVistaLista').style.display='';
+  document.getElementById('cliVistaForm').style.display='none';
+  document.getElementById('btnGuardarCliente').style.display='none';
+  document.getElementById('modalClientesTitulo').textContent='Clientes';
+  filtrarClientesModal();
+}
+async function guardarClienteModal(){
+  const nombre=document.getElementById('cNombre').value.trim();
+  if(!nombre){mostrarToast('El nombre es obligatorio','err');return;}
+  const btn=document.getElementById('btnGuardarCliente');btn.disabled=true;btn.textContent='Guardando…';
+  const id=document.getElementById('cClienteId').value;
+  try{
+    const datos=limpiar({nombre,telefono:document.getElementById('cTelefono').value||null,observaciones:document.getElementById('cObs').value||null});
+    if(id){
+      await sbPatch('clientes',id,datos);
+      const idx=clientes.findIndex(c=>c.id===id);
+      if(idx>=0) clientes[idx]={...clientes[idx],...datos};
+      clientes.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+      mostrarToast('✓ Cliente actualizado','ok');
+    } else {
+      const nuevo=await sbPost('clientes',{...datos,fecha_alta:new Date().toISOString().slice(0,10)});
+      const cli={id:nuevo[0].id,nombre,telefono:datos.telefono||null,observaciones:datos.observaciones||null};
+      clientes.push(cli);clientes.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+      if(clienteCB){clienteCB(cli);clienteCB=null;cerrarModal('modalClientes');btn.disabled=false;btn.textContent='Guardar';return;}
+      mostrarToast('✓ Cliente creado','ok');
+    }
+    volverListaClientes();
+  }catch(err){mostrarToast('Error: '+err.message,'err');}
+  btn.disabled=false;btn.textContent='Guardar';
+}
+
+// ── RPC helper (next_cupon_nuevo) ─────────────────────────────────
+async function sbRpc(fn){
+  const h=getAuthHeaders(); h['Content-Type']='application/json';
+  const resp=await fetch(`${SB_URL}/rpc/${fn}`,{method:'POST',headers:h,body:'null'});
+  if(!resp.ok){ const e=await resp.json().catch(()=>({})); throw new Error(e.message||'HTTP '+resp.status); }
+  return resp.json();
 }
 
 // ── Popup en tiempo real ─────────────────────────────────────────
@@ -462,7 +690,7 @@ function suscribirRealtime(){
       if(n.estado==='Esperando confirmación sucursal' && o.estado!=='Esperando confirmación sucursal'){
         abrirPopup(n);
       }
-      cargarMisPedidos();
+      cargarTodo();
     })
     .subscribe();
 }
@@ -474,16 +702,8 @@ function abrirPopup(p){
   document.getElementById('modalPopup').classList.add('open');
 }
 function cerrarPopup(){ document.getElementById('modalPopup').classList.remove('open'); popupPrepId=null; }
-async function confirmarDesdePopup(){
-  if(!popupPrepId) return;
-  await confirmarPedido(popupPrepId, String(popupTienePrecio));
-  cerrarPopup();
-}
-async function cancelarDesdePopup(){
-  if(!popupPrepId) return;
-  await cancelarPedido(popupPrepId);
-  cerrarPopup();
-}
+async function confirmarDesdePopup(){ if(!popupPrepId) return; await confirmarPedido(popupPrepId, String(popupTienePrecio)); cerrarPopup(); }
+async function cancelarDesdePopup(){ if(!popupPrepId) return; await cancelarPedido(popupPrepId); cerrarPopup(); }
 </script>
 </body>
 </html>
