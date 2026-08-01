@@ -289,9 +289,9 @@
     <p id="popupCliente" style="color:var(--muted);font-size:13px;"></p>
     <div class="precio-grande" id="popupPrecio"></div>
     <p id="popupMensaje" style="font-size:13px;color:var(--muted);"></p>
+    <p style="font-size:12px;color:var(--muted);margin-top:10px;">Confirmalo o cancelalo desde la columna "Aceptado" del kanban.</p>
     <div class="popup-acciones">
-      <button class="btn btn-ghost" onclick="cancelarDesdePopup()">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmarDesdePopup()">Confirmar</button>
+      <button class="btn btn-primary" onclick="cerrarPopup()">Entendido</button>
     </div>
   </div>
 </div>
@@ -702,8 +702,6 @@ function abrirPopup(p){
   document.getElementById('modalPopup').classList.add('open');
 }
 function cerrarPopup(){ document.getElementById('modalPopup').classList.remove('open'); popupPrepId=null; }
-async function confirmarDesdePopup(){ if(!popupPrepId) return; await confirmarPedido(popupPrepId, String(popupTienePrecio)); cerrarPopup(); }
-async function cancelarDesdePopup(){ if(!popupPrepId) return; await cancelarPedido(popupPrepId); cerrarPopup(); }
 </script>
 </body>
 </html>
