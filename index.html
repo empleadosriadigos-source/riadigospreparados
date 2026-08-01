@@ -161,6 +161,26 @@
     .btn-danger{background:var(--danger);color:#fff;}
     .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
     .btn-sm{padding:5px 10px;font-size:12px;}
+    .badge-sucursal{display:inline-block;background:#F0E6FA;color:#6B3FA0;border:1px solid #D9C2ED;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:2px 8px;border-radius:20px;white-space:nowrap;}
+    .card .badge-sucursal{margin-left:6px;}
+    .bell-wrap{position:relative;display:inline-flex;}
+    .bell-btn{background:none;border:1px solid #555;color:#ccc;padding:6px 10px;border-radius:6px;cursor:pointer;display:flex;align-items:center;}
+    .bell-btn:hover{background:#444;}
+    .bell-badge{display:none;position:absolute;top:-6px;right:-6px;background:#B91C1C;color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:10px;align-items:center;justify-content:center;padding:0 4px;}
+    .drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:250;}
+    .drawer-overlay.open{display:block;}
+    .drawer{position:fixed;top:0;right:-400px;width:380px;max-width:92vw;height:100%;background:var(--surface);box-shadow:-4px 0 20px rgba(0,0,0,0.2);z-index:260;transition:right 0.2s;display:flex;flex-direction:column;}
+    .drawer-overlay.open .drawer{right:0;}
+    .drawer-header{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .drawer-header h2{font-size:15px;font-weight:700;}
+    .drawer-body{flex:1;overflow-y:auto;padding:14px 18px;}
+    .drawer-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin:14px 0 8px;}
+    .drawer-section-title:first-child{margin-top:0;}
+    .drawer-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;}
+    .drawer-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;}
+    .drawer-card-actions{display:flex;gap:8px;margin-top:8px;}
+    .drawer-card-actions .btn{flex:1;}
+    .drawer-empty{font-size:12px;color:var(--muted);}
     #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:11px 24px;border-radius:8px;font-size:14px;font-weight:500;color:#fff;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;white-space:nowrap;}
     #toast.show{opacity:1;}
     #toast.ok{background:var(--accent);}
@@ -230,9 +250,30 @@
   </a>
 
   <div class="topbar-right">
+    <div class="bell-wrap">
+      <button class="bell-btn" onclick="toggleDrawer()" title="Solicitudes de sucursal">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </button>
+      <span class="bell-badge" id="bellBadge">0</span>
+    </div>
     <span class="user-chip" id="userNombre"></span>
     <button class="btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
     <button id="btnActualizar" onclick="cargarTodo()">↺ Actualizar</button>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay" onclick="if(event.target===this) cerrarDrawer()">
+  <div class="drawer">
+    <div class="drawer-header">
+      <h2>Solicitudes de sucursal</h2>
+      <button class="modal-close" onclick="cerrarDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-section-title">Nuevas solicitudes</div>
+      <div id="drawerNuevas"></div>
+      <div class="drawer-section-title">Esperando confirmación</div>
+      <div id="drawerEsperando"></div>
+    </div>
   </div>
 </div>
 
@@ -546,6 +587,7 @@
       preparados = preps.map(p => ({ ...p, componentes: compMap[p.id] || [] }));
       setKanbanStatus('');
       renderKanban();
+      renderDrawer();
     } catch(err) {
       setKanbanStatus('Error al cargar: ' + err.message, true);
     }
@@ -661,7 +703,7 @@
     const svgChevronUp=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>`;
     div.innerHTML=`
       <div class="card-top">
-        <div class="card-cupon">${fmtCupon(p)}</div>
+        <div class="card-cupon">${fmtCupon(p)}${p.origen_sucursal?`<span class="badge-sucursal">${escHtml(p.origen_sucursal)}</span>`:''}</div>
         <div class="card-top-actions">
           <button class="icon-btn icon-btn-toggle" onclick="toggleCardView(event,'${p.id}')" title="${colapsada?'Expandir':'Colapsar'}">${colapsada?svgChevronDown:svgChevronUp}</button>
           <button class="icon-btn icon-btn-delete" onclick="abrirBorrar(event,'${p.id}')" title="Eliminar">${svgD}</button>
@@ -685,6 +727,106 @@
         <button class="icon-btn icon-btn-print" onclick="imprimirDesdeCard(event,'${p.id}')" title="Imprimir cupón">${svgPrint}</button>
       </div>`;
     return div;
+  }
+
+  // ── Drawer de solicitudes de sucursal ───────────────────────────────────
+  function toggleDrawer(){ document.getElementById('drawerOverlay').classList.toggle('open'); }
+  function cerrarDrawer(){ document.getElementById('drawerOverlay').classList.remove('open'); }
+
+  function renderDrawer(){
+    const nuevas = preparados.filter(p => p.estado === 'Petición sucursal');
+    const esperando = preparados.filter(p => p.estado === 'Esperando confirmación sucursal');
+    const badge = document.getElementById('bellBadge');
+    const total = nuevas.length + esperando.length;
+    badge.style.display = total > 0 ? 'flex' : 'none';
+    badge.textContent = total;
+
+    const contNuevas = document.getElementById('drawerNuevas');
+    contNuevas.innerHTML = nuevas.length ? '' : '<p class="drawer-empty">No hay solicitudes nuevas.</p>';
+    nuevas.forEach(p => contNuevas.appendChild(crearDrawerCardNueva(p)));
+
+    const contEsperando = document.getElementById('drawerEsperando');
+    contEsperando.innerHTML = esperando.length ? '' : '<p class="drawer-empty">Nada esperando confirmación.</p>';
+    esperando.forEach(p => contEsperando.appendChild(crearDrawerCardEsperando(p)));
+  }
+
+  function drogasResumenHtml(p){
+    return p.componentes.length
+      ? p.componentes.map(c=>`<div class="card-droga-row"><span class="card-droga-nom">${escHtml(c.droga_nombre||'')}</span><span class="card-droga-cant">${c.cantidad||''} ${c.unidad||''}</span></div>`).join('')
+      : '<div style="color:var(--muted);font-size:12px;">Sin componentes</div>';
+  }
+
+  function crearDrawerCardNueva(p){
+    const div = document.createElement('div');
+    div.className = 'drawer-card';
+    const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:''].filter(Boolean);
+    div.innerHTML = `
+      <div class="drawer-card-top">
+        <strong>${escHtml(p.cliente_nombre||'—')}</strong>
+        <span class="badge-sucursal">${escHtml(p.origen_sucursal||'')}</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">${escHtml(partes.join(' · '))}</div>
+      <div class="card-drogas">${drogasResumenHtml(p)}</div>
+      ${p.observaciones?`<div class="pedido-mensaje" style="font-size:12px;background:var(--surface);border-radius:6px;padding:6px 8px;margin-top:8px;border-left:3px solid var(--accent2);">${escHtml(p.observaciones)}</div>`:''}
+      <div class="field-group" style="margin-top:10px;margin-bottom:0;">
+        <label>Precio (opcional)</label>
+        <input type="number" min="0" step="any" id="precio-nueva-${p.id}" placeholder="Podés dejarlo vacío por ahora">
+      </div>
+      <div class="drawer-card-actions">
+        <button class="btn btn-danger btn-sm" onclick="rechazarSolicitud('${p.id}')">Rechazar</button>
+        <button class="btn btn-primary btn-sm" onclick="aceptarSolicitud('${p.id}')">Aceptar</button>
+      </div>`;
+    return div;
+  }
+
+  function crearDrawerCardEsperando(p){
+    const div = document.createElement('div');
+    div.className = 'drawer-card';
+    const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:''].filter(Boolean);
+    div.innerHTML = `
+      <div class="drawer-card-top">
+        <strong>${escHtml(p.cliente_nombre||'—')}</strong>
+        <span class="badge-sucursal">${escHtml(p.origen_sucursal||'')}</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">${escHtml(partes.join(' · '))}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Esperando que confirmen en ${escHtml(p.origen_sucursal||'la sucursal')}</div>
+      <div class="field-group" style="margin-bottom:6px;">
+        <label>Precio</label>
+        <input type="number" min="0" step="any" id="precio-esperando-${p.id}" value="${p.precio_venta ?? ''}">
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="guardarPrecioEsperando('${p.id}')">Guardar precio</button>`;
+    return div;
+  }
+
+  async function aceptarSolicitud(id){
+    const input = document.getElementById('precio-nueva-'+id);
+    const precio = input && input.value ? Number(input.value) : null;
+    try{
+      await sbPatch('preparados', id, { estado:'Esperando confirmación sucursal', precio_venta: precio });
+      mostrarToast('Solicitud aceptada, esperando confirmación de la sucursal', 'ok');
+      cargarTodo();
+    }catch(err){ mostrarToast('Error: '+err.message, 'err'); }
+  }
+
+  async function rechazarSolicitud(id){
+    const motivo = prompt('Motivo del rechazo (lo va a ver la sucursal):');
+    if(motivo === null) return;
+    if(!motivo.trim()){ mostrarToast('El motivo es obligatorio', 'err'); return; }
+    try{
+      await sbPatch('preparados', id, { estado:'Rechazado sucursal', mensaje_sucursal: motivo.trim() });
+      mostrarToast('Solicitud rechazada', 'ok');
+      cargarTodo();
+    }catch(err){ mostrarToast('Error: '+err.message, 'err'); }
+  }
+
+  async function guardarPrecioEsperando(id){
+    const input = document.getElementById('precio-esperando-'+id);
+    const precio = input && input.value ? Number(input.value) : null;
+    try{
+      await sbPatch('preparados', id, { precio_venta: precio });
+      mostrarToast('Precio actualizado', 'ok');
+      cargarTodo();
+    }catch(err){ mostrarToast('Error: '+err.message, 'err'); }
   }
 
   // ── SortableJS kanban ──────────────────────────────────────────────────
