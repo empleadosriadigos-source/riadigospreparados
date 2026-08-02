@@ -241,7 +241,10 @@
       </div>
       <div class="field-group" id="rClienteWrap" style="display:none;">
         <label>Cliente</label>
-        <div class="ss-wrap"><input type="text" id="rClienteInput" placeholder="Buscar cliente…" oninput="filtrarSSClienteR()" onfocus="abrirSSClienteR()" autocomplete="off"/><div class="ss-dropdown" id="ssClienteR"></div><input type="hidden" id="rClienteId"/></div>
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <div class="ss-wrap" style="flex:1;"><input type="text" id="rClienteInput" placeholder="Buscar cliente…" oninput="filtrarSSClienteR()" onfocus="abrirSSClienteR()" autocomplete="off"/><div class="ss-dropdown" id="ssClienteR"></div><input type="hidden" id="rClienteId"/></div>
+          <button type="button" class="btn btn-ghost btn-sm" style="white-space:nowrap;" onclick="abrirNuevoClienteRepetir()">＋ Nuevo</button>
+        </div>
       </div>
       <div class="field-group" id="rTelefonoWrap" style="display:none;">
         <label>Teléfono <span style="color:var(--danger)">*</span></label>
@@ -260,6 +263,19 @@
     <div class="modal-header"><h2>Nueva droga</h2><button class="modal-close" onclick="cerrarModal('modalDroga')">✕</button></div>
     <div class="modal-body"><p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Revisá el nombre antes de crear.</p><div class="field-group"><label>Nombre <span style="color:var(--danger)">*</span></label><input type="text" id="dNombre"/></div></div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal('modalDroga')">Cancelar</button><button class="btn btn-primary" id="btnGuardarDroga" onclick="guardarDroga()">Crear droga</button></div>
+  </div>
+</div>
+
+<!-- Modal Nuevo cliente (desde Repetir) -->
+<div class="modal-overlay" id="modalClienteRepetir">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h2>Nuevo cliente</h2><button class="modal-close" onclick="cerrarModal('modalClienteRepetir')">✕</button></div>
+    <div class="modal-body">
+      <div class="field-group"><label>Nombre <span style="color:var(--danger)">*</span></label><input type="text" id="rcNombre"/></div>
+      <div class="field-group"><label>Teléfono</label><input type="text" id="rcTelefono"/></div>
+      <div class="field-group"><label>Observaciones</label><textarea id="rcObs" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal('modalClienteRepetir')">Cancelar</button><button class="btn btn-primary" id="btnGuardarClienteRepetir" onclick="guardarClienteRepetir()">Crear cliente</button></div>
   </div>
 </div>
 
@@ -692,6 +708,29 @@
       mostrarToast('✓ Droga creada','ok');cerrarModal('modalDroga');document.getElementById('dNombre').value='';
     }catch(err){mostrarToast('Error: '+err.message,'err');}
     btn.disabled=false;btn.textContent='Crear droga';
+  }
+
+  function abrirNuevoClienteRepetir(){
+    document.getElementById('rcNombre').value='';
+    document.getElementById('rcTelefono').value='';
+    document.getElementById('rcObs').value='';
+    abrirModal('modalClienteRepetir');
+    setTimeout(()=>document.getElementById('rcNombre').focus(),100);
+  }
+  async function guardarClienteRepetir(){
+    const nombre=document.getElementById('rcNombre').value.trim();if(!nombre){mostrarToast('El nombre es obligatorio','err');return;}
+    const btn=document.getElementById('btnGuardarClienteRepetir');btn.disabled=true;btn.textContent='Creando…';
+    try{
+      const datos=limpiar({nombre,telefono:document.getElementById('rcTelefono').value||null,observaciones:document.getElementById('rcObs').value||null});
+      const nuevo=await sbPost('clientes',{...datos,fecha_alta:new Date().toISOString().slice(0,10)});
+      const cli={id:nuevo[0].id,nombre,telefono:datos.telefono||null,observaciones:datos.observaciones||null};
+      clientes.push(cli);clientes.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+      document.getElementById('rClienteInput').value=cli.nombre;
+      document.getElementById('rClienteId').value=cli.id;
+      const t=document.getElementById('rTelefono');t.value=cli.telefono||'';t.classList.remove('field-invalid');
+      mostrarToast('✓ Cliente creado','ok');cerrarModal('modalClienteRepetir');
+    }catch(err){mostrarToast('Error: '+err.message,'err');}
+    btn.disabled=false;btn.textContent='Crear cliente';
   }
 
   function onFormaChange(){
