@@ -562,6 +562,22 @@
     poblarSelect('eEstado', ESTADOS, false);
     document.getElementById('pEstado').value = 'Asignar precio';
     cargarTodo();
+    suscribirRealtime();
+  }
+
+  // ── Tiempo real: evita tener que tocar "Actualizar" a mano ──────────────
+  // Se debounce (400ms) porque varios cambios seguidos (ej. aceptar + que la
+  // sucursal confirme casi al toque) podian disparar cargarTodo() superpuesto
+  // y pisarse las respuestas entre si — eso generaba los errores intermitentes.
+  let _recargaTimeout = null;
+  function solicitarRecarga(){
+    clearTimeout(_recargaTimeout);
+    _recargaTimeout = setTimeout(cargarTodo, 400);
+  }
+  function suscribirRealtime(){
+    sbAuth.channel('preparados-admin')
+      .on('postgres_changes', {event:'*', schema:'public', table:'preparados'}, () => solicitarRecarga())
+      .subscribe();
   }
   document.addEventListener('click', e => { if(!e.target.closest('.ss-wrap')) cerrarTodasSS(); });
 

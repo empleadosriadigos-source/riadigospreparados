@@ -704,15 +704,20 @@ async function sbRpc(fn){
 
 // ── Popup en tiempo real ─────────────────────────────────────────
 let popupPrepId = null, popupTienePrecio = false;
+let _recargaTimeout = null;
+function solicitarRecarga(){
+  clearTimeout(_recargaTimeout);
+  _recargaTimeout = setTimeout(cargarTodo, 400);
+}
 function suscribirRealtime(){
   sbAuth.channel('preparados-sucursal')
-    .on('postgres_changes', {event:'UPDATE', schema:'public', table:'preparados'}, payload=>{
-      const n = payload.new, o = payload.old;
-      if(n.origen_sucursal !== SUCURSAL_NOMBRE) return;
+    .on('postgres_changes', {event:'*', schema:'public', table:'preparados'}, payload=>{
+      const n = payload.new || {}, o = payload.old || {};
+      if(n.origen_sucursal !== SUCURSAL_NOMBRE && o.origen_sucursal !== SUCURSAL_NOMBRE) return;
       if(n.estado==='Esperando confirmación sucursal' && o.estado!=='Esperando confirmación sucursal'){
         abrirPopup(n);
       }
-      cargarTodo();
+      solicitarRecarga();
     })
     .subscribe();
 }
