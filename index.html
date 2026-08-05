@@ -181,8 +181,19 @@
     .drawer-card-actions{display:flex;gap:8px;margin-top:8px;}
     .drawer-card-actions .btn{flex:1;}
     .drawer-empty{font-size:12px;color:var(--muted);}
-    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:11px 24px;border-radius:8px;font-size:14px;font-weight:500;color:#fff;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;white-space:nowrap;}
-    #toast.show{opacity:1;}
+    .chat-bubble{border-radius:12px;padding:8px 12px;margin-top:8px;font-size:13px;line-height:1.4;max-width:92%;}
+    .chat-bubble-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;opacity:0.75;}
+    .chat-bubble.chat-recibido{background:#E8F4FB;border:1px solid #C0DFF0;border-top-left-radius:3px;color:#2C5F73;}
+    .chat-bubble.chat-recibido .chat-bubble-label{color:#2C5F73;}
+    .chat-bubble.chat-rechazo{background:#FDECEA;border:1px solid #F3C6C0;border-top-left-radius:3px;color:#8A2E22;}
+    .chat-bubble.chat-rechazo .chat-bubble-label{color:var(--danger);}
+    .chat-bubble.chat-propio{background:#EAF6E4;border:1px solid #CFE9C2;border-top-right-radius:3px;color:#3D5C30;margin-left:auto;}
+    .chat-bubble.chat-propio .chat-bubble-label{color:#3D7A2A;}
+    .card{transition:box-shadow .15s, transform .15s;}
+    .modal{animation:modalIn .16s ease;}
+    @keyframes modalIn{from{opacity:0;transform:translateY(6px) scale(.98);}to{opacity:1;transform:none;}}
+    #toast{position:fixed;bottom:24px;left:50%;padding:11px 24px;border-radius:8px;font-size:14px;font-weight:500;color:#fff;opacity:0;pointer-events:none;z-index:999;white-space:nowrap;transition:opacity .25s ease, transform .25s ease;transform:translate(-50%,4px);}
+    #toast.show{opacity:1;transform:translate(-50%,0);}
     #toast.ok{background:var(--accent);}
     #toast.err{background:var(--danger);}
     .login-overlay{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;}
@@ -276,6 +287,20 @@
       <div id="drawerNuevas"></div>
       <div class="drawer-section-title">Esperando confirmación</div>
       <div id="drawerEsperando"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalRechazar">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h2>Rechazar solicitud</h2><button class="modal-close" onclick="cerrarModal('modalRechazar')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Este mensaje lo va a ver la sucursal, escribilo como si se lo estuvieras diciendo directamente.</p>
+      <div class="field-group"><label>Motivo del rechazo</label><textarea id="rechazarMotivo" rows="3" placeholder="Ej: no tenemos stock de esa droga hasta el jueves"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalRechazar')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmarRechazo()">Rechazar</button>
     </div>
   </div>
 </div>
@@ -801,7 +826,7 @@
       </div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">${escHtml(partes.join(' · '))}</div>
       <div class="card-drogas">${drogasResumenHtml(p)}</div>
-      ${p.observaciones?`<div class="pedido-mensaje" style="font-size:12px;background:var(--surface);border-radius:6px;padding:6px 8px;margin-top:8px;border-left:3px solid var(--accent2);">${escHtml(p.observaciones)}</div>`:''}
+      ${p.observaciones?`<div class="chat-bubble chat-recibido"><div class="chat-bubble-label">${escHtml(p.origen_sucursal||'Sucursal')} dice</div>${escHtml(p.observaciones)}</div>`:''}
       <div class="field-group" style="margin-top:10px;margin-bottom:0;">
         <label>Precio (opcional)</label>
         <input type="number" min="0" step="any" id="precio-nueva-${p.id}" placeholder="Podés dejarlo vacío por ahora">
@@ -842,13 +867,20 @@
     }catch(err){ mostrarToast('Error: '+err.message, 'err'); }
   }
 
-  async function rechazarSolicitud(id){
-    const motivo = prompt('Motivo del rechazo (lo va a ver la sucursal):');
-    if(motivo === null) return;
-    if(!motivo.trim()){ mostrarToast('El motivo es obligatorio', 'err'); return; }
+  let rechazarTargetId = null;
+  function rechazarSolicitud(id){
+    rechazarTargetId = id;
+    document.getElementById('rechazarMotivo').value = '';
+    abrirModal('modalRechazar');
+    setTimeout(()=>document.getElementById('rechazarMotivo').focus(), 100);
+  }
+  async function confirmarRechazo(){
+    const motivo = document.getElementById('rechazarMotivo').value.trim();
+    if(!motivo){ mostrarToast('Contale el motivo, así la sucursal entiende qué pasó', 'err'); return; }
     try{
-      await sbPatch('preparados', id, { estado:'Rechazado sucursal', mensaje_sucursal: motivo.trim() });
+      await sbPatch('preparados', rechazarTargetId, { estado:'Rechazado sucursal', mensaje_sucursal: motivo });
       mostrarToast('Solicitud rechazada', 'ok');
+      cerrarModal('modalRechazar');
       cargarTodo();
     }catch(err){ mostrarToast('Error: '+err.message, 'err'); }
   }

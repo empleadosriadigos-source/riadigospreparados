@@ -125,6 +125,18 @@
   .popup .precio-grande{font-size:28px;font-weight:800;color:var(--accent);margin:12px 0;}
   .popup-acciones{display:flex;gap:10px;margin-top:18px;}
   .popup-acciones .btn{flex:1;}
+  .chat-bubble{border-radius:12px;padding:8px 12px;margin-top:8px;font-size:13px;line-height:1.4;max-width:92%;}
+  .chat-bubble-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;opacity:0.75;}
+  .chat-bubble.chat-recibido{background:#E8F4FB;border:1px solid #C0DFF0;border-top-left-radius:3px;color:#2C5F73;}
+  .chat-bubble.chat-recibido .chat-bubble-label{color:#2C5F73;}
+  .chat-bubble.chat-rechazo{background:#FDECEA;border:1px solid #F3C6C0;border-top-left-radius:3px;color:#8A2E22;}
+  .chat-bubble.chat-rechazo .chat-bubble-label{color:var(--danger);}
+  .chat-bubble.chat-propio{background:#EAF6E4;border:1px solid #CFE9C2;border-top-right-radius:3px;color:#3D5C30;margin-left:auto;}
+  .chat-bubble.chat-propio .chat-bubble-label{color:#3D7A2A;}
+  .card{transition:box-shadow .15s, transform .15s;}
+  .modal{animation:modalIn .16s ease;}
+  .popup{animation:modalIn .18s ease;}
+  @keyframes modalIn{from{opacity:0;transform:translateY(6px) scale(.98);}to{opacity:1;transform:none;}}
   @media (max-width:640px){
     html{font-size:14px;}
     .modal{width:100%;height:100%;max-width:100%;max-height:100%;border-radius:0;}
@@ -315,6 +327,17 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modalCancelar">
+  <div class="popup">
+    <h3>¿Cancelar este pedido?</h3>
+    <p style="font-size:13px;color:var(--muted);margin-top:6px;">San Martín va a ver que lo cancelaste vos.</p>
+    <div class="popup-acciones">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalCancelar')">Volver</button>
+      <button class="btn btn-danger" onclick="confirmarCancelacionModal()">Sí, cancelar</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <div class="modal-overlay" id="modalPopup">
@@ -485,17 +508,21 @@ function crearTarjeta(p){
     <div class="card-meta" style="margin-bottom:6px;">${escHtml(partes.join(' · '))}</div>
     <div class="card-drogas">${drogasHtml(p)}</div>`;
 
+  if(p.observaciones){
+    cuerpo += `<div class="chat-bubble chat-propio"><div class="chat-bubble-label">Vos escribiste</div>${escHtml(p.observaciones)}</div>`;
+  }
+
   if(p.estado==='Petición sucursal'){
     cuerpo += `<span class="badge badge-espera">Esperando respuesta</span>`;
   } else if(p.estado==='Rechazado sucursal'){
     cuerpo += `<span class="badge badge-rechazo">Rechazado</span>`;
-    if(p.mensaje_sucursal) cuerpo += `<div class="card-mensaje">Motivo: ${escHtml(p.mensaje_sucursal)}</div>`;
+    if(p.mensaje_sucursal) cuerpo += `<div class="chat-bubble chat-rechazo"><div class="chat-bubble-label">Rechazado por San Martín</div>${escHtml(p.mensaje_sucursal)}</div>`;
   } else if(p.estado==='Esperando confirmación sucursal'){
     cuerpo += `<span class="badge badge-precio">Precio propuesto</span>`;
     cuerpo += `<div class="card-precio">${p.precio_venta!=null?'$'+p.precio_venta:'A confirmar'}</div>`;
-    if(p.mensaje_sucursal) cuerpo += `<div class="card-mensaje">${escHtml(p.mensaje_sucursal)}</div>`;
+    if(p.mensaje_sucursal) cuerpo += `<div class="chat-bubble chat-recibido"><div class="chat-bubble-label">San Martín dice</div>${escHtml(p.mensaje_sucursal)}</div>`;
     cuerpo += `<div class="card-acciones">
-      <button class="btn btn-ghost btn-sm" onclick="cancelarPedido('${p.id}')">Cancelar</button>
+      <button class="btn btn-ghost btn-sm" onclick="pedirCancelarPedido('${p.id}')">Cancelar</button>
       <button class="btn btn-primary btn-sm" onclick="confirmarPedido('${p.id}','${p.precio_venta!=null}')">Confirmar</button>
     </div>`;
   } else if(p.estado==='Cancelado sucursal'){
@@ -519,12 +546,18 @@ async function confirmarPedido(id, tienePrecioStr){
   }catch(err){ mostrarToast('Error: '+err.message,'err'); }
 }
 async function cancelarPedido(id){
-  if(!confirm('¿Cancelar este pedido?')) return;
   try{
     await sbPatch('preparados', id, { estado: 'Cancelado sucursal' });
     mostrarToast('Pedido cancelado','ok');
     cargarTodo();
   }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+}
+let cancelarTargetId = null;
+function pedirCancelarPedido(id){ cancelarTargetId = id; abrirModal('modalCancelar'); }
+async function confirmarCancelacionModal(){
+  cerrarModal('modalCancelar');
+  if(cancelarTargetId) await cancelarPedido(cancelarTargetId);
+  cancelarTargetId = null;
 }
 
 // ── Cargar preparado (modal, idéntico en espíritu al de index.html) ─────
@@ -661,10 +694,11 @@ function renderHistorial(lista){
     const div = document.createElement('div');
     div.className = 'hist-item';
     let extra = '';
-    if(p.estado==='Rechazado sucursal' && p.mensaje_sucursal) extra += `<div class="card-mensaje">Motivo: ${escHtml(p.mensaje_sucursal)}</div>`;
-    if(p.precio_venta!=null) extra += `<div style="font-size:13px;font-weight:700;color:var(--accent);margin-top:4px;">$${p.precio_venta}</div>`;
+    if(p.observaciones) extra += `<div class="chat-bubble chat-propio"><div class="chat-bubble-label">Vos escribiste</div>${escHtml(p.observaciones)}</div>`;
+    if(p.estado==='Rechazado sucursal' && p.mensaje_sucursal) extra += `<div class="chat-bubble chat-rechazo"><div class="chat-bubble-label">Rechazado por San Martín</div>${escHtml(p.mensaje_sucursal)}</div>`;
+    else if(p.mensaje_sucursal) extra += `<div class="chat-bubble chat-recibido"><div class="chat-bubble-label">San Martín dice</div>${escHtml(p.mensaje_sucursal)}</div>`;
+    if(p.precio_venta!=null) extra += `<div style="font-size:13px;font-weight:700;color:var(--accent);margin-top:6px;">$${p.precio_venta}</div>`;
     if(p.nro_receta) extra += `<div class="hist-item-meta" style="margin-top:2px;">Receta #${p.nro_receta}</div>`;
-    if(p.observaciones) extra += `<div class="card-mensaje">${escHtml(p.observaciones)}</div>`;
     div.innerHTML = `
       <div class="hist-item-top">
         <span class="hist-item-cliente">#${p.nro_cupon_nuevo??'—'} · ${escHtml(p.cliente_nombre||'—')}</span>
