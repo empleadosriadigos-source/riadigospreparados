@@ -425,6 +425,15 @@ const ESTADOS_PETICION = ['Petición sucursal','Rechazado sucursal'];
 const ESTADOS_ACEPTADO = ['Esperando confirmación sucursal','Cancelado sucursal'];
 const ESTADOS_PREP = ['Asignar precio','En laboratorio'];
 const ESTADOS_RETIRAR = ['Para retirar'];
+const DIAS_LIMPIEZA_KANBAN = 3; // rechazados/cancelados se ocultan del kanban pasado este tiempo; siguen en "Buscar anteriores"
+
+function estaExpiradoDelKanban(p){
+  if(p.estado!=='Rechazado sucursal' && p.estado!=='Cancelado sucursal') return false;
+  const fecha = p.fecha_cambio_estado || p.created_at;
+  if(!fecha) return false;
+  const dias = (Date.now() - new Date(fecha).getTime()) / 86400000;
+  return dias > DIAS_LIMPIEZA_KANBAN;
+}
 
 function renderKanban(){
   const bP = document.getElementById('body-peticion'), bA = document.getElementById('body-aceptado'),
@@ -432,6 +441,7 @@ function renderKanban(){
   bP.innerHTML=''; bA.innerHTML=''; bPr.innerHTML=''; bR.innerHTML='';
   let cP=0, cA=0, cPr=0, cR=0;
   preparados.forEach(p=>{
+    if(estaExpiradoDelKanban(p)) return;
     if(ESTADOS_PETICION.includes(p.estado)){ bP.appendChild(crearTarjeta(p)); cP++; }
     else if(ESTADOS_ACEPTADO.includes(p.estado)){ bA.appendChild(crearTarjeta(p)); cA++; }
     else if(ESTADOS_PREP.includes(p.estado)){ bPr.appendChild(crearTarjeta(p)); cPr++; }
@@ -617,7 +627,14 @@ async function abrirModalHistorial(){
   document.getElementById('histResultados').innerHTML = '<p class="hist-empty">Cargando…</p>';
   abrirModal('modalHistorial');
   try{
-    historial = await sbGet(`preparados_completos?origen_sucursal=eq.${encodeURIComponent(SUCURSAL_NOMBRE)}&order=created_at.desc`);
+    const preps = await sbGet(`preparados_completos?origen_sucursal=eq.${encodeURIComponent(SUCURSAL_NOMBRE)}&order=created_at.desc`);
+    const compMap = {};
+    if(preps.length>0){
+      const ids = preps.map(p=>p.id).join(',');
+      const comps = await sbGet('componentes_con_droga?preparado_id=in.('+ids+')');
+      comps.forEach(c=>{ if(!compMap[c.preparado_id]) compMap[c.preparado_id]=[]; compMap[c.preparado_id].push(c); });
+    }
+    historial = preps.map(p=>({...p, componentes: compMap[p.id]||[]}));
     renderHistorial(historial);
   }catch(err){
     document.getElementById('histResultados').innerHTML = '<p class="hist-empty">Error al cargar: '+err.message+'</p>';
@@ -629,7 +646,9 @@ function filtrarHistorial(){
   renderHistorial(historial.filter(p =>
     (p.cliente_nombre||'').toLowerCase().includes(q) ||
     (p.forma_farmaceutica||'').toLowerCase().includes(q) ||
-    (p.nro_cupon_nuevo!=null && String(p.nro_cupon_nuevo).includes(q))
+    (p.observaciones||'').toLowerCase().includes(q) ||
+    (p.nro_cupon_nuevo!=null && String(p.nro_cupon_nuevo).includes(q)) ||
+    p.componentes.some(c => (c.droga_nombre||'').toLowerCase().includes(q))
   ));
 }
 function renderHistorial(lista){
@@ -641,35 +660,39 @@ function renderHistorial(lista){
     const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:''].filter(Boolean);
     const div = document.createElement('div');
     div.className = 'hist-item';
+    let extra = '';
+    if(p.estado==='Rechazado sucursal' && p.mensaje_sucursal) extra += `<div class="card-mensaje">Motivo: ${escHtml(p.mensaje_sucursal)}</div>`;
+    if(p.precio_venta!=null) extra += `<div style="font-size:13px;font-weight:700;color:var(--accent);margin-top:4px;">$${p.precio_venta}</div>`;
+    if(p.nro_receta) extra += `<div class="hist-item-meta" style="margin-top:2px;">Receta #${p.nro_receta}</div>`;
+    if(p.observaciones) extra += `<div class="card-mensaje">${escHtml(p.observaciones)}</div>`;
     div.innerHTML = `
       <div class="hist-item-top">
         <span class="hist-item-cliente">#${p.nro_cupon_nuevo??'—'} · ${escHtml(p.cliente_nombre||'—')}</span>
         <span class="badge ${info.cls}">${info.txt}</span>
       </div>
       <div class="hist-item-meta">${fmtFecha(p.fecha_recepcion)} · ${escHtml(partes.join(' · '))}</div>
-      <button class="btn btn-ghost btn-sm" onclick="repetirDesdeHistorial('${p.id}')">↺ Repetir este pedido</button>`;
+      <div class="card-drogas">${drogasHtml(p)}</div>
+      ${extra}
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="repetirDesdeHistorial('${p.id}')">↺ Repetir este pedido</button>`;
     cont.appendChild(div);
   });
 }
 async function repetirDesdeHistorial(id){
   const p = historial.find(x=>x.id===id);
   if(!p) return;
-  try{
-    const comps = await sbGet(`componentes_con_droga?preparado_id=eq.${id}`);
-    cerrarModal('modalHistorial');
-    abrirModalPedido();
-    document.getElementById('pClienteInput').value = p.cliente_nombre||'';
-    document.getElementById('pClienteId').value = p.cliente_id||'';
-    document.getElementById('pTelefono').value = p.cliente_telefono||'';
-    document.getElementById('pForma').value = p.forma_farmaceutica||'';
-    onFormaChange('p');
-    document.getElementById('pUnidad').value = p.unidad||'';
-    document.getElementById('pCantTotal').value = p.cantidad_total ?? '';
-    document.getElementById('pObs').value = p.observaciones||'';
-    document.getElementById('compRowsNuevo').innerHTML = '';
-    comps.forEach(c => agregarCompRow('compRowsNuevo', {drogaId:c.droga_id, nombre:c.droga_nombre, cantidad:c.cantidad, unidad:c.unidad}));
-    mostrarToast('Datos copiados — revisá y enviá a San Martín','ok');
-  }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+  cerrarModal('modalHistorial');
+  abrirModalPedido();
+  document.getElementById('pClienteInput').value = p.cliente_nombre||'';
+  document.getElementById('pClienteId').value = p.cliente_id||'';
+  document.getElementById('pTelefono').value = p.cliente_telefono||'';
+  document.getElementById('pForma').value = p.forma_farmaceutica||'';
+  onFormaChange('p');
+  document.getElementById('pUnidad').value = p.unidad||'';
+  document.getElementById('pCantTotal').value = p.cantidad_total ?? '';
+  document.getElementById('pObs').value = p.observaciones||'';
+  document.getElementById('compRowsNuevo').innerHTML = '';
+  p.componentes.forEach(c => agregarCompRow('compRowsNuevo', {drogaId:c.droga_id, nombre:c.droga_nombre, cantidad:c.cantidad, unidad:c.unidad}));
+  mostrarToast('Datos copiados — revisá y enviá a San Martín','ok');
 }
 
 // ── Componentes (idéntico a index.html, sin c.s.p ya que acá no hay cantidad total confirmada) ─
