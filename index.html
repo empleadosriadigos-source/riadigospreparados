@@ -578,6 +578,7 @@
     sbAuth.channel('preparados-admin')
       .on('postgres_changes', {event:'*', schema:'public', table:'preparados'}, () => solicitarRecarga())
       .subscribe();
+    setInterval(solicitarRecarga, 15000);
   }
   document.addEventListener('click', e => { if(!e.target.closest('.ss-wrap')) cerrarTodasSS(); });
 

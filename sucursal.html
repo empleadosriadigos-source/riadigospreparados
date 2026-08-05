@@ -362,6 +362,8 @@ async function initApp(){
 document.addEventListener('click', e => { if(!e.target.closest('.ss-wrap')) cerrarTodasSS(); });
 
 // ── Cargar y renderizar kanban ──────────────────────────────────
+let estadosConocidos = {}; // id -> estado anterior, para detectar transiciones y disparar el popup sin depender solo de que llegue el evento de realtime
+
 async function cargarTodo(){
   document.getElementById('kanbanStatus').textContent = 'Cargando…';
   try{
@@ -373,6 +375,17 @@ async function cargarTodo(){
       comps.forEach(c=>{ if(!compMap[c.preparado_id]) compMap[c.preparado_id]=[]; compMap[c.preparado_id].push(c); });
     }
     preparados = preps.map(p=>({...p, componentes: compMap[p.id]||[]}));
+
+    const nuevosEstados = {};
+    preparados.forEach(p=>{
+      nuevosEstados[p.id] = p.estado;
+      const anterior = estadosConocidos[p.id];
+      if(anterior !== undefined && anterior !== 'Esperando confirmación sucursal' && p.estado === 'Esperando confirmación sucursal'){
+        abrirPopup(p);
+      }
+    });
+    estadosConocidos = nuevosEstados;
+
     document.getElementById('kanbanStatus').textContent = '';
     renderKanban();
   }catch(err){
@@ -711,15 +724,11 @@ function solicitarRecarga(){
 }
 function suscribirRealtime(){
   sbAuth.channel('preparados-sucursal')
-    .on('postgres_changes', {event:'*', schema:'public', table:'preparados'}, payload=>{
-      const n = payload.new || {}, o = payload.old || {};
-      if(n.origen_sucursal !== SUCURSAL_NOMBRE && o.origen_sucursal !== SUCURSAL_NOMBRE) return;
-      if(n.estado==='Esperando confirmación sucursal' && o.estado!=='Esperando confirmación sucursal'){
-        abrirPopup(n);
-      }
-      solicitarRecarga();
-    })
+    .on('postgres_changes', {event:'*', schema:'public', table:'preparados'}, () => solicitarRecarga())
     .subscribe();
+  // Respaldo: si por algún motivo el evento de tiempo real no llega (RLS,
+  // reconexión del socket, etc.), esto igual mantiene todo al día.
+  setInterval(solicitarRecarga, 15000);
 }
 function abrirPopup(p){
   popupPrepId = p.id; popupTienePrecio = p.precio_venta!=null;
