@@ -250,6 +250,9 @@
   </a>
 
   <div class="topbar-right">
+    <button class="bell-btn" onclick="abrirPapelera()" title="Papelera" style="margin-right:2px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+    </button>
     <div class="bell-wrap">
       <button class="bell-btn" onclick="toggleDrawer()" title="Solicitudes de sucursal">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -274,6 +277,20 @@
       <div class="drawer-section-title">Esperando confirmación</div>
       <div id="drawerEsperando"></div>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalPapelera">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Papelera</h2>
+      <button class="modal-close" onclick="cerrarModal('modalPapelera')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Los preparados eliminados se guardan acá 30 días antes de borrarse en serio.</p>
+      <div id="papeleraLista" style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto;"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal('modalPapelera')">Cerrar</button></div>
   </div>
 </div>
 
@@ -588,7 +605,7 @@
     document.getElementById('kanbanCols').style.display = 'none';
     try {
       const [preps, drs, clis] = await Promise.all([
-        sbGet('preparados_completos?estado=neq.Entregado&order=fecha_recepcion.desc'),
+        sbGet('preparados_completos?estado=neq.Entregado&eliminado_en=is.null&order=fecha_recepcion.desc'),
         sbGet('drogas?order=nombre.asc', true),
         sbGet('clientes?order=nombre.asc&select=id,nombre,telefono,observaciones'),
       ]);
@@ -931,11 +948,48 @@
     const btn=document.getElementById('btnConfirmarBorrar');
     btn.disabled=true;btn.textContent='Eliminando…';
     try{
-      await sbDelete('componentes?preparado_id=eq.'+prepActual.id);
-      await sbDelete('preparados?id=eq.'+prepActual.id);
-      preparados=preparados.filter(x=>x.id!==prepActual.id);renderKanban();mostrarToast('✓ Eliminado','ok');cerrarModal('modalBorrar');
+      await sbPatch('preparados', prepActual.id, {eliminado_en: new Date().toISOString()});
+      preparados=preparados.filter(x=>x.id!==prepActual.id);renderKanban();renderDrawer();
+      mostrarToast('✓ Movido a la papelera (se puede recuperar)','ok');cerrarModal('modalBorrar');
     }catch(err){mostrarToast('Error: '+err.message,'err');}
     btn.disabled=false;btn.textContent='Eliminar';
+  }
+
+  // ── Papelera (preparados eliminados, recuperables por 30 días) ──────────
+  async function abrirPapelera(){
+    document.getElementById('papeleraLista').innerHTML = '<p style="color:var(--muted);font-size:13px;">Cargando…</p>';
+    abrirModal('modalPapelera');
+    try{
+      const items = await sbGet('preparados_completos?eliminado_en=not.is.null&order=eliminado_en.desc');
+      renderPapelera(items);
+    }catch(err){
+      document.getElementById('papeleraLista').innerHTML = '<p style="color:var(--danger);font-size:13px;">Error: '+err.message+'</p>';
+    }
+  }
+  function renderPapelera(items){
+    const cont = document.getElementById('papeleraLista');
+    if(!items.length){ cont.innerHTML = '<p style="color:var(--muted);font-size:13px;">La papelera está vacía.</p>'; return; }
+    cont.innerHTML = '';
+    items.forEach(p=>{
+      const vence = new Date(new Date(p.eliminado_en).getTime() + 30*86400000);
+      const div = document.createElement('div');
+      div.style.cssText = 'background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;';
+      div.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
+          <strong style="font-size:13px;">${fmtCupon(p)} · ${escHtml(p.cliente_nombre||'—')}</strong>
+          <button class="btn btn-primary btn-sm" onclick="recuperarPreparado('${p.id}')">↺ Recuperar</button>
+        </div>
+        <div style="font-size:12px;color:var(--muted);">${escHtml(p.forma_farmaceutica||'')} · Eliminado el ${fmtFecha(p.eliminado_en.slice(0,10))} · Se borra definitivo el ${fmtFecha(vence.toISOString().slice(0,10))}</div>`;
+      cont.appendChild(div);
+    });
+  }
+  async function recuperarPreparado(id){
+    try{
+      await sbPatch('preparados', id, {eliminado_en: null});
+      mostrarToast('✓ Recuperado','ok');
+      await abrirPapelera();
+      cargarTodo();
+    }catch(err){ mostrarToast('Error: '+err.message,'err'); }
   }
 
   // ── Editar ─────────────────────────────────────────────────────────────

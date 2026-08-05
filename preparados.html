@@ -703,7 +703,7 @@
 
   async function confirmarBorrar(){
     const btn=document.getElementById('btnConfirmarBorrar');btn.disabled=true;btn.textContent='Eliminando…';
-    try{await sbDelete('componentes?preparado_id=eq.'+prepActual.id);await sbDelete('preparados?id=eq.'+prepActual.id);mostrarToast('✓ Eliminado','ok');cerrarModal('modalBorrar');await filtrar();}
+    try{await sbPatch('preparados', prepActual.id, {eliminado_en: new Date().toISOString()});mostrarToast('✓ Movido a la papelera (Papelera en el Kanban)','ok');cerrarModal('modalBorrar');await filtrar();}
     catch(err){mostrarToast('Error: '+err.message,'err');}
     btn.disabled=false;btn.textContent='Eliminar';
   }

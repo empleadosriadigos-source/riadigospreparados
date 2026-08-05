@@ -393,7 +393,7 @@ let estadosConocidos = {}; // id -> estado anterior, para detectar transiciones 
 async function cargarTodo(){
   document.getElementById('kanbanStatus').textContent = 'Cargando…';
   try{
-    const preps = await sbGet(`preparados?origen_sucursal=eq.${encodeURIComponent(SUCURSAL_NOMBRE)}&estado=neq.Entregado&order=created_at.desc`);
+    const preps = await sbGet(`preparados?origen_sucursal=eq.${encodeURIComponent(SUCURSAL_NOMBRE)}&estado=neq.Entregado&eliminado_en=is.null&order=created_at.desc`);
     const compMap = {};
     if(preps.length>0){
       const ids = preps.map(p=>p.id).join(',');
@@ -627,7 +627,7 @@ async function abrirModalHistorial(){
   document.getElementById('histResultados').innerHTML = '<p class="hist-empty">Cargando…</p>';
   abrirModal('modalHistorial');
   try{
-    const preps = await sbGet(`preparados_completos?origen_sucursal=eq.${encodeURIComponent(SUCURSAL_NOMBRE)}&order=created_at.desc`);
+    const preps = await sbGet(`preparados_completos?origen_sucursal=eq.${encodeURIComponent(SUCURSAL_NOMBRE)}&eliminado_en=is.null&order=created_at.desc`);
     const compMap = {};
     if(preps.length>0){
       const ids = preps.map(p=>p.id).join(',');
