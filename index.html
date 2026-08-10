@@ -1532,6 +1532,9 @@
       }
       function linea(s){ return [...txt(s),...LF]; }
       function sep(){ return [...txt(LINE),...LF]; }
+      // '‰' (tanto por mil) no existe en la tabla PC850 de la impresora y cae a '?'.
+      // Solo para texto que va al ticket, se reemplaza por 'o/oo'. En pantalla se sigue mostrando el símbolo real.
+      function unidadImp(u){ return u === '‰' ? 'o/oo' : (u || ''); }
 
       const fecha = prep.fecha_recepcion ? prep.fecha_recepcion.slice(8,10)+'/'+prep.fecha_recepcion.slice(5,7)+'/'+prep.fecha_recepcion.slice(0,4) : '';
       const cupon = prep.nro_cupon_nuevo != null ? String(prep.nro_cupon_nuevo) : 'T'+String(prep.nro_cupon ?? '');
@@ -1546,14 +1549,14 @@
       // Componentes resumidos para cliente
       const compsCorto = (prep.componentes||[]).map(c=>{
         let s = (c.droga_nombre||'');
-        if(c.cantidad!=null) s += ' '+c.cantidad+(c.unidad?' '+c.unidad:'');
+        if(c.cantidad!=null) s += ' '+c.cantidad+(c.unidad?' '+unidadImp(c.unidad):'');
         return s;
       }).join(' - ');
 
       // Componentes detallados para farmacia
       const compsLargoData = (prep.componentes||[]).map(c=>{
         const nom = (c.droga_nombre||'');
-        const det = c.cantidad!=null ? String(c.cantidad)+(c.unidad?' '+c.unidad:'') : '';
+        const det = c.cantidad!=null ? String(c.cantidad)+(c.unidad?' '+unidadImp(c.unidad):'') : '';
         const linePad = (nom+'                      ').slice(0,22)+det;
         return linea(linePad);
       }).flat();
