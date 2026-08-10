@@ -7,7 +7,7 @@
 const ESTADOS   = ['Asignar precio','En laboratorio','Para retirar','Entregado'];
 const FORMAS    = ['Solución','Loción','Crema','Ungüento','Gel','Spray','Shampoo','Cápsulas','Suspensión','Jarabe','Gotas','Polvo','Sobres','Oro Base','Glóbulos'];
 const UNIDADES  = ['ml','g','mg','unidades','UI'];
-const UNID_COMP = ['ml','g','mg','%','mcg','UI','c.s.p','mg/ml','g/ml','mcg/ml','UI/ml'];
+const UNID_COMP = ['ml','g','mg','%','‰','mcg','UI','c.s.p','mg/ml','g/ml','mcg/ml','UI/ml'];
 
 // Unidad fija (bloqueada) segun forma farmaceutica
 const FORMA_UNIDAD = {
