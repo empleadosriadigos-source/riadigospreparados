@@ -181,14 +181,25 @@
     .drawer-card-actions{display:flex;gap:8px;margin-top:8px;}
     .drawer-card-actions .btn{flex:1;}
     .drawer-empty{font-size:12px;color:var(--muted);}
-    .chat-bubble{border-radius:12px;padding:8px 12px;margin-top:8px;font-size:13px;line-height:1.4;max-width:92%;}
-    .chat-bubble-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;opacity:0.75;}
+    .chat-bubble{border-radius:12px;padding:7px 11px;font-size:12.5px;line-height:1.35;max-width:88%;}
+    .chat-bubble-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;opacity:0.75;}
     .chat-bubble.chat-recibido{background:#E8F4FB;border:1px solid #C0DFF0;border-top-left-radius:3px;color:#2C5F73;}
     .chat-bubble.chat-recibido .chat-bubble-label{color:#2C5F73;}
     .chat-bubble.chat-rechazo{background:#FDECEA;border:1px solid #F3C6C0;border-top-left-radius:3px;color:#8A2E22;}
     .chat-bubble.chat-rechazo .chat-bubble-label{color:var(--danger);}
     .chat-bubble.chat-propio{background:#EAF6E4;border:1px solid #CFE9C2;border-top-right-radius:3px;color:#3D5C30;margin-left:auto;}
     .chat-bubble.chat-propio .chat-bubble-label{color:#3D7A2A;}
+    .minichat{border:1px solid var(--border);border-radius:8px;margin-top:8px;background:var(--bg);overflow:hidden;}
+    .minichat-messages{height:130px;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px;scroll-behavior:smooth;}
+    .minichat-empty{font-size:11px;color:var(--muted);text-align:center;margin:auto;}
+    .minichat-input-row{display:flex;gap:6px;padding:6px;border-top:1px solid var(--border);background:var(--surface);}
+    .minichat-input-row input{flex:1;padding:5px 10px;border:1px solid var(--border);border-radius:20px;font-size:12px;background:var(--bg);outline:none;}
+    .minichat-input-row button{border-radius:20px;padding:5px 12px;}
+    .card.card-item-collapsed .minichat{display:none;}
+    .popup{background:var(--surface);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,.25);max-width:380px;width:100%;padding:26px 24px;text-align:center;animation:modalIn .16s ease;}
+    .popup h3{font-size:16px;margin-bottom:4px;}
+    .popup-acciones{display:flex;gap:10px;margin-top:18px;}
+    .popup-acciones .btn{flex:1;}
     .card{transition:box-shadow .15s, transform .15s;}
     .modal{animation:modalIn .16s ease;}
     @keyframes modalIn{from{opacity:0;transform:translateY(6px) scale(.98);}to{opacity:1;transform:none;}}
@@ -292,15 +303,12 @@
 </div>
 
 <div class="modal-overlay" id="modalRechazar">
-  <div class="modal modal-sm">
-    <div class="modal-header"><h2>Rechazar solicitud</h2><button class="modal-close" onclick="cerrarModal('modalRechazar')">✕</button></div>
-    <div class="modal-body">
-      <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Este mensaje lo va a ver la sucursal, escribilo como si se lo estuvieras diciendo directamente.</p>
-      <div class="field-group"><label>Motivo del rechazo</label><textarea id="rechazarMotivo" rows="3" placeholder="Ej: no tenemos stock de esa droga hasta el jueves"></textarea></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="cerrarModal('modalRechazar')">Cancelar</button>
-      <button class="btn btn-danger" onclick="confirmarRechazo()">Rechazar</button>
+  <div class="popup">
+    <h3>¿Rechazar esta solicitud?</h3>
+    <p style="font-size:13px;color:var(--muted);margin-top:6px;">La sucursal va a ver que la rechazaste. Si querés explicarle por qué, escribile por el chat del preparado.</p>
+    <div class="popup-acciones">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalRechazar')">Volver</button>
+      <button class="btn btn-danger" onclick="confirmarRechazo()">Sí, rechazar</button>
     </div>
   </div>
 </div>
@@ -619,7 +627,10 @@
   function suscribirRealtime(){
     sbAuth.channel('preparados-admin')
       .on('postgres_changes', {event:'*', schema:'public', table:'preparados'}, () => solicitarRecarga())
-      .on('postgres_changes', {event:'*', schema:'public', table:'preparado_comentarios'}, () => solicitarRecarga())
+      .on('postgres_changes', {event:'*', schema:'public', table:'preparado_comentarios'}, payload => {
+        const pid = payload.new?.preparado_id || payload.old?.preparado_id;
+        if(pid) refrescarChat(pid);
+      })
       .subscribe();
     setInterval(solicitarRecarga, 15000);
   }
@@ -742,6 +753,7 @@
     if(elCount) elCount.textContent = (termino || soloDemorados) ? `${visibles} de ${total}` : '';
     document.getElementById('kanbanCols').style.display='grid';
     initSortable();
+    scrollTodosLosChats();
   }
 
   function crearTarjeta(p, termino='', antigClase=null, dias=0) {
@@ -789,7 +801,8 @@
       <div class="card-bottom-actions">
         <button class="icon-btn icon-btn-edit" onclick="abrirEditar(event,'${p.id}')" title="Editar">${svgE}</button>
         <button class="icon-btn icon-btn-print" onclick="imprimirDesdeCard(event,'${p.id}')" title="Imprimir cupón">${svgPrint}</button>
-      </div>`;
+      </div>
+      ${p.origen_sucursal?renderMiniChat(p):''}`;
     return div;
   }
 
@@ -812,6 +825,7 @@
     const contEsperando = document.getElementById('drawerEsperando');
     contEsperando.innerHTML = esperando.length ? '' : '<p class="drawer-empty">Nada esperando confirmación.</p>';
     esperando.forEach(p => contEsperando.appendChild(crearDrawerCardEsperando(p)));
+    scrollTodosLosChats();
   }
 
   function drogasResumenHtml(p){
@@ -820,36 +834,55 @@
       : '<div style="color:var(--muted);font-size:12px;">Sin componentes</div>';
   }
 
-  function renderHiloAdmin(p){
-    let html = '';
-    if(p.observaciones){
-      html += `<div style="font-size:12px;color:var(--muted);background:var(--bg);border-radius:6px;padding:6px 8px;margin-top:8px;"><strong>Observación:</strong> ${escHtml(p.observaciones)}</div>`;
+  // ── Minichat por preparado (tamaño fijo, scrolleable, tiempo real puntual) ─
+  let draftComentarios = {};
+  function chatMensajesHtml(p){
+    const msgs = p.comentarios||[];
+    if(!msgs.length){
+      if(p.mensaje_sucursal){
+        return `<div class="chat-bubble chat-propio"><div class="chat-bubble-label">San Martín</div>${escHtml(p.mensaje_sucursal)}</div>`;
+      }
+      return '<div class="minichat-empty">Sin mensajes todavía</div>';
     }
-    (p.comentarios||[]).forEach(c=>{
+    return msgs.map(c=>{
       const propio = c.autor_tipo==='admin';
       const label = propio ? 'San Martín' : (p.origen_sucursal||'Sucursal');
-      html += `<div class="chat-bubble ${propio?'chat-propio':'chat-recibido'}"><div class="chat-bubble-label">${escHtml(label)}</div>${escHtml(c.texto)}</div>`;
-    });
-    if((!p.comentarios || !p.comentarios.length) && p.mensaje_sucursal){
-      html += `<div class="chat-bubble chat-propio"><div class="chat-bubble-label">San Martín</div>${escHtml(p.mensaje_sucursal)}</div>`;
-    }
-    return html;
+      return `<div class="chat-bubble ${propio?'chat-propio':'chat-recibido'}"><div class="chat-bubble-label">${escHtml(label)}</div>${escHtml(c.texto)}</div>`;
+    }).join('');
   }
-  function drawerComposerHtml(id){
-    return `<div style="display:flex;gap:6px;margin-top:10px;">
-      <input type="text" id="dcomentario-input-${id}" placeholder="Escribir un comentario…" style="flex:1;padding:6px 12px;border:1px solid var(--border);border-radius:20px;font-size:12px;background:var(--surface);outline:none;" onkeydown="if(event.key==='Enter'){enviarComentarioDrawer('${id}')}"/>
-      <button class="btn btn-ghost btn-sm" style="border-radius:20px;" onclick="enviarComentarioDrawer('${id}')">➤</button>
+  function renderMiniChat(p){
+    return `<div class="minichat">
+      <div class="minichat-messages" id="chatmsg-${p.id}">${chatMensajesHtml(p)}</div>
+      <div class="minichat-input-row">
+        <input type="text" id="chatinput-${p.id}" placeholder="Escribir…" value="${escHtml(draftComentarios[p.id]||'')}" oninput="draftComentarios['${p.id}']=this.value" onkeydown="if(event.key==='Enter'){enviarComentarioChat('${p.id}')}"/>
+        <button class="btn btn-primary btn-sm" onclick="enviarComentarioChat('${p.id}')">➤</button>
+      </div>
     </div>`;
   }
-  async function enviarComentarioDrawer(id){
-    const input = document.getElementById('dcomentario-input-'+id);
+  function scrollChatAbajo(id){ const el = document.getElementById('chatmsg-'+id); if(el) el.scrollTop = el.scrollHeight; }
+  function scrollTodosLosChats(){ document.querySelectorAll('.minichat-messages').forEach(el => el.scrollTop = el.scrollHeight); }
+  async function enviarComentarioChat(id){
+    const input = document.getElementById('chatinput-'+id);
     if(!input) return;
     const texto = input.value.trim();
     if(!texto) return;
+    input.disabled = true;
     try{
       await sbPost('preparado_comentarios', {preparado_id:id, autor_tipo:'admin', texto});
-      cargarTodo();
-    }catch(err){ mostrarToast('Error: '+err.message, 'err'); }
+      delete draftComentarios[id];
+      input.value = '';
+      await refrescarChat(id);
+    }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+    input.disabled = false;
+  }
+  async function refrescarChat(id){
+    try{
+      const coments = await sbGet(`preparado_comentarios?preparado_id=eq.${id}&order=created_at.asc`);
+      const p = preparados.find(x=>x.id===id);
+      if(p) p.comentarios = coments;
+      const cont = document.getElementById('chatmsg-'+id);
+      if(cont && p){ cont.innerHTML = chatMensajesHtml(p); scrollChatAbajo(id); }
+    }catch(err){ /* silencioso */ }
   }
 
   function crearDrawerCardNueva(p){
@@ -863,19 +896,16 @@
       </div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">${escHtml(partes.join(' · '))}</div>
       <div class="card-drogas">${drogasResumenHtml(p)}</div>
-      ${renderHiloAdmin(p)}
-      <div class="field-group" style="margin-top:10px;margin-bottom:6px;">
+      ${p.observaciones?`<div style="font-size:12px;color:var(--muted);background:var(--bg);border-radius:6px;padding:6px 8px;margin-top:8px;"><strong>Observación:</strong> ${escHtml(p.observaciones)}</div>`:''}
+      <div class="field-group" style="margin-top:10px;margin-bottom:0;">
         <label>Precio (opcional)</label>
         <input type="number" min="0" step="any" id="precio-nueva-${p.id}" placeholder="Podés dejarlo vacío por ahora">
-      </div>
-      <div class="field-group" style="margin-bottom:0;">
-        <label>Comentario (opcional)</label>
-        <textarea id="comentario-nueva-${p.id}" rows="2" placeholder="Ej: dale, lo tenemos para mañana"></textarea>
       </div>
       <div class="drawer-card-actions">
         <button class="btn btn-danger btn-sm" onclick="rechazarSolicitud('${p.id}')">Rechazar</button>
         <button class="btn btn-primary btn-sm" onclick="aceptarSolicitud('${p.id}')">Aceptar</button>
-      </div>`;
+      </div>
+      ${renderMiniChat(p)}`;
     return div;
   }
 
@@ -890,44 +920,30 @@
       </div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">${escHtml(partes.join(' · '))}</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Esperando que confirmen en ${escHtml(p.origen_sucursal||'la sucursal')}</div>
-      ${renderHiloAdmin(p)}
-      <div class="field-group" style="margin-bottom:6px;margin-top:8px;">
+      <div class="field-group" style="margin-bottom:6px;">
         <label>Precio</label>
         <input type="number" min="0" step="any" id="precio-esperando-${p.id}" value="${p.precio_venta ?? ''}">
       </div>
       <button class="btn btn-ghost btn-sm" onclick="guardarPrecioEsperando('${p.id}')">Guardar precio</button>
-      ${drawerComposerHtml(p.id)}`;
+      ${renderMiniChat(p)}`;
     return div;
   }
 
   async function aceptarSolicitud(id){
     const input = document.getElementById('precio-nueva-'+id);
     const precio = input && input.value ? Number(input.value) : null;
-    const comentarioInput = document.getElementById('comentario-nueva-'+id);
-    const comentario = comentarioInput ? comentarioInput.value.trim() : '';
     try{
       await sbPatch('preparados', id, { estado:'Esperando confirmación sucursal', precio_venta: precio });
-      if(comentario){
-        await sbPost('preparado_comentarios', {preparado_id:id, autor_tipo:'admin', texto: comentario});
-      }
       mostrarToast('Solicitud aceptada, esperando confirmación de la sucursal', 'ok');
       cargarTodo();
     }catch(err){ mostrarToast('Error: '+err.message, 'err'); }
   }
 
   let rechazarTargetId = null;
-  function rechazarSolicitud(id){
-    rechazarTargetId = id;
-    document.getElementById('rechazarMotivo').value = '';
-    abrirModal('modalRechazar');
-    setTimeout(()=>document.getElementById('rechazarMotivo').focus(), 100);
-  }
+  function rechazarSolicitud(id){ rechazarTargetId = id; abrirModal('modalRechazar'); }
   async function confirmarRechazo(){
-    const motivo = document.getElementById('rechazarMotivo').value.trim();
-    if(!motivo){ mostrarToast('Contale el motivo, así la sucursal entiende qué pasó', 'err'); return; }
     try{
-      await sbPatch('preparados', rechazarTargetId, { estado:'Rechazado sucursal', mensaje_sucursal: motivo });
-      await sbPost('preparado_comentarios', {preparado_id: rechazarTargetId, autor_tipo:'admin', texto: motivo});
+      await sbPatch('preparados', rechazarTargetId, { estado:'Rechazado sucursal' });
       mostrarToast('Solicitud rechazada', 'ok');
       cerrarModal('modalRechazar');
       cargarTodo();
