@@ -258,7 +258,13 @@
         <div class="field-group"><label>Fecha de recepción <span style="color:var(--danger)">*</span></label><input type="date" id="pFecha"/></div>
         <div class="field-group"><label>Nro Receta</label><input type="number" id="pReceta"/></div>
       </div>
-      <div class="field-group"><label>Observaciones para San Martín</label><textarea id="pObs" rows="2"></textarea></div>
+      <div class="field-row">
+        <div class="field-group"><label>Observación del preparado</label><textarea id="pObs" rows="3" placeholder="Detalles técnicos de la preparación..."></textarea></div>
+        <div class="field-group">
+          <label>Comentario para San Martín</label>
+          <textarea id="pComentario" rows="3" class="chat-bubble chat-propio" style="width:100%;font-family:inherit;resize:vertical;border:1px solid #CFE9C2;" placeholder="Hola chicos, ¿pueden preparar esto?"></textarea>
+        </div>
+      </div>
 
       <div class="modal-sep"></div>
       <div class="sec-title">Componentes</div>
@@ -417,13 +423,17 @@ async function cargarTodo(){
   document.getElementById('kanbanStatus').textContent = 'Cargando…';
   try{
     const preps = await sbGet(`preparados?origen_sucursal=eq.${encodeURIComponent(SUCURSAL_NOMBRE)}&estado=neq.Entregado&eliminado_en=is.null&order=created_at.desc`);
-    const compMap = {};
+    const compMap = {}, comMap = {};
     if(preps.length>0){
       const ids = preps.map(p=>p.id).join(',');
-      const comps = await sbGet('componentes_con_droga?preparado_id=in.('+ids+')');
+      const [comps, coments] = await Promise.all([
+        sbGet('componentes_con_droga?preparado_id=in.('+ids+')'),
+        sbGet('preparado_comentarios?preparado_id=in.('+ids+')&order=created_at.asc')
+      ]);
       comps.forEach(c=>{ if(!compMap[c.preparado_id]) compMap[c.preparado_id]=[]; compMap[c.preparado_id].push(c); });
+      coments.forEach(c=>{ if(!comMap[c.preparado_id]) comMap[c.preparado_id]=[]; comMap[c.preparado_id].push(c); });
     }
-    preparados = preps.map(p=>({...p, componentes: compMap[p.id]||[]}));
+    preparados = preps.map(p=>({...p, componentes: compMap[p.id]||[], comentarios: comMap[p.id]||[]}));
 
     const nuevosEstados = {};
     preparados.forEach(p=>{
@@ -486,6 +496,40 @@ function drogasHtml(p){
     : '<div class="card-droga-row" style="color:var(--muted)">Sin componentes</div>';
 }
 
+function renderHilo(p){
+  let html = '';
+  if(p.observaciones){
+    html += `<div style="font-size:12px;color:var(--muted);background:var(--bg);border-radius:6px;padding:6px 8px;margin-top:8px;"><strong>Observación:</strong> ${escHtml(p.observaciones)}</div>`;
+  }
+  (p.comentarios||[]).forEach(c=>{
+    const propio = c.autor_tipo==='sucursal';
+    const label = propio ? (SUCURSAL_NOMBRE||'Vos') : 'San Martín';
+    html += `<div class="chat-bubble ${propio?'chat-propio':'chat-recibido'}"><div class="chat-bubble-label">${escHtml(label)}</div>${escHtml(c.texto)}</div>`;
+  });
+  if((!p.comentarios || !p.comentarios.length) && p.mensaje_sucursal){
+    const rechazo = p.estado==='Rechazado sucursal';
+    html += `<div class="chat-bubble ${rechazo?'chat-rechazo':'chat-recibido'}"><div class="chat-bubble-label">${rechazo?'Rechazado por San Martín':'San Martín dice'}</div>${escHtml(p.mensaje_sucursal)}</div>`;
+  }
+  return html;
+}
+function composerHtml(id){
+  return `<div style="display:flex;gap:6px;margin-top:10px;">
+    <input type="text" id="comentario-input-${id}" placeholder="Escribir un comentario…" style="flex:1;padding:6px 12px;border:1px solid var(--border);border-radius:20px;font-size:12px;background:var(--surface);outline:none;" onkeydown="if(event.key==='Enter'){enviarComentario('${id}')}"/>
+    <button class="btn btn-primary btn-sm" style="border-radius:20px;" onclick="enviarComentario('${id}')">➤</button>
+  </div>`;
+}
+async function enviarComentario(id){
+  const input = document.getElementById('comentario-input-'+id);
+  if(!input) return;
+  const texto = input.value.trim();
+  if(!texto) return;
+  input.disabled = true;
+  try{
+    await sbPost('preparado_comentarios', {preparado_id:id, autor_tipo:'sucursal', texto});
+    await cargarTodo();
+  }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+}
+
 function crearTarjeta(p){
   const div = document.createElement('div');
   let claseExtra = '';
@@ -506,21 +550,16 @@ function crearTarjeta(p){
     </div>
     <hr class="card-divider"/>
     <div class="card-meta" style="margin-bottom:6px;">${escHtml(partes.join(' · '))}</div>
-    <div class="card-drogas">${drogasHtml(p)}</div>`;
-
-  if(p.observaciones){
-    cuerpo += `<div class="chat-bubble chat-propio"><div class="chat-bubble-label">${escHtml(SUCURSAL_NOMBRE||'Vos')}</div>${escHtml(p.observaciones)}</div>`;
-  }
+    <div class="card-drogas">${drogasHtml(p)}</div>
+    ${renderHilo(p)}`;
 
   if(p.estado==='Petición sucursal'){
     cuerpo += `<span class="badge badge-espera">Esperando respuesta</span>`;
   } else if(p.estado==='Rechazado sucursal'){
     cuerpo += `<span class="badge badge-rechazo">Rechazado</span>`;
-    if(p.mensaje_sucursal) cuerpo += `<div class="chat-bubble chat-rechazo"><div class="chat-bubble-label">Rechazado por San Martín</div>${escHtml(p.mensaje_sucursal)}</div>`;
   } else if(p.estado==='Esperando confirmación sucursal'){
     cuerpo += `<span class="badge badge-precio">Precio propuesto</span>`;
     cuerpo += `<div class="card-precio">${p.precio_venta!=null?'$'+p.precio_venta:'A confirmar'}</div>`;
-    if(p.mensaje_sucursal) cuerpo += `<div class="chat-bubble chat-recibido"><div class="chat-bubble-label">San Martín dice</div>${escHtml(p.mensaje_sucursal)}</div>`;
     cuerpo += `<div class="card-acciones">
       <button class="btn btn-ghost btn-sm" onclick="pedirCancelarPedido('${p.id}')">Cancelar</button>
       <button class="btn btn-primary btn-sm" onclick="confirmarPedido('${p.id}','${p.precio_venta!=null}')">Confirmar</button>
@@ -533,6 +572,7 @@ function crearTarjeta(p){
     cuerpo += `<span class="badge badge-prep">En preparación</span>`;
   }
 
+  cuerpo += composerHtml(p.id);
   div.innerHTML = cuerpo;
   return div;
 }
@@ -563,7 +603,7 @@ async function confirmarCancelacionModal(){
 // ── Cargar preparado (modal, idéntico en espíritu al de index.html) ─────
 function abrirModalPedido(){ limpiarFormPedido(); abrirModal('modalPedido'); }
 function limpiarFormPedido(){
-  ['pReceta','pCantTotal','pObs'].forEach(id=>document.getElementById(id).value='');
+  ['pReceta','pCantTotal','pObs','pComentario'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('pClienteInput').value=''; document.getElementById('pClienteId').value='';
   document.getElementById('pTelefono').value=''; document.getElementById('pTelefono').classList.remove('field-invalid');
   document.getElementById('pForma').value=''; document.getElementById('pUnidad').value='';
@@ -611,6 +651,10 @@ async function guardarPedido(){
       const unid = row.querySelector('.comp-unid').value || null;
       if(!drugId) continue;
       await sbPost('componentes', limpiar({preparado_id: prepId, droga_id: drugId, cantidad: cant, unidad: unid}));
+    }
+    const comentarioInicial = document.getElementById('pComentario').value.trim();
+    if(comentarioInicial){
+      await sbPost('preparado_comentarios', {preparado_id: prepId, autor_tipo:'sucursal', texto: comentarioInicial});
     }
     mostrarToast('✓ Pedido enviado a San Martín','ok');
     cerrarModal('modalPedido');
@@ -661,13 +705,17 @@ async function abrirModalHistorial(){
   abrirModal('modalHistorial');
   try{
     const preps = await sbGet(`preparados_completos?origen_sucursal=eq.${encodeURIComponent(SUCURSAL_NOMBRE)}&eliminado_en=is.null&order=created_at.desc`);
-    const compMap = {};
+    const compMap = {}, comMap = {};
     if(preps.length>0){
       const ids = preps.map(p=>p.id).join(',');
-      const comps = await sbGet('componentes_con_droga?preparado_id=in.('+ids+')');
+      const [comps, coments] = await Promise.all([
+        sbGet('componentes_con_droga?preparado_id=in.('+ids+')'),
+        sbGet('preparado_comentarios?preparado_id=in.('+ids+')&order=created_at.asc')
+      ]);
       comps.forEach(c=>{ if(!compMap[c.preparado_id]) compMap[c.preparado_id]=[]; compMap[c.preparado_id].push(c); });
+      coments.forEach(c=>{ if(!comMap[c.preparado_id]) comMap[c.preparado_id]=[]; comMap[c.preparado_id].push(c); });
     }
-    historial = preps.map(p=>({...p, componentes: compMap[p.id]||[]}));
+    historial = preps.map(p=>({...p, componentes: compMap[p.id]||[], comentarios: comMap[p.id]||[]}));
     renderHistorial(historial);
   }catch(err){
     document.getElementById('histResultados').innerHTML = '<p class="hist-empty">Error al cargar: '+err.message+'</p>';
@@ -684,6 +732,16 @@ function filtrarHistorial(){
     p.componentes.some(c => (c.droga_nombre||'').toLowerCase().includes(q))
   ));
 }
+async function enviarComentarioHistorial(id){
+  const input = document.getElementById('comentario-input-'+id);
+  if(!input) return;
+  const texto = input.value.trim();
+  if(!texto) return;
+  try{
+    await sbPost('preparado_comentarios', {preparado_id:id, autor_tipo:'sucursal', texto});
+    await abrirModalHistorial();
+  }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+}
 function renderHistorial(lista){
   const cont = document.getElementById('histResultados');
   if(!lista.length){ cont.innerHTML = '<p class="hist-empty">Sin resultados.</p>'; return; }
@@ -693,10 +751,7 @@ function renderHistorial(lista){
     const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:''].filter(Boolean);
     const div = document.createElement('div');
     div.className = 'hist-item';
-    let extra = '';
-    if(p.observaciones) extra += `<div class="chat-bubble chat-propio"><div class="chat-bubble-label">${escHtml(SUCURSAL_NOMBRE||'Vos')}</div>${escHtml(p.observaciones)}</div>`;
-    if(p.estado==='Rechazado sucursal' && p.mensaje_sucursal) extra += `<div class="chat-bubble chat-rechazo"><div class="chat-bubble-label">Rechazado por San Martín</div>${escHtml(p.mensaje_sucursal)}</div>`;
-    else if(p.mensaje_sucursal) extra += `<div class="chat-bubble chat-recibido"><div class="chat-bubble-label">San Martín dice</div>${escHtml(p.mensaje_sucursal)}</div>`;
+    let extra = renderHilo(p);
     if(p.precio_venta!=null) extra += `<div style="font-size:13px;font-weight:700;color:var(--accent);margin-top:6px;">$${p.precio_venta}</div>`;
     if(p.nro_receta) extra += `<div class="hist-item-meta" style="margin-top:2px;">Receta #${p.nro_receta}</div>`;
     div.innerHTML = `
@@ -707,6 +762,10 @@ function renderHistorial(lista){
       <div class="hist-item-meta">${fmtFecha(p.fecha_recepcion)} · ${escHtml(partes.join(' · '))}</div>
       <div class="card-drogas">${drogasHtml(p)}</div>
       ${extra}
+      <div style="display:flex;gap:6px;margin-top:10px;">
+        <input type="text" id="comentario-input-${p.id}" placeholder="Escribir un comentario…" style="flex:1;padding:6px 12px;border:1px solid var(--border);border-radius:20px;font-size:12px;background:var(--surface);outline:none;" onkeydown="if(event.key==='Enter'){enviarComentarioHistorial('${p.id}')}"/>
+        <button class="btn btn-ghost btn-sm" style="border-radius:20px;" onclick="enviarComentarioHistorial('${p.id}')">➤</button>
+      </div>
       <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="repetirDesdeHistorial('${p.id}')">↺ Repetir este pedido</button>`;
     cont.appendChild(div);
   });
@@ -881,6 +940,7 @@ function solicitarRecarga(){
 function suscribirRealtime(){
   sbAuth.channel('preparados-sucursal')
     .on('postgres_changes', {event:'*', schema:'public', table:'preparados'}, () => solicitarRecarga())
+    .on('postgres_changes', {event:'*', schema:'public', table:'preparado_comentarios'}, () => solicitarRecarga())
     .subscribe();
   // Respaldo: si por algún motivo el evento de tiempo real no llega (RLS,
   // reconexión del socket, etc.), esto igual mantiene todo al día.

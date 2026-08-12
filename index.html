@@ -619,6 +619,7 @@
   function suscribirRealtime(){
     sbAuth.channel('preparados-admin')
       .on('postgres_changes', {event:'*', schema:'public', table:'preparados'}, () => solicitarRecarga())
+      .on('postgres_changes', {event:'*', schema:'public', table:'preparado_comentarios'}, () => solicitarRecarga())
       .subscribe();
     setInterval(solicitarRecarga, 15000);
   }
@@ -636,14 +637,18 @@
       ]);
       drogas   = drs;
       clientes = clis;
-      // Traer solo componentes de los preparados activos
-      const compMap = {};
+      // Traer solo componentes y comentarios de los preparados activos
+      const compMap = {}, comMap = {};
       if(preps.length > 0){
         const ids = preps.map(p=>p.id).join(',');
-        const comps = await sbGet('componentes_con_droga?preparado_id=in.('+ids+')');
+        const [comps, coments] = await Promise.all([
+          sbGet('componentes_con_droga?preparado_id=in.('+ids+')'),
+          sbGet('preparado_comentarios?preparado_id=in.('+ids+')&order=created_at.asc')
+        ]);
         comps.forEach(c => { if(!compMap[c.preparado_id]) compMap[c.preparado_id]=[]; compMap[c.preparado_id].push(c); });
+        coments.forEach(c => { if(!comMap[c.preparado_id]) comMap[c.preparado_id]=[]; comMap[c.preparado_id].push(c); });
       }
-      preparados = preps.map(p => ({ ...p, componentes: compMap[p.id] || [] }));
+      preparados = preps.map(p => ({ ...p, componentes: compMap[p.id] || [], comentarios: comMap[p.id] || [] }));
       setKanbanStatus('');
       renderKanban();
       renderDrawer();
@@ -815,6 +820,38 @@
       : '<div style="color:var(--muted);font-size:12px;">Sin componentes</div>';
   }
 
+  function renderHiloAdmin(p){
+    let html = '';
+    if(p.observaciones){
+      html += `<div style="font-size:12px;color:var(--muted);background:var(--bg);border-radius:6px;padding:6px 8px;margin-top:8px;"><strong>Observación:</strong> ${escHtml(p.observaciones)}</div>`;
+    }
+    (p.comentarios||[]).forEach(c=>{
+      const propio = c.autor_tipo==='admin';
+      const label = propio ? 'San Martín' : (p.origen_sucursal||'Sucursal');
+      html += `<div class="chat-bubble ${propio?'chat-propio':'chat-recibido'}"><div class="chat-bubble-label">${escHtml(label)}</div>${escHtml(c.texto)}</div>`;
+    });
+    if((!p.comentarios || !p.comentarios.length) && p.mensaje_sucursal){
+      html += `<div class="chat-bubble chat-propio"><div class="chat-bubble-label">San Martín</div>${escHtml(p.mensaje_sucursal)}</div>`;
+    }
+    return html;
+  }
+  function drawerComposerHtml(id){
+    return `<div style="display:flex;gap:6px;margin-top:10px;">
+      <input type="text" id="dcomentario-input-${id}" placeholder="Escribir un comentario…" style="flex:1;padding:6px 12px;border:1px solid var(--border);border-radius:20px;font-size:12px;background:var(--surface);outline:none;" onkeydown="if(event.key==='Enter'){enviarComentarioDrawer('${id}')}"/>
+      <button class="btn btn-ghost btn-sm" style="border-radius:20px;" onclick="enviarComentarioDrawer('${id}')">➤</button>
+    </div>`;
+  }
+  async function enviarComentarioDrawer(id){
+    const input = document.getElementById('dcomentario-input-'+id);
+    if(!input) return;
+    const texto = input.value.trim();
+    if(!texto) return;
+    try{
+      await sbPost('preparado_comentarios', {preparado_id:id, autor_tipo:'admin', texto});
+      cargarTodo();
+    }catch(err){ mostrarToast('Error: '+err.message, 'err'); }
+  }
+
   function crearDrawerCardNueva(p){
     const div = document.createElement('div');
     div.className = 'drawer-card';
@@ -826,10 +863,14 @@
       </div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">${escHtml(partes.join(' · '))}</div>
       <div class="card-drogas">${drogasResumenHtml(p)}</div>
-      ${p.observaciones?`<div class="chat-bubble chat-recibido"><div class="chat-bubble-label">${escHtml(p.origen_sucursal||'Sucursal')} dice</div>${escHtml(p.observaciones)}</div>`:''}
-      <div class="field-group" style="margin-top:10px;margin-bottom:0;">
+      ${renderHiloAdmin(p)}
+      <div class="field-group" style="margin-top:10px;margin-bottom:6px;">
         <label>Precio (opcional)</label>
         <input type="number" min="0" step="any" id="precio-nueva-${p.id}" placeholder="Podés dejarlo vacío por ahora">
+      </div>
+      <div class="field-group" style="margin-bottom:0;">
+        <label>Comentario (opcional)</label>
+        <textarea id="comentario-nueva-${p.id}" rows="2" placeholder="Ej: dale, lo tenemos para mañana"></textarea>
       </div>
       <div class="drawer-card-actions">
         <button class="btn btn-danger btn-sm" onclick="rechazarSolicitud('${p.id}')">Rechazar</button>
@@ -849,19 +890,26 @@
       </div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">${escHtml(partes.join(' · '))}</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Esperando que confirmen en ${escHtml(p.origen_sucursal||'la sucursal')}</div>
-      <div class="field-group" style="margin-bottom:6px;">
+      ${renderHiloAdmin(p)}
+      <div class="field-group" style="margin-bottom:6px;margin-top:8px;">
         <label>Precio</label>
         <input type="number" min="0" step="any" id="precio-esperando-${p.id}" value="${p.precio_venta ?? ''}">
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="guardarPrecioEsperando('${p.id}')">Guardar precio</button>`;
+      <button class="btn btn-ghost btn-sm" onclick="guardarPrecioEsperando('${p.id}')">Guardar precio</button>
+      ${drawerComposerHtml(p.id)}`;
     return div;
   }
 
   async function aceptarSolicitud(id){
     const input = document.getElementById('precio-nueva-'+id);
     const precio = input && input.value ? Number(input.value) : null;
+    const comentarioInput = document.getElementById('comentario-nueva-'+id);
+    const comentario = comentarioInput ? comentarioInput.value.trim() : '';
     try{
       await sbPatch('preparados', id, { estado:'Esperando confirmación sucursal', precio_venta: precio });
+      if(comentario){
+        await sbPost('preparado_comentarios', {preparado_id:id, autor_tipo:'admin', texto: comentario});
+      }
       mostrarToast('Solicitud aceptada, esperando confirmación de la sucursal', 'ok');
       cargarTodo();
     }catch(err){ mostrarToast('Error: '+err.message, 'err'); }
@@ -879,6 +927,7 @@
     if(!motivo){ mostrarToast('Contale el motivo, así la sucursal entiende qué pasó', 'err'); return; }
     try{
       await sbPatch('preparados', rechazarTargetId, { estado:'Rechazado sucursal', mensaje_sucursal: motivo });
+      await sbPost('preparado_comentarios', {preparado_id: rechazarTargetId, autor_tipo:'admin', texto: motivo});
       mostrarToast('Solicitud rechazada', 'ok');
       cerrarModal('modalRechazar');
       cargarTodo();
