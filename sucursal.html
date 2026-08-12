@@ -509,7 +509,7 @@ function crearTarjeta(p){
     <div class="card-drogas">${drogasHtml(p)}</div>`;
 
   if(p.observaciones){
-    cuerpo += `<div class="chat-bubble chat-propio"><div class="chat-bubble-label">Vos escribiste</div>${escHtml(p.observaciones)}</div>`;
+    cuerpo += `<div class="chat-bubble chat-propio"><div class="chat-bubble-label">${escHtml(SUCURSAL_NOMBRE||'Vos')}</div>${escHtml(p.observaciones)}</div>`;
   }
 
   if(p.estado==='Petición sucursal'){
@@ -694,7 +694,7 @@ function renderHistorial(lista){
     const div = document.createElement('div');
     div.className = 'hist-item';
     let extra = '';
-    if(p.observaciones) extra += `<div class="chat-bubble chat-propio"><div class="chat-bubble-label">Vos escribiste</div>${escHtml(p.observaciones)}</div>`;
+    if(p.observaciones) extra += `<div class="chat-bubble chat-propio"><div class="chat-bubble-label">${escHtml(SUCURSAL_NOMBRE||'Vos')}</div>${escHtml(p.observaciones)}</div>`;
     if(p.estado==='Rechazado sucursal' && p.mensaje_sucursal) extra += `<div class="chat-bubble chat-rechazo"><div class="chat-bubble-label">Rechazado por San Martín</div>${escHtml(p.mensaje_sucursal)}</div>`;
     else if(p.mensaje_sucursal) extra += `<div class="chat-bubble chat-recibido"><div class="chat-bubble-label">San Martín dice</div>${escHtml(p.mensaje_sucursal)}</div>`;
     if(p.precio_venta!=null) extra += `<div style="font-size:13px;font-weight:700;color:var(--accent);margin-top:6px;">$${p.precio_venta}</div>`;
