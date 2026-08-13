@@ -54,6 +54,13 @@
     .field-group label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px;}
     .field-group select,.field-group input{width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);outline:none;}
     .field-group select:focus,.field-group input:focus{border-color:var(--accent2);}
+    .global-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;margin-bottom:14px;}
+    .global-bar-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px;}
+    .uso-global-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+    .btn-uso{padding:9px 18px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:opacity 0.15s;}
+    .btn-uso.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+    .vto-global-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+    .vto-global-row .field-group{max-width:140px;}
     #status{text-align:center;padding:40px;font-size:14px;color:var(--muted);}
     #status.error{color:var(--danger);font-weight:600;}
     .spinner{display:inline-block;width:16px;height:16px;border:2px solid #ccc;border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
@@ -144,7 +151,21 @@
   </div>
 
   <div id="paso2">
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Configurá uso y vencimiento para cada preparado seleccionado.</p>
+    <div class="global-bar">
+      <div class="global-bar-title">Uso (se aplica a todos los preparados)</div>
+      <div class="uso-global-row">
+        <button type="button" class="btn-uso active" id="btnUsoInterno" onclick="setUsoGlobal('USO INTERNO')">USO INTERNO</button>
+        <button type="button" class="btn-uso" id="btnUsoExterno" onclick="setUsoGlobal('USO EXTERNO')">USO EXTERNO</button>
+      </div>
+      <div class="global-bar-title">Vencimiento para todos</div>
+      <div class="vto-global-row">
+        <div class="field-group">
+          <input type="text" id="vtoGlobal" placeholder="MM/AA" maxlength="5" oninput="fmtVto(this)" onkeydown="vtoKeyDown(event,this)"/>
+        </div>
+        <button type="button" class="btn btn-ghost" onclick="aplicarVtoGlobal()">Aplicar a todos</button>
+      </div>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Podés editar el vencimiento de cada preparado por separado si alguno necesita una fecha distinta.</p>
     <div id="configCards"></div>
     <div class="bottom-bar">
       <button class="btn btn-ghost" onclick="irPaso1()">← Volver</button>
@@ -255,15 +276,35 @@
   function toggleTodos(chkMaster){document.querySelectorAll('#tbody input[type=checkbox]').forEach(chk=>{chk.checked=chkMaster.checked;toggleCheck(chk.dataset.id,chk);});}
   function actualizarContador(){const n=seleccion.size;document.getElementById('countSel').innerHTML=`<strong>${n}</strong> seleccionado${n!==1?'s':''}`;document.getElementById('btnSiguiente').disabled=n===0;}
 
+  let usoGlobalActual='USO INTERNO';
+
   function irPaso2(){
     const sel=todos.filter(p=>seleccion.has(p.id));
     const cont=document.getElementById('configCards');cont.innerHTML='';
+    usoGlobalActual='USO INTERNO';
+    document.getElementById('btnUsoInterno').classList.add('active');
+    document.getElementById('btnUsoExterno').classList.remove('active');
+    document.getElementById('vtoGlobal').value='';
     sel.forEach(p=>{
-      const div=document.createElement('div');div.className='config-card';div.dataset.id=p.id;
-      div.innerHTML=`<div class="config-card-header"><div><div class="config-cupon">#${p.nro_cupon??'—'} · ${escHtml(p.cliente_nombre||'')}</div><div class="config-cliente">${p.forma_farmaceutica??''} ${p.cantidad_total!=null?p.cantidad_total+' '+(p.unidad??''):''}${p.nro_receta?' · Receta: '+p.nro_receta:''}</div></div></div><div class="config-row"><div class="field-group"><label>Uso</label><select class="cfg-uso"><option value="USO INTERNO">USO INTERNO</option><option value="USO EXTERNO">USO EXTERNO</option></select></div><div class="field-group"><label>Vencimiento <span style="color:#C0392B">*</span></label><input type="text" class="cfg-vto" placeholder="MM/AA" maxlength="5" oninput="fmtVto(this)" onkeydown="vtoKeyDown(event,this)"/></div></div>`;
+      const div=document.createElement('div');div.className='config-card';div.dataset.id=p.id;div.dataset.uso=usoGlobalActual;
+      div.innerHTML=`<div class="config-card-header"><div><div class="config-cupon">#${p.nro_cupon??'—'} · ${escHtml(p.cliente_nombre||'')}</div><div class="config-cliente">${p.forma_farmaceutica??''} ${p.cantidad_total!=null?p.cantidad_total+' '+(p.unidad??''):''}${p.nro_receta?' · Receta: '+p.nro_receta:''}</div></div></div><div class="config-row"><div class="field-group"><label>Vencimiento <span style="color:#C0392B">*</span></label><input type="text" class="cfg-vto" placeholder="MM/AA" maxlength="5" oninput="fmtVto(this)" onkeydown="vtoKeyDown(event,this)"/></div></div>`;
       cont.appendChild(div);
     });
     document.getElementById('paso1').style.display='none';document.getElementById('paso2').style.display='block';setStep(2);
+  }
+
+  function setUsoGlobal(uso){
+    usoGlobalActual=uso;
+    document.getElementById('btnUsoInterno').classList.toggle('active',uso==='USO INTERNO');
+    document.getElementById('btnUsoExterno').classList.toggle('active',uso==='USO EXTERNO');
+    document.querySelectorAll('#configCards .config-card').forEach(card=>{ card.dataset.uso=uso; });
+  }
+
+  function aplicarVtoGlobal(){
+    const v=document.getElementById('vtoGlobal').value.trim();
+    if(!v){mostrarToast('Escribí primero un vencimiento para aplicar','err');return;}
+    document.querySelectorAll('#configCards .cfg-vto').forEach(inp=>{ inp.value=v; inp.style.borderColor=''; });
+    mostrarToast('Vencimiento aplicado a todos','ok');
   }
   function irPaso1(){document.getElementById('paso2').style.display='none';document.getElementById('paso1').style.display='block';setStep(1);}
   function setStep(n){[1,2,3].forEach(i=>document.getElementById(`stepTag${i}`).classList.toggle('active',i===n));}
@@ -297,7 +338,7 @@
       if(vtoFaltante){mostrarToast('Completá el vencimiento de todos los preparados','err');btn.disabled=false;btn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar Word`;return;}
       cards.forEach(card=>{
         const id=card.dataset.id;const p=todos.find(x=>x.id===id);if(!p)return;
-        const f=p;const uso=card.querySelector('.cfg-uso').value;const vto=card.querySelector('.cfg-vto').value.trim()||'—';
+        const f=p;const uso=card.dataset.uso||usoGlobalActual;const vto=card.querySelector('.cfg-vto').value.trim()||'—';
         const rec=f.nro_receta?`RECETA: ${f.nro_receta}`:'';
         const compLines=p.componentes.map(c=>{
           const nom=c.droga_nombre||'';const cant=c.cantidad??'';const uni=c.unidad||'';
@@ -343,11 +384,11 @@
         const filaUsoVto = recNum
           ? `<tr>
               <td style="${cell}border:${bdr};font-weight:bold;font-size:6pt;">${escHtml(et.uso)}<br>Receta: ${escHtml(recNum)}</td>
-              <td style="font-family:${ff};font-size:9pt;font-weight:bold;border:${bdr};text-align:right;padding:1pt 3pt;">VTO: ${escHtml(et.vto)}</td>
+              <td style="font-family:${ff};font-size:6pt;font-weight:bold;border:${bdr};text-align:right;padding:1pt 3pt;white-space:nowrap;">VTO: ${escHtml(et.vto)}</td>
             </tr>`
           : `<tr>
               <td style="${cell}border:${bdr};font-weight:bold;font-size:6pt;">${escHtml(et.uso)}</td>
-              <td style="font-family:${ff};font-size:9pt;font-weight:bold;border:${bdr};text-align:right;padding:1pt 3pt;">VTO: ${escHtml(et.vto)}</td>
+              <td style="font-family:${ff};font-size:6pt;font-weight:bold;border:${bdr};text-align:right;padding:1pt 3pt;white-space:nowrap;">VTO: ${escHtml(et.vto)}</td>
             </tr>`;
 
         return `
