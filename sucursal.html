@@ -95,6 +95,9 @@
   .ss-empty{padding:8px 12px;font-size:13px;color:var(--muted);}
   .sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px;margin-top:4px;}
   .comp-editor{border:1px solid var(--border);border-radius:6px;overflow:visible;margin-bottom:8px;}
+  .comp-unidad-global{display:flex;justify-content:flex-end;margin-bottom:6px;}
+  .comp-unidad-global select{padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface);color:var(--muted);outline:none;cursor:pointer;}
+  .comp-unidad-global select:focus{border-color:var(--accent2);}
   .comp-editor-header{display:grid;grid-template-columns:1fr 90px 100px 32px;gap:6px;padding:7px 10px;background:#EDEAE0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);border-bottom:1px solid var(--border);border-radius:6px 6px 0 0;}
   .comp-row{display:grid;grid-template-columns:1fr 90px 100px 32px;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);align-items:center;}
   .comp-row:last-child{border-bottom:none;}
@@ -268,6 +271,7 @@
 
       <div class="modal-sep"></div>
       <div class="sec-title">Componentes</div>
+      <div class="comp-unidad-global"><select id="unidadGlobalNuevo" onchange="aplicarUnidadGlobal('compRowsNuevo',this)"></select></div>
       <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div>Unidad</div><div></div></div><div id="compRowsNuevo"></div></div>
       <button class="btn btn-ghost btn-sm" onclick="agregarCompRow('compRowsNuevo')">+ Agregar componente</button>
       <div class="field-row-3" style="margin-top:14px;">
@@ -391,10 +395,21 @@ function abrirModal(id){ document.getElementById(id).classList.add('open'); }
 function cerrarModal(id){ document.getElementById(id).classList.remove('open'); }
 function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function fmtFecha(iso){ if(!iso) return '—'; const [y,m,d]=iso.slice(0,10).split('-'); return `${d}/${m}/${y}`; }
+function poblarUnidadGlobal(id){
+  const sel=document.getElementById(id); if(!sel) return;
+  sel.innerHTML='<option value="">Unidad para todos…</option>'+UNID_COMP.map(o=>`<option value="${o}">${o}</option>`).join('');
+}
+function aplicarUnidadGlobal(contId,sel){
+  const valor=sel.value; if(!valor) return;
+  const cont=document.getElementById(contId);
+  if(cont){ cont.querySelectorAll('.comp-unid').forEach(otro=>{ otro.value=valor; }); }
+  sel.value='';
+}
 function poblarSelect(id,opts,conBlanco){ const sel=document.getElementById(id); if(!sel) return; const val=sel.value; sel.innerHTML=''; if(conBlanco) sel.innerHTML='<option value="">— Sin especificar —</option>'; opts.forEach(o=>{const op=document.createElement('option'); op.value=o; op.textContent=o; sel.appendChild(op);}); if(val) sel.value=val; }
 
 async function initApp(){
   poblarSelect('pForma', FORMAS, true);
+  poblarUnidadGlobal('unidadGlobalNuevo');
   document.getElementById('pFecha').value = new Date().toISOString().slice(0,10);
   try{
     SUCURSAL_NOMBRE = await sbRpc('mi_sucursal');
@@ -810,14 +825,9 @@ function agregarCompRow(contId, prefill){
       <input type="hidden" class="comp-drug-id" data-idx="${idx}" value="${prefill&&prefill.drogaId?prefill.drogaId:''}"/>
     </div>
     <div class="comp-cant-cell"><input type="number" class="comp-cant" placeholder="Cant." step="any" min="0" value="${prefill&&prefill.cantidad!=null?prefill.cantidad:''}"/></div>
-    <select class="comp-unid" onchange="onUnidadCompChange(this)">${unidOpts}</select>
+    <select class="comp-unid">${unidOpts}</select>
     <button class="btn-del-comp" onclick="this.closest('.comp-row').remove()">×</button>`;
   cont.appendChild(div);
-}
-function onUnidadCompChange(sel){
-  const cont = sel.closest('[id]');
-  if(!cont) return;
-  cont.querySelectorAll('.comp-unid').forEach(otro=>{ if(otro!==sel) otro.value = sel.value; });
 }
 function filtrarSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);if(!input.value.trim()){dd.classList.remove('open');return;}renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())).slice(0,50),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
 function abrirSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);if(!input.value.trim()){dd.classList.remove('open');return;}renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
