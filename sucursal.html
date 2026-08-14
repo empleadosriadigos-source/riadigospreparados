@@ -95,9 +95,8 @@
   .ss-empty{padding:8px 12px;font-size:13px;color:var(--muted);}
   .sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px;margin-top:4px;}
   .comp-editor{border:1px solid var(--border);border-radius:6px;overflow:visible;margin-bottom:8px;}
-  .comp-unidad-global{display:flex;justify-content:flex-end;margin-bottom:6px;}
-  .comp-unidad-global select{padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface);color:var(--muted);outline:none;cursor:pointer;}
-  .comp-unidad-global select:focus{border-color:var(--accent2);}
+  .comp-editor-header select{width:100%;border:none;background:transparent;color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;cursor:pointer;outline:none;padding:0;font-family:inherit;text-align:left;}
+  .comp-editor-header select:focus{color:var(--text);}
   .comp-editor-header{display:grid;grid-template-columns:1fr 90px 100px 32px;gap:6px;padding:7px 10px;background:#EDEAE0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);border-bottom:1px solid var(--border);border-radius:6px 6px 0 0;}
   .comp-row{display:grid;grid-template-columns:1fr 90px 100px 32px;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);align-items:center;}
   .comp-row:last-child{border-bottom:none;}
@@ -271,8 +270,7 @@
 
       <div class="modal-sep"></div>
       <div class="sec-title">Componentes</div>
-      <div class="comp-unidad-global"><select id="unidadGlobalNuevo" onchange="aplicarUnidadGlobal('compRowsNuevo',this)"></select></div>
-      <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div>Unidad</div><div></div></div><div id="compRowsNuevo"></div></div>
+      <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div><select id="unidadGlobalNuevo" onchange="aplicarUnidadGlobal('compRowsNuevo',this)"></select></div><div></div></div><div id="compRowsNuevo"></div></div>
       <button class="btn btn-ghost btn-sm" onclick="agregarCompRow('compRowsNuevo')">+ Agregar componente</button>
       <div class="field-row-3" style="margin-top:14px;">
         <div class="field-group"><label>Forma farmacéutica</label><select id="pForma" onchange="onFormaChange('p')"><option value="">— Sin especificar —</option></select></div>
@@ -397,13 +395,12 @@ function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
 function fmtFecha(iso){ if(!iso) return '—'; const [y,m,d]=iso.slice(0,10).split('-'); return `${d}/${m}/${y}`; }
 function poblarUnidadGlobal(id){
   const sel=document.getElementById(id); if(!sel) return;
-  sel.innerHTML='<option value="">Unidad para todos…</option>'+UNID_COMP.map(o=>`<option value="${o}">${o}</option>`).join('');
+  sel.innerHTML='<option value="">Unidad</option>'+UNID_COMP.map(o=>`<option value="${o}">${o}</option>`).join('');
 }
 function aplicarUnidadGlobal(contId,sel){
   const valor=sel.value; if(!valor) return;
   const cont=document.getElementById(contId);
   if(cont){ cont.querySelectorAll('.comp-unid').forEach(otro=>{ otro.value=valor; }); }
-  sel.value='';
 }
 function poblarSelect(id,opts,conBlanco){ const sel=document.getElementById(id); if(!sel) return; const val=sel.value; sel.innerHTML=''; if(conBlanco) sel.innerHTML='<option value="">— Sin especificar —</option>'; opts.forEach(o=>{const op=document.createElement('option'); op.value=o; op.textContent=o; sel.appendChild(op);}); if(val) sel.value=val; }
 
@@ -648,6 +645,7 @@ function limpiarFormPedido(){
   document.getElementById('pForma').value=''; document.getElementById('pUnidad').value='';
   document.getElementById('pFecha').value = new Date().toISOString().slice(0,10);
   document.getElementById('compRowsNuevo').innerHTML='';
+  document.getElementById('unidadGlobalNuevo').value='';
 }
 
 async function guardarPedido(){
