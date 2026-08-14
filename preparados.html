@@ -770,8 +770,14 @@
   function agregarCompRow(contId,recId='',dNom='',dId='',cant='',unid=''){
     const cont=document.getElementById(contId);const idx=Date.now()+Math.random();const div=document.createElement('div');div.className='comp-row';div.dataset.recid=recId;
     const unidOpts=['<option value="">—</option>',...UNID_COMP.map(o=>`<option value="${o}" ${o===unid?'selected':''}>${o}</option>`)].join('');
-    div.innerHTML=`<div class="ss-wrap"><input type="text" class="ss-input" data-idx="${idx}" placeholder="Buscar droga…" value="${escHtml(dNom)}" oninput="filtrarSSComp(this)" onfocus="abrirSSComp(this)" autocomplete="off"/><div class="ss-dropdown" id="ssComp_${idx}"></div><input type="hidden" class="comp-drug-id" data-idx="${idx}" value="${dId}"/></div><input type="number" class="comp-cant" value="${cant}" placeholder="Cant." step="any" min="0"/><select class="comp-unid">${unidOpts}</select><button class="btn-del-comp" onclick="this.closest('.comp-row').remove()">×</button>`;
+    div.innerHTML=`<div class="ss-wrap"><input type="text" class="ss-input" data-idx="${idx}" placeholder="Buscar droga…" value="${escHtml(dNom)}" oninput="filtrarSSComp(this)" onfocus="abrirSSComp(this)" autocomplete="off"/><div class="ss-dropdown" id="ssComp_${idx}"></div><input type="hidden" class="comp-drug-id" data-idx="${idx}" value="${dId}"/></div><input type="number" class="comp-cant" value="${cant}" placeholder="Cant." step="any" min="0"/><select class="comp-unid" onchange="onUnidadCompChange(this)">${unidOpts}</select><button class="btn-del-comp" onclick="this.closest('.comp-row').remove()">×</button>`;
     cont.appendChild(div);
+  }
+
+  function onUnidadCompChange(sel){
+    const cont = sel.closest('[id]');
+    if(!cont) return;
+    cont.querySelectorAll('.comp-unid').forEach(otro=>{ if(otro!==sel) otro.value = sel.value; });
   }
 
   function filtrarSSCliente(){const input=document.getElementById('eClienteInput');const dd=document.getElementById('ssCliente');renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),input.value);posicionarDD(input,dd);dd.classList.add('open');}
