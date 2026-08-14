@@ -84,8 +84,9 @@
     .ss-action:hover{background:var(--accent);color:#fff;}.ss-empty{padding:8px 12px;font-size:13px;color:var(--muted);}
     .sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px;margin-top:4px;}
     .comp-editor{border:1px solid var(--border);border-radius:6px;overflow:visible;margin-bottom:8px;}
-    .comp-editor-header select{width:100%;border:none;background:transparent;color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;cursor:pointer;outline:none;padding:0;font-family:inherit;text-align:left;}
-    .comp-editor-header select:focus{color:var(--text);}
+    .comp-unidad-global-row{display:grid;grid-template-columns:1fr 90px 100px 32px;gap:6px;padding:6px 10px;border-bottom:1px solid var(--border);align-items:center;background:var(--surface);}
+    .comp-unidad-global-row select{padding:5px 8px;font-size:12px;border:1px solid var(--border);border-radius:5px;background:var(--bg);color:var(--text);outline:none;width:100%;cursor:pointer;}
+    .comp-unidad-global-row select:focus{border-color:var(--accent2);}
     .comp-editor-header{display:grid;grid-template-columns:1fr 90px 100px 32px;gap:6px;padding:7px 10px;background:#EDEAE0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);border-bottom:1px solid var(--border);border-radius:6px 6px 0 0;}
     .comp-row{display:grid;grid-template-columns:1fr 90px 100px 32px;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);align-items:center;}
     .comp-row:last-child{border-bottom:none;}
@@ -115,7 +116,7 @@
       .modal{width:100%;height:100%;max-width:100%;max-height:100%;border-radius:0;}
       .field-row{grid-template-columns:1fr!important;}
       .field-row-3{grid-template-columns:1fr!important;}
-      .comp-editor-header,.comp-row{grid-template-columns:1fr 70px 80px 28px;}
+      .comp-editor-header,.comp-row,.comp-unidad-global-row{grid-template-columns:1fr 70px 80px 28px;}
       table{min-width:700px;}
     }
   </style>
@@ -211,7 +212,7 @@
       <div class="modal-sep"></div>
       <div class="field-group"><label>Nro Receta</label><input type="number" id="eReceta"/></div>
       <div class="sec-title">Componentes</div>
-      <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div><select id="unidadGlobalEditar" onchange="aplicarUnidadGlobal('compRowsEditar',this)"></select></div><div></div></div><div id="compRowsEditar"></div></div>
+      <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div>Unidad</div><div></div></div><div class="comp-unidad-global-row"><div></div><div></div><select id="unidadGlobalEditar" onchange="aplicarUnidadGlobal('compRowsEditar',this)"></select><div></div></div><div id="compRowsEditar"></div></div>
       <button class="btn btn-ghost btn-sm" onclick="agregarCompRow('compRowsEditar')">+ Agregar componente</button>
       <div class="field-row-3" style="margin-top:14px;">
         <div class="field-group"><label>Forma farmacéutica</label><select id="eForma" style="width:100%" onchange="onFormaChange()"><option value="">— Sin especificar —</option></select></div>
