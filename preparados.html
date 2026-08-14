@@ -84,6 +84,9 @@
     .ss-action:hover{background:var(--accent);color:#fff;}.ss-empty{padding:8px 12px;font-size:13px;color:var(--muted);}
     .sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px;margin-top:4px;}
     .comp-editor{border:1px solid var(--border);border-radius:6px;overflow:visible;margin-bottom:8px;}
+    .comp-unidad-global{display:flex;justify-content:flex-end;margin-bottom:6px;}
+    .comp-unidad-global select{padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface);color:var(--muted);outline:none;cursor:pointer;}
+    .comp-unidad-global select:focus{border-color:var(--accent2);}
     .comp-editor-header{display:grid;grid-template-columns:1fr 90px 100px 32px;gap:6px;padding:7px 10px;background:#EDEAE0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);border-bottom:1px solid var(--border);border-radius:6px 6px 0 0;}
     .comp-row{display:grid;grid-template-columns:1fr 90px 100px 32px;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);align-items:center;}
     .comp-row:last-child{border-bottom:none;}
@@ -209,6 +212,7 @@
       <div class="modal-sep"></div>
       <div class="field-group"><label>Nro Receta</label><input type="number" id="eReceta"/></div>
       <div class="sec-title">Componentes</div>
+      <div class="comp-unidad-global"><select id="unidadGlobalEditar" onchange="aplicarUnidadGlobal('compRowsEditar',this)"></select></div>
       <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div>Unidad</div><div></div></div><div id="compRowsEditar"></div></div>
       <button class="btn btn-ghost btn-sm" onclick="agregarCompRow('compRowsEditar')">+ Agregar componente</button>
       <div class="field-row-3" style="margin-top:14px;">
@@ -356,6 +360,7 @@
     poblarSelect('eForma',FORMAS,true);
     poblarSelect('eEstado',ESTADOS,false);
     poblarSelect('eUnidad',UNIDADES,true);
+    poblarUnidadGlobal('unidadGlobalEditar');
     cargarListasApoyo();
     filtrar();
     sbAuth.channel('preparados-lista')
@@ -770,14 +775,8 @@
   function agregarCompRow(contId,recId='',dNom='',dId='',cant='',unid=''){
     const cont=document.getElementById(contId);const idx=Date.now()+Math.random();const div=document.createElement('div');div.className='comp-row';div.dataset.recid=recId;
     const unidOpts=['<option value="">—</option>',...UNID_COMP.map(o=>`<option value="${o}" ${o===unid?'selected':''}>${o}</option>`)].join('');
-    div.innerHTML=`<div class="ss-wrap"><input type="text" class="ss-input" data-idx="${idx}" placeholder="Buscar droga…" value="${escHtml(dNom)}" oninput="filtrarSSComp(this)" onfocus="abrirSSComp(this)" autocomplete="off"/><div class="ss-dropdown" id="ssComp_${idx}"></div><input type="hidden" class="comp-drug-id" data-idx="${idx}" value="${dId}"/></div><input type="number" class="comp-cant" value="${cant}" placeholder="Cant." step="any" min="0"/><select class="comp-unid" onchange="onUnidadCompChange(this)">${unidOpts}</select><button class="btn-del-comp" onclick="this.closest('.comp-row').remove()">×</button>`;
+    div.innerHTML=`<div class="ss-wrap"><input type="text" class="ss-input" data-idx="${idx}" placeholder="Buscar droga…" value="${escHtml(dNom)}" oninput="filtrarSSComp(this)" onfocus="abrirSSComp(this)" autocomplete="off"/><div class="ss-dropdown" id="ssComp_${idx}"></div><input type="hidden" class="comp-drug-id" data-idx="${idx}" value="${dId}"/></div><input type="number" class="comp-cant" value="${cant}" placeholder="Cant." step="any" min="0"/><select class="comp-unid">${unidOpts}</select><button class="btn-del-comp" onclick="this.closest('.comp-row').remove()">×</button>`;
     cont.appendChild(div);
-  }
-
-  function onUnidadCompChange(sel){
-    const cont = sel.closest('[id]');
-    if(!cont) return;
-    cont.querySelectorAll('.comp-unid').forEach(otro=>{ if(otro!==sel) otro.value = sel.value; });
   }
 
   function filtrarSSCliente(){const input=document.getElementById('eClienteInput');const dd=document.getElementById('ssCliente');renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),input.value);posicionarDD(input,dd);dd.classList.add('open');}
@@ -861,6 +860,16 @@
 
   // sbGet/sbPost/sbPatch/sbDelete vienen de supabase-shared.js
 
+  function poblarUnidadGlobal(id){
+    const sel=document.getElementById(id);if(!sel)return;
+    sel.innerHTML='<option value="">Unidad para todos…</option>'+UNID_COMP.map(o=>`<option value="${o}">${o}</option>`).join('');
+  }
+  function aplicarUnidadGlobal(contId,sel){
+    const valor=sel.value;if(!valor)return;
+    const cont=document.getElementById(contId);
+    if(cont){ cont.querySelectorAll('.comp-unid').forEach(otro=>{ otro.value=valor; }); }
+    sel.value='';
+  }
   function poblarSelect(id,opts,conBlanco){const sel=document.getElementById(id);if(!sel)return;const val=sel.value;sel.innerHTML='';if(conBlanco)sel.innerHTML='<option value="">— Sin especificar —</option>';opts.forEach(o=>{const opt=document.createElement('option');opt.value=o;opt.textContent=o;sel.appendChild(opt);});if(val)sel.value=val;}
   function limpiar(obj){const r={};for(const[k,v]of Object.entries(obj))if(v!==null&&v!==undefined)r[k]=v;return r;}
   function abrirModal(id){document.getElementById(id).classList.add('open');}
