@@ -810,9 +810,14 @@ function agregarCompRow(contId, prefill){
       <input type="hidden" class="comp-drug-id" data-idx="${idx}" value="${prefill&&prefill.drogaId?prefill.drogaId:''}"/>
     </div>
     <div class="comp-cant-cell"><input type="number" class="comp-cant" placeholder="Cant." step="any" min="0" value="${prefill&&prefill.cantidad!=null?prefill.cantidad:''}"/></div>
-    <select class="comp-unid">${unidOpts}</select>
+    <select class="comp-unid" onchange="onUnidadCompChange(this)">${unidOpts}</select>
     <button class="btn-del-comp" onclick="this.closest('.comp-row').remove()">×</button>`;
   cont.appendChild(div);
+}
+function onUnidadCompChange(sel){
+  const cont = sel.closest('[id]');
+  if(!cont) return;
+  cont.querySelectorAll('.comp-unid').forEach(otro=>{ if(otro!==sel) otro.value = sel.value; });
 }
 function filtrarSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);if(!input.value.trim()){dd.classList.remove('open');return;}renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())).slice(0,50),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
 function abrirSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);if(!input.value.trim()){dd.classList.remove('open');return;}renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
