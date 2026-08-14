@@ -143,8 +143,7 @@
         <button type="button" class="btn-uso" id="btnUsoExterno" onclick="setUsoGlobal('USO EXTERNO')">USO EXTERNO</button>
       </div>
       <div class="vto-global-row">
-        <input type="text" id="vtoGlobal" placeholder="MM/AA" maxlength="5" oninput="fmtVto(this)" onkeydown="vtoKeyDown(event,this)"/>
-        <button type="button" class="btn btn-ghost" onclick="aplicarVtoGlobal()">Aplicar a todos</button>
+        <input type="text" id="vtoGlobal" placeholder="MM/AA" maxlength="5" oninput="fmtVto(this);aplicarVtoGlobal();" onkeydown="vtoKeyDown(event,this)"/>
       </div>
       <div class="vto-quick-row">
         <button type="button" class="btn-vto-rapido" onclick="setVtoRapido(3)">+3 meses</button>
@@ -286,11 +285,10 @@
     document.querySelectorAll('#configCards .config-list-item').forEach(card=>{ card.dataset.uso=uso; });
   }
 
-  function aplicarVtoGlobal(){
+  function aplicarVtoGlobal(mostrarAviso){
     const v=document.getElementById('vtoGlobal').value.trim();
-    if(!v){mostrarToast('Escribí primero un vencimiento para aplicar','err');return;}
     document.querySelectorAll('#configCards .cfg-vto').forEach(inp=>{ inp.value=v; inp.style.borderColor=''; });
-    mostrarToast('Vencimiento aplicado a todos','ok');
+    if(mostrarAviso) mostrarToast('Vencimiento aplicado a todos','ok');
   }
 
   function setVtoRapido(meses){
@@ -299,7 +297,7 @@
     const mm=String(d.getMonth()+1).padStart(2,'0');
     const aa=String(d.getFullYear()%100).padStart(2,'0');
     document.getElementById('vtoGlobal').value=`${mm}/${aa}`;
-    aplicarVtoGlobal();
+    aplicarVtoGlobal(true);
   }
   function irPaso1(){document.getElementById('paso2').style.display='none';document.getElementById('paso1').style.display='block';setStep(1);}
   function setStep(n){[1,2,3].forEach(i=>{const el=document.getElementById(`stepTag${i}`);if(el)el.classList.toggle('active',i===n);});}
