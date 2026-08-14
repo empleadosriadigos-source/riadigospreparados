@@ -47,6 +47,9 @@
     .vto-global-row{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;}
     .vto-global-row input{width:100px;text-align:center;padding:9px 11px;border:1px solid var(--border);border-radius:6px;font-size:14px;background:var(--bg);color:var(--text);outline:none;}
     .vto-global-row input:focus{border-color:var(--accent2);}
+    .vto-quick-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px;}
+    .btn-vto-rapido{padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:opacity 0.15s;}
+    .btn-vto-rapido:hover{opacity:0.75;}
     .config-list{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:16px;}
     .config-list-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border);}
     .config-list-item:last-child{border-bottom:none;}
@@ -142,6 +145,11 @@
       <div class="vto-global-row">
         <input type="text" id="vtoGlobal" placeholder="MM/AA" maxlength="5" oninput="fmtVto(this)" onkeydown="vtoKeyDown(event,this)"/>
         <button type="button" class="btn btn-ghost" onclick="aplicarVtoGlobal()">Aplicar a todos</button>
+      </div>
+      <div class="vto-quick-row">
+        <button type="button" class="btn-vto-rapido" onclick="setVtoRapido(3)">+3 meses</button>
+        <button type="button" class="btn-vto-rapido" onclick="setVtoRapido(6)">+6 meses</button>
+        <button type="button" class="btn-vto-rapido" onclick="setVtoRapido(12)">+12 meses</button>
       </div>
     </div>
     <div class="config-list" id="configCards"></div>
@@ -283,6 +291,15 @@
     if(!v){mostrarToast('Escribí primero un vencimiento para aplicar','err');return;}
     document.querySelectorAll('#configCards .cfg-vto').forEach(inp=>{ inp.value=v; inp.style.borderColor=''; });
     mostrarToast('Vencimiento aplicado a todos','ok');
+  }
+
+  function setVtoRapido(meses){
+    const d=new Date();
+    d.setMonth(d.getMonth()+meses);
+    const mm=String(d.getMonth()+1).padStart(2,'0');
+    const aa=String(d.getFullYear()%100).padStart(2,'0');
+    document.getElementById('vtoGlobal').value=`${mm}/${aa}`;
+    aplicarVtoGlobal();
   }
   function irPaso1(){document.getElementById('paso2').style.display='none';document.getElementById('paso1').style.display='block';setStep(1);}
   function setStep(n){[1,2,3].forEach(i=>{const el=document.getElementById(`stepTag${i}`);if(el)el.classList.toggle('active',i===n);});}
