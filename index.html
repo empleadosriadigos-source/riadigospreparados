@@ -1040,44 +1040,50 @@
           document.getElementById('dropZone').classList.add('drag-active');
         },
         onEnd: async (evt) => {
-          arrastrando = false;
           document.getElementById('dropZone').classList.remove('drag-active');
           document.getElementById('dropZone').classList.remove('drag-over');
 
-          const id = evt.item.dataset.id;
-          const colDestino = evt.to.id;
-          const nuevoEstado = Object.entries(COL_BODY).find(([,v]) => v === colDestino)?.[0];
-
-          if (!nuevoEstado || !id) return;
-
-          const p = preparados.find(x => x.id === id);
-          if (!p) return;
-
-          // Orden nuevo según dónde quedó soltada la card: entre la de arriba y la de abajo
-          // (mayor orden = más arriba). Si no hay vecino de un lado, se extrapola.
-          const nodoArriba = evt.item.previousElementSibling;
-          const nodoAbajo  = evt.item.nextElementSibling;
-          const pArriba = nodoArriba?.dataset?.id ? preparados.find(x => x.id === nodoArriba.dataset.id) : null;
-          const pAbajo  = nodoAbajo?.dataset?.id  ? preparados.find(x => x.id === nodoAbajo.dataset.id)  : null;
-          let nuevoOrden;
-          if (pArriba && pAbajo) nuevoOrden = (pArriba.orden + pAbajo.orden) / 2;
-          else if (pArriba) nuevoOrden = pArriba.orden - 1000;
-          else if (pAbajo) nuevoOrden = pAbajo.orden + 1000;
-          else nuevoOrden = Date.now();
-
-          const cambioEstado = p.estado !== nuevoEstado;
-          const patch = { orden: nuevoOrden };
-          if (cambioEstado) patch.estado = nuevoEstado;
-
+          // arrastrando se apaga recién en el finally: mientras dure el guardado
+          // (await sbPatch) seguimos pisando cualquier recarga de fondo que llegue,
+          // para que no se cruce con datos viejos y duplique la card en el DOM.
           try {
-            await sbPatch('preparados', id, patch);
-            p.orden = nuevoOrden;
-            if (cambioEstado) { p.estado = nuevoEstado; p.fecha_cambio_estado = new Date().toISOString(); mostrarToast(`✓ Movido a ${nuevoEstado}`, 'ok'); }
-            renderKanban();
-          } catch(err) {
-            mostrarToast('Error: ' + err.message, 'err');
-            // Revertir visualmente
-            renderKanban();
+            const id = evt.item.dataset.id;
+            const colDestino = evt.to.id;
+            const nuevoEstado = Object.entries(COL_BODY).find(([,v]) => v === colDestino)?.[0];
+
+            if (!nuevoEstado || !id) return;
+
+            const p = preparados.find(x => x.id === id);
+            if (!p) return;
+
+            // Orden nuevo según dónde quedó soltada la card: entre la de arriba y la de abajo
+            // (mayor orden = más arriba). Si no hay vecino de un lado, se extrapola.
+            const nodoArriba = evt.item.previousElementSibling;
+            const nodoAbajo  = evt.item.nextElementSibling;
+            const pArriba = nodoArriba?.dataset?.id ? preparados.find(x => x.id === nodoArriba.dataset.id) : null;
+            const pAbajo  = nodoAbajo?.dataset?.id  ? preparados.find(x => x.id === nodoAbajo.dataset.id)  : null;
+            let nuevoOrden;
+            if (pArriba && pAbajo) nuevoOrden = (pArriba.orden + pAbajo.orden) / 2;
+            else if (pArriba) nuevoOrden = pArriba.orden - 1000;
+            else if (pAbajo) nuevoOrden = pAbajo.orden + 1000;
+            else nuevoOrden = Date.now();
+
+            const cambioEstado = p.estado !== nuevoEstado;
+            const patch = { orden: nuevoOrden };
+            if (cambioEstado) patch.estado = nuevoEstado;
+
+            try {
+              await sbPatch('preparados', id, patch);
+              p.orden = nuevoOrden;
+              if (cambioEstado) { p.estado = nuevoEstado; p.fecha_cambio_estado = new Date().toISOString(); mostrarToast(`✓ Movido a ${nuevoEstado}`, 'ok'); }
+              renderKanban();
+            } catch(err) {
+              mostrarToast('Error: ' + err.message, 'err');
+              // Revertir visualmente
+              renderKanban();
+            }
+          } finally {
+            arrastrando = false;
           }
         }
       });
