@@ -432,9 +432,11 @@ document.addEventListener('click', e => { if(!e.target.closest('.ss-wrap')) cerr
 
 // ── Cargar y renderizar kanban ──────────────────────────────────
 let estadosConocidos = {}; // id -> estado anterior, para detectar transiciones y disparar el popup sin depender solo de que llegue el evento de realtime
+let primeraCargaSuc = true;
+let ultimoHashSuc = null;
 
 async function cargarTodo(){
-  document.getElementById('kanbanStatus').textContent = 'Cargando…';
+  if(primeraCargaSuc) document.getElementById('kanbanStatus').textContent = 'Cargando…';
   try{
     const preps = await sbGet(`preparados?origen_sucursal=eq.${encodeURIComponent(SUCURSAL_NOMBRE)}&estado=neq.Entregado&eliminado_en=is.null&order=created_at.desc`);
     const compMap = {}, comMap = {};
@@ -447,10 +449,10 @@ async function cargarTodo(){
       comps.forEach(c=>{ if(!compMap[c.preparado_id]) compMap[c.preparado_id]=[]; compMap[c.preparado_id].push(c); });
       coments.forEach(c=>{ if(!comMap[c.preparado_id]) comMap[c.preparado_id]=[]; comMap[c.preparado_id].push(c); });
     }
-    preparados = preps.map(p=>({...p, componentes: compMap[p.id]||[], comentarios: comMap[p.id]||[]}));
+    const nuevos = preps.map(p=>({...p, componentes: compMap[p.id]||[], comentarios: comMap[p.id]||[]}));
 
     const nuevosEstados = {};
-    preparados.forEach(p=>{
+    nuevos.forEach(p=>{
       nuevosEstados[p.id] = p.estado;
       const anterior = estadosConocidos[p.id];
       if(anterior !== undefined && anterior !== 'Esperando confirmación sucursal' && p.estado === 'Esperando confirmación sucursal'){
@@ -459,10 +461,16 @@ async function cargarTodo(){
     });
     estadosConocidos = nuevosEstados;
 
+    const hash = JSON.stringify(nuevos);
+    const huboCambios = hash !== ultimoHashSuc;
+    ultimoHashSuc = hash;
+    preparados = nuevos;
+
     document.getElementById('kanbanStatus').textContent = '';
-    renderKanban();
+    primeraCargaSuc = false;
+    if(huboCambios) renderKanban();
   }catch(err){
-    document.getElementById('kanbanStatus').textContent = 'Error al cargar: '+err.message;
+    if(primeraCargaSuc) document.getElementById('kanbanStatus').textContent = 'Error al cargar: '+err.message;
   }
 }
 
@@ -482,26 +490,50 @@ function estaExpiradoDelKanban(p){
   return dias > DIAS_LIMPIEZA_KANBAN;
 }
 
+// Reconcilia el contenido de una columna sin destruir las cards que no cambiaron
+// (evita el parpadeo y preserva scroll / foco del minichat).
+function reconciliarColumna(body, items, mensajeVacio){
+  const existentes = new Map();
+  Array.from(body.children).forEach(n=>{ if(n.dataset && n.dataset.id) existentes.set(n.dataset.id, n); });
+  const usados = new Set();
+  items.forEach(p=>{
+    const sig = JSON.stringify(p);
+    let nodo = existentes.get(p.id);
+    if(!nodo || nodo.dataset.sig !== sig){
+      nodo = crearTarjeta(p);
+      nodo.dataset.sig = sig;
+    }
+    usados.add(p.id);
+    body.appendChild(nodo); // si ya estaba en el DOM, solo lo reordena
+  });
+  existentes.forEach((nodo,id)=>{ if(!usados.has(id)) nodo.remove(); });
+  const msgVacio = body.querySelector(':scope > .empty-msg');
+  if(!items.length){
+    if(!msgVacio){ const p=document.createElement('p'); p.className='empty-msg'; p.textContent=mensajeVacio; body.appendChild(p); }
+  } else if(msgVacio){
+    msgVacio.remove();
+  }
+}
+
 function renderKanban(){
   const bP = document.getElementById('body-peticion'), bA = document.getElementById('body-aceptado'),
         bPr = document.getElementById('body-prep'), bR = document.getElementById('body-retirar');
-  bP.innerHTML=''; bA.innerHTML=''; bPr.innerHTML=''; bR.innerHTML='';
-  let cP=0, cA=0, cPr=0, cR=0;
+  const listaP=[], listaA=[], listaPr=[], listaR=[];
   preparados.forEach(p=>{
     if(estaExpiradoDelKanban(p)) return;
-    if(ESTADOS_PETICION.includes(p.estado)){ bP.appendChild(crearTarjeta(p)); cP++; }
-    else if(ESTADOS_ACEPTADO.includes(p.estado)){ bA.appendChild(crearTarjeta(p)); cA++; }
-    else if(ESTADOS_PREP.includes(p.estado)){ bPr.appendChild(crearTarjeta(p)); cPr++; }
-    else if(ESTADOS_RETIRAR.includes(p.estado)){ bR.appendChild(crearTarjeta(p)); cR++; }
+    if(ESTADOS_PETICION.includes(p.estado)) listaP.push(p);
+    else if(ESTADOS_ACEPTADO.includes(p.estado)) listaA.push(p);
+    else if(ESTADOS_PREP.includes(p.estado)) listaPr.push(p);
+    else if(ESTADOS_RETIRAR.includes(p.estado)) listaR.push(p);
   });
-  document.getElementById('count-peticion').textContent = cP;
-  document.getElementById('count-aceptado').textContent = cA;
-  document.getElementById('count-prep').textContent = cPr;
-  document.getElementById('count-retirar').textContent = cR;
-  if(!cP) bP.innerHTML = '<p class="empty-msg">Sin solicitudes.</p>';
-  if(!cA) bA.innerHTML = '<p class="empty-msg">Nada esperando confirmación.</p>';
-  if(!cPr) bPr.innerHTML = '<p class="empty-msg">Nada en preparación.</p>';
-  if(!cR) bR.innerHTML = '<p class="empty-msg">Nada para retirar.</p>';
+  reconciliarColumna(bP, listaP, 'Sin solicitudes.');
+  reconciliarColumna(bA, listaA, 'Nada esperando confirmación.');
+  reconciliarColumna(bPr, listaPr, 'Nada en preparación.');
+  reconciliarColumna(bR, listaR, 'Nada para retirar.');
+  document.getElementById('count-peticion').textContent = listaP.length;
+  document.getElementById('count-aceptado').textContent = listaA.length;
+  document.getElementById('count-prep').textContent = listaPr.length;
+  document.getElementById('count-retirar').textContent = listaR.length;
   scrollTodosLosChats();
 }
 
@@ -570,6 +602,7 @@ async function refrescarChat(id){
 
 function crearTarjeta(p){
   const div = document.createElement('div');
+  div.dataset.id = p.id;
   let claseExtra = '';
   if(p.estado==='Rechazado sucursal') claseExtra=' card-rechazado';
   else if(p.estado==='Cancelado sucursal') claseExtra=' card-cancelado';
@@ -983,3 +1016,4 @@ function cerrarPopup(){ document.getElementById('modalPopup').classList.remove('
 </script>
 </body>
 </html>
+
