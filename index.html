@@ -643,9 +643,21 @@
   document.addEventListener('click', e => { if(!e.target.closest('.ss-wrap')) cerrarTodasSS(); });
 
   // ── Carga ──────────────────────────────────────────────────────────────
+  // Actualización sin parpadeo:
+  // - La primera carga sí tapa el kanban y muestra el spinner (no hay nada que mostrar todavía).
+  // - Las siguientes (polling de respaldo / eventos de Realtime) son "silenciosas": si mientras
+  //   tanto se está arrastrando una card, se pisa la recarga para más adelante; si los datos
+  //   traídos son idénticos a los que ya se están mostrando, no se toca el DOM para nada.
+  let primeraCarga = true;
+  let ultimoHashPreparados = null;
+  let arrastrando = false;
+
   async function cargarTodo() {
-    setKanbanStatus('<span class="spinner"></span> Cargando…');
-    document.getElementById('kanbanCols').style.display = 'none';
+    if(arrastrando){ solicitarRecarga(); return; } // reintentar cuando termine el drag en curso
+    if(primeraCarga){
+      setKanbanStatus('<span class="spinner"></span> Cargando…');
+      document.getElementById('kanbanCols').style.display = 'none';
+    }
     try {
       const [preps, drs, clis] = await Promise.all([
         sbGet('preparados_completos?estado=neq.Entregado&eliminado_en=is.null&order=fecha_recepcion.desc'),
@@ -665,12 +677,23 @@
         comps.forEach(c => { if(!compMap[c.preparado_id]) compMap[c.preparado_id]=[]; compMap[c.preparado_id].push(c); });
         coments.forEach(c => { if(!comMap[c.preparado_id]) comMap[c.preparado_id]=[]; comMap[c.preparado_id].push(c); });
       }
-      preparados = preps.map(p => ({ ...p, componentes: compMap[p.id] || [], comentarios: comMap[p.id] || [] }));
+      const nuevos = preps.map(p => ({ ...p, componentes: compMap[p.id] || [], comentarios: comMap[p.id] || [] }));
+
+      const hash = JSON.stringify(nuevos);
+      const huboCambios = hash !== ultimoHashPreparados;
+      ultimoHashPreparados = hash;
+      preparados = nuevos;
+
+      if(primeraCarga) document.getElementById('kanbanCols').style.display = 'grid';
       setKanbanStatus('');
-      renderKanban();
-      renderDrawer();
+      primeraCarga = false;
+
+      if(huboCambios){
+        renderKanban();
+        renderDrawer();
+      }
     } catch(err) {
-      setKanbanStatus('Error al cargar: ' + err.message, true);
+      if(primeraCarga) setKanbanStatus('Error al cargar: ' + err.message, true);
     }
   }
 
@@ -739,11 +762,18 @@
   }
 
   // ── Render kanban ──────────────────────────────────────────────────────
+  // Firma de una card: si no cambia entre un render y el siguiente, el nodo DOM
+  // existente se deja intacto (no se toca su scroll, hover, foco del minichat, etc).
+  function firmaTarjeta(p, termino, clase, colapsada){
+    return JSON.stringify([p, termino, clase, colapsada]);
+  }
+
   function renderKanban() {
-    ESTADOS_KANBAN.forEach(e => { document.getElementById(COL_BODY[e]).innerHTML=''; });
     const counts = {'Asignar precio':0,'En laboratorio':0,'Para retirar':0};
     const termino = document.getElementById('kanbanSearch')?.value.trim() || '';
     let visibles = 0, total = 0;
+    const porColumna = {'Asignar precio':[], 'En laboratorio':[], 'Para retirar':[]};
+
     preparados.forEach(p => {
       if(!ESTADOS_KANBAN.includes(p.estado)) return;
       total++;
@@ -752,8 +782,30 @@
       if(!coincideBusqueda(p, termino)) return;
       visibles++;
       counts[p.estado]++;
-      document.getElementById(COL_BODY[p.estado]).appendChild(crearTarjeta(p, termino, clase, dias));
+      porColumna[p.estado].push({p, dias, clase});
     });
+
+    ESTADOS_KANBAN.forEach(estado => {
+      const body = document.getElementById(COL_BODY[estado]);
+      const existentes = new Map();
+      Array.from(body.children).forEach(n => { if(n.dataset && n.dataset.id) existentes.set(n.dataset.id, n); });
+      const usados = new Set();
+
+      porColumna[estado].forEach(({p, dias, clase}) => {
+        const colapsada = (cardOverrides[p.id] || vistaKanban) === 'colapsada';
+        const sig = firmaTarjeta(p, termino, clase, colapsada);
+        let nodo = existentes.get(p.id);
+        if(!nodo || nodo.dataset.sig !== sig){
+          nodo = crearTarjeta(p, termino, clase, dias);
+          nodo.dataset.sig = sig;
+        }
+        usados.add(p.id);
+        body.appendChild(nodo); // si ya estaba en el DOM, esto solo lo reordena (no lo recrea)
+      });
+
+      existentes.forEach((nodo, id) => { if(!usados.has(id)) nodo.remove(); });
+    });
+
     ESTADOS_KANBAN.forEach(e => { document.getElementById(COL_COUNT[e]).textContent=counts[e]; });
     const elCount = document.getElementById('kanbanResultsCount');
     if(elCount) elCount.textContent = (termino || soloDemorados) ? `${visibles} de ${total}` : '';
@@ -982,9 +1034,11 @@
         chosenClass: 'card-chosen',
         dragClass: 'card-dragging',
         onStart: () => {
+          arrastrando = true;
           document.getElementById('dropZone').classList.add('drag-active');
         },
         onEnd: async (evt) => {
+          arrastrando = false;
           document.getElementById('dropZone').classList.remove('drag-active');
           document.getElementById('dropZone').classList.remove('drag-over');
 
@@ -1713,5 +1767,6 @@
   </script>
 </body>
 </html>
+
 
 
