@@ -166,6 +166,13 @@
     .btn-sm{padding:5px 10px;font-size:12px;}
     .badge-sucursal{display:inline-block;background:#F0E6FA;color:#6B3FA0;border:1px solid #D9C2ED;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:2px 8px;border-radius:20px;white-space:nowrap;}
     .card .badge-sucursal{margin-left:6px;}
+    .badge-stock{display:inline-block;background:#FCEBD5;color:#9A5B0C;border:1px solid #F0CB98;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:2px 8px;border-radius:20px;white-space:nowrap;}
+    .card .badge-stock{margin-left:6px;}
+    .fs-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--border,#e5e5e5);}
+    .fs-row:last-child{border-bottom:none;}
+    .fs-row-info strong{font-size:13px;}
+    .fs-row-info div{font-size:12px;color:var(--muted);margin-top:2px;}
+    .fs-row-actions{display:flex;gap:6px;flex-shrink:0;}
     .bell-wrap{position:relative;display:inline-flex;}
     .bell-btn{background:none;border:1px solid #555;color:#ccc;padding:6px 10px;border-radius:6px;cursor:pointer;display:flex;align-items:center;}
     .bell-btn:hover{background:#444;}
@@ -274,6 +281,10 @@
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
     Etiquetas
   </a>
+  <button class="nav-btn nav-btn-dark" onclick="abrirModalFormulasStock()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+    Fórmulas de stock
+  </button>
 
   <div class="topbar-right">
     <button class="bell-btn" onclick="abrirPapelera()" title="Papelera" style="margin-right:2px;">
@@ -389,9 +400,29 @@
         <input type="number" id="pCupon" class="cupon-input" placeholder="Número de talonario" style="display:none;"/>
       </div>
       <div class="modal-sep"></div>
+      <div class="cupon-box">
+        <label>Tipo de preparado</label>
+        <div class="cupon-toggle">
+          <label><input type="radio" name="modoPreparado" value="normal" id="pModoNormal" checked onchange="toggleModoPreparado()"> Normal</label>
+          <label><input type="radio" name="modoPreparado" value="stock" id="pModoStock" onchange="toggleModoPreparado()"> De stock</label>
+        </div>
+      </div>
+      <div id="stockSeccion" style="display:none;">
+        <div class="field-row">
+          <div class="field-group">
+            <label>Fórmula de stock <span style="color:var(--danger)">*</span></label>
+            <select id="pFormulaStock" onchange="onFormulaStockChange()"><option value="">— Elegir fórmula —</option></select>
+          </div>
+          <div class="field-group">
+            <label>Cantidad de envases <span style="color:var(--danger)">*</span></label>
+            <input type="number" id="pEnvases" min="1" step="1" value="1" oninput="regenerarPreviewStock()"/>
+          </div>
+        </div>
+      </div>
+      <div class="modal-sep"></div>
       <div class="field-row">
         <div class="field-group">
-          <label>Cliente <span style="color:var(--danger)">*</span></label>
+          <label>Cliente <span style="color:var(--danger)" id="pClienteReq">*</span></label>
           <div style="display:flex;gap:6px;">
             <div class="ss-wrap" style="flex:1;">
               <input type="text" id="pClienteInput" placeholder="Buscar cliente…" oninput="filtrarSSCliente('p')" onfocus="abrirSSCliente('p')" autocomplete="off"/>
@@ -402,7 +433,7 @@
           </div>
         </div>
         <div class="field-group">
-          <label>Teléfono <span style="color:var(--danger)">*</span></label>
+          <label>Teléfono <span style="color:var(--danger)" id="pTelefonoReq">*</span></label>
           <input type="text" id="pTelefono" placeholder="Teléfono del cliente" oninput="this.classList.remove('field-invalid')"/>
         </div>
       </div>
@@ -417,7 +448,7 @@
       <div class="field-group"><label>Nro Receta</label><input type="number" id="pReceta"/></div>
       <div class="sec-title">Componentes</div>
       <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div class="comp-unidad-global-row">Unidad<select id="unidadGlobalNuevo" onchange="aplicarUnidadGlobal('compRowsNuevo',this)"></select></div><div></div></div><div id="compRowsNuevo"></div></div>
-      <button class="btn btn-ghost btn-sm" onclick="agregarCompRow('compRowsNuevo')">+ Agregar componente</button>
+      <button class="btn btn-ghost btn-sm" id="btnAgregarCompNuevo" onclick="agregarCompRow('compRowsNuevo')">+ Agregar componente</button>
       <div class="field-row-3" style="margin-top:14px;">
         <div class="field-group"><label>Forma farmacéutica</label><select id="pForma" onchange="onFormaChange('p')"><option value="">— Sin especificar —</option></select></div>
         <div class="field-group">
@@ -431,6 +462,42 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="cerrarModal('modalPreparado')">Cancelar</button>
       <button class="btn btn-primary" id="btnGuardarPrep" onclick="guardarPreparado()">Guardar preparado</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalFormulasStock">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-header">
+      <h2>Fórmulas de stock</h2>
+      <button class="modal-close" onclick="cerrarModal('modalFormulasStock')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="fsListaWrap">
+        <button class="btn btn-primary btn-sm" onclick="abrirFormFormulaStock()">＋ Nueva fórmula</button>
+        <div id="fsLista" style="margin-top:14px;"></div>
+      </div>
+      <div id="fsFormWrap" style="display:none;">
+        <input type="hidden" id="fsId"/>
+        <div class="field-group"><label>Nombre <span style="color:var(--danger)">*</span></label><input type="text" id="fsNombre" placeholder="Ej: Loción pediculicida"/></div>
+        <div class="field-row-3">
+          <div class="field-group"><label>Forma farmacéutica</label><select id="fsForma" onchange="onFormaChange('fs')"><option value="">— Sin especificar —</option></select></div>
+          <div class="field-group">
+            <label>Cantidad por envase <span style="color:var(--danger)">*</span></label>
+            <input type="number" id="fsCantBase" step="any" min="0"/>
+            <div class="unidad-hint" id="fsUnidadHint"></div>
+          </div>
+          <div class="field-group"><label>Unidad</label><select id="fsUnidad"><option value="">— Sin especificar —</option></select></div>
+        </div>
+        <div class="sec-title">Componentes (para UN envase)</div>
+        <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div class="comp-unidad-global-row">Unidad<select id="unidadGlobalFormula" onchange="aplicarUnidadGlobal('compRowsFormula',this)"></select></div><div></div></div><div id="compRowsFormula"></div></div>
+        <button class="btn btn-ghost btn-sm" onclick="agregarCompRow('compRowsFormula')">+ Agregar componente</button>
+        <div class="field-group" style="margin-top:14px;"><label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="checkbox" id="fsActivo" checked style="width:auto;"/> Activa (aparece al elegir en "Cargar preparado")</label></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="fsBtnCancelar" onclick="cerrarModal('modalFormulasStock')">Cerrar</button>
+      <button class="btn btn-primary" id="fsBtnGuardar" style="display:none;" onclick="guardarFormulaStock()">Guardar fórmula</button>
     </div>
   </div>
 </div>
@@ -603,6 +670,7 @@
 
   let preparados = [], drogas = [], clientes = [];
   let dragId = null, prepActual = null, cbDrogaIdx = null, clienteCB = null;
+  let formulasStock = [], formulasStockComponentes = {}, formulaStockSeleccionada = null;
 
   // ── Init ───────────────────────────────────────────────────────────────
   function initApp() {
@@ -610,14 +678,18 @@
     document.getElementById('pFecha').value     = hoy;
     poblarSelect('pForma',  FORMAS,   true);
     poblarSelect('eForma',  FORMAS,   true);
+    poblarSelect('fsForma', FORMAS,   true);
     poblarSelect('pUnidad', UNIDADES, true);
     poblarSelect('eUnidad', UNIDADES, true);
+    poblarSelect('fsUnidad',UNIDADES, true);
     poblarUnidadGlobal('unidadGlobalNuevo');
     poblarUnidadGlobal('unidadGlobalEditar');
+    poblarUnidadGlobal('unidadGlobalFormula');
     poblarSelect('pEstado', ESTADOS.filter(e=>e!=='Entregado'), false);
     poblarSelect('eEstado', ESTADOS, false);
     document.getElementById('pEstado').value = 'Asignar precio';
     cargarTodo();
+    cargarFormulasStock();
     suscribirRealtime();
   }
 
@@ -697,6 +769,138 @@
     }
   }
 
+  // ── Fórmulas de stock ────────────────────────────────────────────────
+  async function cargarFormulasStock(){
+    try{
+      const [formulas, comps] = await Promise.all([
+        sbGet('formulas_stock?order=nombre.asc'),
+        sbGet('formula_stock_componentes?select=*,drogas(nombre)&order=id.asc'),
+      ]);
+      formulasStock = formulas;
+      formulasStockComponentes = {};
+      comps.forEach(c=>{
+        if(!formulasStockComponentes[c.formula_stock_id]) formulasStockComponentes[c.formula_stock_id]=[];
+        formulasStockComponentes[c.formula_stock_id].push({droga_id:c.droga_id, droga_nombre:c.drogas?.nombre||'', cantidad:c.cantidad, unidad:c.unidad});
+      });
+      poblarSelectPFormulaStock();
+      renderListaFormulasStock();
+    }catch(err){ mostrarToast('Error al cargar fórmulas de stock: '+err.message,'err'); }
+  }
+  function poblarSelectPFormulaStock(){
+    const sel=document.getElementById('pFormulaStock');
+    const val=sel.value;
+    sel.innerHTML='<option value="">— Elegir fórmula —</option>'+formulasStock.filter(f=>f.activo).map(f=>`<option value="${f.id}">${escHtml(f.nombre)}</option>`).join('');
+    if(val && formulasStock.some(f=>f.id===val && f.activo)) sel.value=val;
+  }
+
+  async function abrirModalFormulasStock(){
+    await cargarFormulasStock();
+    cerrarFormFormulaStock();
+    abrirModal('modalFormulasStock');
+  }
+  function renderListaFormulasStock(){
+    const cont=document.getElementById('fsLista');
+    if(!cont) return;
+    if(!formulasStock.length){ cont.innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px 0;">Todavía no hay fórmulas cargadas.</div>'; return; }
+    cont.innerHTML = formulasStock.map(f=>{
+      const meta = [f.forma_farmaceutica, `${f.cantidad_base}${f.unidad?' '+f.unidad:''} por envase`].filter(Boolean).join(' · ');
+      const nComp = (formulasStockComponentes[f.id]||[]).length;
+      return `<div class="fs-row">
+        <div class="fs-row-info">
+          <strong>${escHtml(f.nombre)}</strong> ${f.activo?'':'<span style="color:var(--muted);font-size:11px;">(inactiva)</span>'}
+          <div>${escHtml(meta)} · ${nComp} componente${nComp===1?'':'s'}</div>
+        </div>
+        <div class="fs-row-actions">
+          <button class="btn btn-ghost btn-sm" onclick="abrirFormFormulaStock('${f.id}')">Editar</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleActivoFormulaStock('${f.id}',${f.activo})">${f.activo?'Desactivar':'Activar'}</button>
+          <button class="btn btn-ghost btn-sm" onclick="eliminarFormulaStock('${f.id}')">🗑</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  function abrirFormFormulaStock(id=''){
+    document.getElementById('fsListaWrap').style.display='none';
+    document.getElementById('fsFormWrap').style.display='';
+    document.getElementById('fsBtnCancelar').textContent='← Volver';
+    document.getElementById('fsBtnCancelar').setAttribute('onclick','cerrarFormFormulaStock()');
+    document.getElementById('fsBtnGuardar').style.display='';
+    document.getElementById('compRowsFormula').innerHTML='';
+    document.getElementById('unidadGlobalFormula').value='';
+    const f = id ? formulasStock.find(x=>x.id===id) : null;
+    document.getElementById('fsId').value = f ? f.id : '';
+    document.getElementById('fsNombre').value = f ? f.nombre : '';
+    document.getElementById('fsForma').value = f ? (f.forma_farmaceutica||'') : '';
+    onFormaChange('fs');
+    document.getElementById('fsUnidad').value = f ? (f.unidad||'') : '';
+    document.getElementById('fsCantBase').value = f ? f.cantidad_base : '';
+    document.getElementById('fsActivo').checked = f ? f.activo : true;
+    if(f){
+      (formulasStockComponentes[f.id]||[]).forEach(c=>{
+        agregarCompRow('compRowsFormula','', c.droga_nombre, c.droga_id, c.cantidad??'', c.unidad);
+      });
+    }
+  }
+  function cerrarFormFormulaStock(){
+    document.getElementById('fsListaWrap').style.display='';
+    document.getElementById('fsFormWrap').style.display='none';
+    document.getElementById('fsBtnCancelar').textContent='Cerrar';
+    document.getElementById('fsBtnCancelar').setAttribute('onclick',"cerrarModal('modalFormulasStock')");
+    document.getElementById('fsBtnGuardar').style.display='none';
+  }
+  async function guardarFormulaStock(){
+    const nombre=document.getElementById('fsNombre').value.trim();
+    if(!nombre){mostrarToast('El nombre de la fórmula es obligatorio','err');return;}
+    const cantBase=parseFloat(document.getElementById('fsCantBase').value);
+    if(!cantBase||cantBase<=0){mostrarToast('Ingresá la cantidad por envase','err');return;}
+    const id=document.getElementById('fsId').value;
+    const btn=document.getElementById('fsBtnGuardar');btn.disabled=true;btn.textContent='Guardando…';
+    try{
+      const payload=limpiar({
+        nombre,
+        forma_farmaceutica:document.getElementById('fsForma').value||null,
+        unidad:document.getElementById('fsUnidad').value||null,
+        cantidad_base:cantBase,
+        activo:document.getElementById('fsActivo').checked,
+      });
+      let formulaId=id;
+      if(id){
+        await sbPatch('formulas_stock',id,payload);
+        await sbDelete('formula_stock_componentes?formula_stock_id=eq.'+id);
+      }else{
+        const nueva=await sbPost('formulas_stock',payload);
+        formulaId=nueva[0].id;
+      }
+      const rows=document.querySelectorAll('#compRowsFormula .comp-row');
+      for(const row of rows){
+        const drugId=row.querySelector('.comp-drug-id').value;
+        const cant=parseFloat(row.querySelector('.comp-cant').value)||null;
+        const unid=row.querySelector('.comp-unid').value||null;
+        if(!drugId) continue;
+        await sbPost('formula_stock_componentes',limpiar({formula_stock_id:formulaId,droga_id:drugId,cantidad:cant,unidad:unid}));
+      }
+      mostrarToast('✓ Fórmula guardada','ok');
+      await cargarFormulasStock();
+      cerrarFormFormulaStock();
+    }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+    btn.disabled=false;btn.textContent='Guardar fórmula';
+  }
+  async function toggleActivoFormulaStock(id, activoActual){
+    try{
+      await sbPatch('formulas_stock',id,{activo:!activoActual});
+      await cargarFormulasStock();
+    }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+  }
+  async function eliminarFormulaStock(id){
+    const f = formulasStock.find(x=>x.id===id);
+    const nombre = f ? f.nombre : 'esta fórmula';
+    if(!confirm(`¿Eliminar la fórmula "${nombre}"? Los preparados ya cargados con esta fórmula no se ven afectados, pero se pierde la receta guardada.`)) return;
+    try{
+      await sbDelete('formulas_stock?id=eq.'+id);
+      mostrarToast('✓ Fórmula eliminada','ok');
+      await cargarFormulasStock();
+    }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+  }
+
   // ── Búsqueda / vista / antigüedad ────────────────────────────────────
   let vistaKanban = 'expandida';
   let soloDemorados = false;
@@ -745,7 +949,7 @@
     const t = normalizar(termino);
     const campos = [
       p.nro_cupon, p.nro_cupon_nuevo, p.cliente_nombre, p.cliente_telefono,
-      p.nro_receta, p.forma_farmaceutica, p.observaciones
+      p.nro_receta, p.forma_farmaceutica, p.observaciones, p.formula_stock_nombre
     ].map(normalizar);
     if(campos.some(c => c.includes(t))) return true;
     return (p.componentes||[]).some(c => normalizar(c.droga_nombre).includes(t));
@@ -841,14 +1045,14 @@
     const svgChevronUp=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>`;
     div.innerHTML=`
       <div class="card-top">
-        <div class="card-cupon">${fmtCupon(p)}${p.origen_sucursal?`<span class="badge-sucursal">${escHtml(p.origen_sucursal)}</span>`:''}</div>
+        <div class="card-cupon">${fmtCupon(p)}${p.origen_sucursal?`<span class="badge-sucursal">${escHtml(p.origen_sucursal)}</span>`:''}${p.formula_stock_nombre?`<span class="badge-stock">📦 Stock</span>`:''}</div>
         <div class="card-top-actions">
           <button class="icon-btn icon-btn-toggle" onclick="toggleCardView(event,'${p.id}')" title="${colapsada?'Expandir':'Colapsar'}">${colapsada?svgChevronDown:svgChevronUp}</button>
           <button class="icon-btn icon-btn-delete" onclick="abrirBorrar(event,'${p.id}')" title="Eliminar">${svgD}</button>
         </div>
       </div>
       <div class="card-contact">
-        <div class="card-contact-row">${svgP}<span class="card-cliente-text">${resaltar(p.cliente_nombre||'—',termino)}</span></div>
+        <div class="card-contact-row">${svgP}<span class="card-cliente-text">${resaltar(p.cliente_nombre || (p.formula_stock_nombre?('📦 '+p.formula_stock_nombre):'—'), termino)}</span></div>
         <div class="card-contact-row">${svgT}<span class="card-tel-text">${resaltar(p.cliente_telefono||'',termino)}</span></div>
         <div class="card-contact-row">${svgC}<span class="card-fecha-text">${fmtFecha(p.fecha_recepcion)}</span></div>
       </div>
@@ -1272,8 +1476,14 @@
 
   async function guardarPreparado(){
     const tipoNuevo = document.getElementById('tipoCuponNuevo').checked;
+    const modoStock = document.getElementById('pModoStock').checked;
     // Validar forma farmacéutica obligatoria
     if(!document.getElementById('pForma').value){mostrarToast('Seleccioná una forma farmacéutica','err');return;}
+    if(modoStock){
+      if(!formulaStockSeleccionada){mostrarToast('Seleccioná una fórmula de stock','err');return;}
+      const envasesChk=parseInt(document.getElementById('pEnvases').value);
+      if(!envasesChk||envasesChk<1){mostrarToast('Ingresá una cantidad de envases válida','err');return;}
+    }
     let cupon;
     if(tipoNuevo){
       try{
@@ -1289,24 +1499,27 @@
       if(!cupon){mostrarToast('El Nro Cupón es obligatorio','err');return;}
     }
     const cliId=document.getElementById('pClienteId').value;
-    if(!cliId){mostrarToast('Seleccioná un cliente','err');return;}
+    if(!modoStock && !cliId){mostrarToast('Seleccioná un cliente','err');return;}
     const telInput=document.getElementById('pTelefono');
     const telVal=telInput.value.trim();
-    if(!telVal){telInput.classList.add('field-invalid');mostrarToast('Completá el teléfono del cliente','err');return;}
+    if(cliId && !telVal){telInput.classList.add('field-invalid');mostrarToast('Completá el teléfono del cliente','err');return;}
     telInput.classList.remove('field-invalid');
     const btn=document.getElementById('btnGuardarPrep');btn.disabled=true;btn.textContent='Guardando…';
     try{
-      const cliActual=clientes.find(c=>c.id===cliId);
-      if(cliActual && (cliActual.telefono||'')!==telVal){
-        await sbPatch('clientes',cliId,{telefono:telVal});
-        cliActual.telefono=telVal;
-        preparados.filter(p=>p.cliente_id===cliId).forEach(p=>{p.cliente_telefono=telVal;});
+      if(cliId){
+        const cliActual=clientes.find(c=>c.id===cliId);
+        if(cliActual && (cliActual.telefono||'')!==telVal){
+          await sbPatch('clientes',cliId,{telefono:telVal});
+          cliActual.telefono=telVal;
+          preparados.filter(p=>p.cliente_id===cliId).forEach(p=>{p.cliente_telefono=telVal;});
+        }
       }
       const nuevoPrep=await sbPost('preparados',limpiar({
         nro_cupon_nuevo:tipoNuevo?cupon:null,
         nro_cupon:tipoNuevo?null:cupon,
         nro_receta:parseInt(document.getElementById('pReceta').value)||null,
-        cliente_id:cliId,
+        cliente_id:cliId||null,
+        formula_stock_id:modoStock&&formulaStockSeleccionada?formulaStockSeleccionada.id:null,
         fecha_recepcion:document.getElementById('pFecha').value||null,
         estado:document.getElementById('pEstado').value||null,
         forma_farmaceutica:document.getElementById('pForma').value||null,
@@ -1351,6 +1564,58 @@
     document.getElementById('unidadGlobalNuevo').value='';
     document.getElementById('tipoCuponNuevo').checked=true;
     toggleTipoCupon();
+    document.getElementById('pModoNormal').checked=true;
+    document.getElementById('pFormulaStock').value='';
+    document.getElementById('pEnvases').value='1';
+    formulaStockSeleccionada=null;
+    toggleModoPreparado();
+  }
+
+  // ── Preparados de stock (cargar) ────────────────────────────────────────
+  function toggleModoPreparado(){
+    const stock = document.getElementById('pModoStock').checked;
+    document.getElementById('stockSeccion').style.display = stock ? '' : 'none';
+    document.getElementById('pForma').disabled = stock;
+    document.getElementById('pUnidad').disabled = stock;
+    document.getElementById('pCantTotal').readOnly = stock;
+    document.getElementById('btnAgregarCompNuevo').style.display = stock ? 'none' : '';
+    document.getElementById('unidadGlobalNuevo').disabled = stock;
+    document.getElementById('pClienteReq').style.display = stock ? 'none' : '';
+    document.getElementById('pTelefonoReq').style.display = stock ? 'none' : '';
+    if(!stock){
+      formulaStockSeleccionada=null;
+      document.getElementById('pFormulaStock').value='';
+      document.getElementById('pEnvases').value='1';
+      document.getElementById('compRowsNuevo').innerHTML='';
+      document.getElementById('pForma').value='';
+      document.getElementById('pCantTotal').value='';
+      onFormaChange('p');
+    }
+  }
+  function onFormulaStockChange(){
+    const id=document.getElementById('pFormulaStock').value;
+    formulaStockSeleccionada = formulasStock.find(f=>f.id===id) || null;
+    regenerarPreviewStock();
+  }
+  function regenerarPreviewStock(){
+    document.getElementById('compRowsNuevo').innerHTML='';
+    if(!formulaStockSeleccionada){
+      document.getElementById('pForma').value='';document.getElementById('pCantTotal').value='';
+      onFormaChange('p');
+      return;
+    }
+    const envases = parseFloat(document.getElementById('pEnvases').value)||0;
+    document.getElementById('pForma').value = formulaStockSeleccionada.forma_farmaceutica||'';
+    onFormaChange('p');
+    document.getElementById('pUnidad').value = formulaStockSeleccionada.unidad||'';
+    document.getElementById('pForma').disabled = true;
+    document.getElementById('pUnidad').disabled = true;
+    document.getElementById('pCantTotal').value = envases>0 ? +(formulaStockSeleccionada.cantidad_base*envases).toFixed(4) : '';
+    (formulasStockComponentes[formulaStockSeleccionada.id]||[]).forEach(c=>{
+      const cant = (envases>0 && c.cantidad!=null) ? +(c.cantidad*envases).toFixed(4) : '';
+      agregarCompRow('compRowsNuevo','', c.droga_nombre, c.droga_id, cant, c.unidad);
+    });
+    document.querySelectorAll('#compRowsNuevo .comp-row input, #compRowsNuevo .comp-row select, #compRowsNuevo .comp-row button').forEach(el=>el.disabled=true);
   }
 
   // ── Modal clientes unificado ───────────────────────────────────────────
