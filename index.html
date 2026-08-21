@@ -452,12 +452,6 @@
         </div>
       </div>
 
-      <!-- Selector de fórmulas de stock: grilla de botones -->
-      <div id="seccionStockPicker" style="display:none;">
-        <div class="sec-title">Elegí una fórmula</div>
-        <div id="stockPickerGrid" class="stock-picker-grid"></div>
-      </div>
-
       <!-- Fórmula ya elegida: nombre (tocar para volver a elegir) + cantidad de envases -->
       <div id="seccionStockSeleccionada" style="display:none;">
         <div class="sec-title">Fórmula elegida</div>
@@ -468,8 +462,25 @@
         </div>
       </div>
 
-      <!-- Alta rápida de una fórmula nueva, dentro del mismo flujo -->
-      <div id="seccionStockNuevaFormula" style="display:none;">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalPreparado')">Cancelar</button>
+      <button class="btn btn-primary" id="btnGuardarPrep" onclick="guardarPreparado()">Guardar preparado</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalStockPicker">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <h2>Preparados de stock</h2>
+      <button class="modal-close" onclick="cerrarStockPicker()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="stockPickerGridWrap">
+        <div id="stockPickerGrid" class="stock-picker-grid"></div>
+      </div>
+      <div id="stockPickerNuevaFormula" style="display:none;">
         <div class="sec-title">Nueva fórmula de stock</div>
         <div class="field-group"><label>Nombre <span style="color:var(--danger)">*</span></label><input type="text" id="pnfNombre" placeholder="Ej: Loción pediculicida"/></div>
         <div class="sec-title">Componentes</div>
@@ -489,11 +500,6 @@
           <button class="btn btn-primary btn-sm" id="btnGuardarPNF" onclick="guardarNuevaFormulaInline()">Guardar fórmula</button>
         </div>
       </div>
-
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="cerrarModal('modalPreparado')">Cancelar</button>
-      <button class="btn btn-primary" id="btnGuardarPrep" onclick="guardarPreparado()">Guardar preparado</button>
     </div>
   </div>
 </div>
@@ -1512,8 +1518,6 @@
   }
 
   async function guardarPreparado(){
-    if(vistaPrepModal==='picker'){mostrarToast('Elegí una fórmula de la lista, o volvé a "Preparado normal"','err');return;}
-    if(vistaPrepModal==='nuevaFormula'){mostrarToast('Terminá de guardar la fórmula nueva primero (o cancelá)','err');return;}
     const modoStock = vistaPrepModal==='seleccionada' && !!formulaStockSeleccionada;
     const tipoNuevo = document.getElementById('tipoCuponNuevo').checked;
     // Validar forma farmacéutica obligatoria
@@ -1608,23 +1612,19 @@
   }
 
   // ── Preparados de stock (cargar) ────────────────────────────────────────
-  // vistaPrepModal: 'normal' | 'picker' (grilla de fórmulas) | 'seleccionada' (fórmula + envases) | 'nuevaFormula' (alta rápida)
+  // vistaPrepModal: 'normal' | 'seleccionada' (fórmula elegida + cantidad de envases), dentro de modalPreparado
   let vistaPrepModal = 'normal';
   function mostrarVistaPrep(v){
     vistaPrepModal = v;
     document.getElementById('seccionPrepNormal').style.display        = v==='normal' ? '' : 'none';
-    document.getElementById('seccionStockPicker').style.display       = v==='picker' ? '' : 'none';
     document.getElementById('seccionStockSeleccionada').style.display = v==='seleccionada' ? '' : 'none';
-    document.getElementById('seccionStockNuevaFormula').style.display = v==='nuevaFormula' ? '' : 'none';
     document.getElementById('btnTogglePreparadosStock').textContent = v==='normal' ? '📦 Preparados de stock' : '← Preparado normal';
     document.getElementById('pClienteReq').style.display = v==='normal' ? '' : 'none';
     document.getElementById('pTelefonoReq').style.display = v==='normal' ? '' : 'none';
   }
   function togglePreparadosStock(){
     if(vistaPrepModal==='normal'){
-      formulaStockSeleccionada=null;
-      renderStockPickerGrid();
-      mostrarVistaPrep('picker');
+      abrirStockPicker();
     } else {
       volverANormalPrep();
     }
@@ -1637,19 +1637,6 @@
     document.getElementById('pCantTotal').value='';
     onFormaChange('p');
     mostrarVistaPrep('normal');
-  }
-  function seleccionarFormulaStock(id){
-    formulaStockSeleccionada = formulasStock.find(f=>f.id===id) || null;
-    if(!formulaStockSeleccionada) return;
-    document.getElementById('btnFormulaSeleccionadaNombre').textContent = formulaStockSeleccionada.nombre;
-    document.getElementById('pEnvases').value='1';
-    regenerarPreviewStock();
-    mostrarVistaPrep('seleccionada');
-  }
-  function volverAPickerStock(){
-    formulaStockSeleccionada=null;
-    document.getElementById('compRowsNuevo').innerHTML='';
-    mostrarVistaPrep('picker');
   }
   function regenerarPreviewStock(){
     if(!formulaStockSeleccionada) return;
@@ -1665,7 +1652,37 @@
     });
   }
 
-  // ── Alta rápida de fórmula, sin salir del modal de cargar preparado ──────
+  // ── Modal aparte: elegir fórmula de stock (modalStockPicker) ────────────
+  // vistaPicker: 'grid' (botones de fórmulas) | 'nuevaFormula' (alta rápida)
+  let vistaPicker = 'grid';
+  function mostrarVistaPicker(v){
+    vistaPicker = v;
+    document.getElementById('stockPickerGridWrap').style.display  = v==='grid' ? '' : 'none';
+    document.getElementById('stockPickerNuevaFormula').style.display = v==='nuevaFormula' ? '' : 'none';
+  }
+  function abrirStockPicker(){
+    cerrarModal('modalPreparado');
+    renderStockPickerGrid();
+    mostrarVistaPicker('grid');
+    abrirModal('modalStockPicker');
+  }
+  function cerrarStockPicker(){
+    cerrarModal('modalStockPicker');
+    abrirModal('modalPreparado');
+  }
+  function volverAPickerStock(){
+    abrirStockPicker();
+  }
+  function seleccionarFormulaStock(id){
+    formulaStockSeleccionada = formulasStock.find(f=>f.id===id) || null;
+    if(!formulaStockSeleccionada) return;
+    document.getElementById('btnFormulaSeleccionadaNombre').textContent = formulaStockSeleccionada.nombre;
+    document.getElementById('pEnvases').value='1';
+    regenerarPreviewStock();
+    cerrarModal('modalStockPicker');
+    abrirModal('modalPreparado');
+    mostrarVistaPrep('seleccionada');
+  }
   function mostrarNuevaFormulaInline(){
     document.getElementById('pnfNombre').value='';
     document.getElementById('pnfForma').value='';
@@ -1674,10 +1691,10 @@
     document.getElementById('pnfCantBase').value='';
     document.getElementById('compRowsPNF').innerHTML='';
     document.getElementById('unidadGlobalPNF').value='';
-    mostrarVistaPrep('nuevaFormula');
+    mostrarVistaPicker('nuevaFormula');
   }
   function cancelarNuevaFormulaInline(){
-    mostrarVistaPrep('picker');
+    mostrarVistaPicker('grid');
   }
   async function guardarNuevaFormulaInline(){
     const nombre=document.getElementById('pnfNombre').value.trim();
@@ -1703,7 +1720,7 @@
       }
       mostrarToast('✓ Fórmula agregada','ok');
       await cargarFormulasStock();
-      mostrarVistaPrep('picker');
+      mostrarVistaPicker('grid');
     }catch(err){ mostrarToast('Error: '+err.message,'err'); }
     btn.disabled=false;btn.textContent='Guardar fórmula';
   }
