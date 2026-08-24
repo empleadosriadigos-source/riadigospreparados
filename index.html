@@ -2103,6 +2103,15 @@
         return linea(linePad);
       }).flat();
 
+      // Preparado de stock: en vez de fórmula/componentes, mostrar nombre + cantidad de envases
+      const esStock = !!(prep.formula_stock_id && prep.formula_stock_nombre);
+      let envases = null;
+      if(esStock){
+        const f = formulasStock.find(x=>x.id===prep.formula_stock_id);
+        if(f && f.cantidad_base) envases = Math.round((prep.cantidad_total||0)/f.cantidad_base);
+      }
+      const envasesTxt = envases!=null ? (envases+' envase'+(envases===1?'':'s')) : '';
+
       // ── CUPÓN CLIENTE ────────────────────────────────────────────────
       const datosCli = [
         ...INIT,
@@ -2117,8 +2126,13 @@
         ...linea(cliente),
         ...(tel ? linea('Tel: '+tel) : []),
         ...sep(),
-        ...((forma||cant) ? linea(forma+(forma&&cant?' - ':'')+cant) : []),
-        ...(compsCorto ? linea(compsCorto) : []),
+        ...(esStock
+          ? linea(prep.formula_stock_nombre + (envasesTxt ? ' - '+envasesTxt : ''))
+          : [
+              ...((forma||cant) ? linea(forma+(forma&&cant?' - ':'')+cant) : []),
+              ...(compsCorto ? linea(compsCorto) : []),
+            ]
+        ),
         ...sep(),
         ...LF,...LF,...LF,...LF,
         ...CUT,
@@ -2144,8 +2158,17 @@
         ...linea('CANTIDAD: '+(cant||'___________')),
         ...linea('PRECIO: '+(precio||'___________')),
         ...sep(),
-        ...linea('COMPONENTES:'),
-        ...(compsLargoData.length ? compsLargoData : linea('___________')),
+        ...(esStock
+          ? [
+              ...linea('FORMULA STOCK:'),
+              ...linea(prep.formula_stock_nombre||''),
+              ...linea('ENVASES: '+(envasesTxt||'___________')),
+            ]
+          : [
+              ...linea('COMPONENTES:'),
+              ...(compsLargoData.length ? compsLargoData : linea('___________')),
+            ]
+        ),
         ...sep(),
         ...linea('OBS: '+(obs||'')),
         ...LF,...LF,
