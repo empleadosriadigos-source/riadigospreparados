@@ -1523,6 +1523,17 @@
           precio_venta:parseFloat(document.getElementById('ePrecio').value)||null,
           observaciones:document.getElementById('eObs').value||null,
         }));
+        // Si cambió la cantidad de envases, hay que reescalar los componentes guardados
+        // (los usa el reporte de consumo de drogas) para que sigan reflejando lo real.
+        if(envases !== prepActual.cantidad_envases && f){
+          await sbDelete('componentes?preparado_id=eq.'+prepActual.id);
+          const receta = formulasStockComponentes[f.id]||[];
+          for(const c of receta){
+            if(!c.droga_id) continue;
+            const cant = escalarCantidadComponente(c.cantidad, c.unidad, envases);
+            await sbPost('componentes',limpiar({preparado_id:prepActual.id,droga_id:c.droga_id,cantidad:cant,unidad:c.unidad}));
+          }
+        }
         mostrarToast('✓ Guardado','ok');cerrarModal('modalEditar');await cargarTodo();
         btn.disabled=false;btn.textContent='Guardar cambios';
         return;
@@ -1621,15 +1632,13 @@
         observaciones:document.getElementById('pObs').value||null,
       }));
       const prepId=nuevoPrep[0].id;
-      if(!modoStock){
-        const rows=document.querySelectorAll('#compRowsNuevo .comp-row');
-        for(const row of rows){
-          const drugId=row.querySelector('.comp-drug-id').value;
-          const cant=parseFloat(row.querySelector('.comp-cant').value)||null;
-          const unid=row.querySelector('.comp-unid').value||null;
-          if(!drugId) continue;
-          await sbPost('componentes',limpiar({preparado_id:prepId,droga_id:drugId,cantidad:cant,unidad:unid}));
-        }
+      const rows=document.querySelectorAll('#compRowsNuevo .comp-row');
+      for(const row of rows){
+        const drugId=row.querySelector('.comp-drug-id').value;
+        const cant=parseFloat(row.querySelector('.comp-cant').value)||null;
+        const unid=row.querySelector('.comp-unid').value||null;
+        if(!drugId) continue;
+        await sbPost('componentes',limpiar({preparado_id:prepId,droga_id:drugId,cantidad:cant,unidad:unid}));
       }
       mostrarToast('✓ Preparado cargado','ok');
       cerrarModal('modalPreparado');
@@ -1699,8 +1708,8 @@
     document.getElementById('pUnidad').value = formulaStockSeleccionada.unidad||'';
     document.getElementById('pCantTotal').value = envases>0 ? +(formulaStockSeleccionada.cantidad_base*envases).toFixed(4) : '';
     (formulasStockComponentes[formulaStockSeleccionada.id]||[]).forEach(c=>{
-      const cant = (envases>0 && c.cantidad!=null) ? +(c.cantidad*envases).toFixed(4) : '';
-      agregarCompRow('compRowsNuevo','', c.droga_nombre, c.droga_id, cant, c.unidad);
+      const cant = envases>0 ? escalarCantidadComponente(c.cantidad, c.unidad, envases) : '';
+      agregarCompRow('compRowsNuevo','', c.droga_nombre, c.droga_id, cant??'', c.unidad);
     });
   }
 
@@ -2031,6 +2040,16 @@
   }
   function poblarSelect(id,opts,conBlanco){const sel=document.getElementById(id);if(!sel)return;const val=sel.value;sel.innerHTML='';if(conBlanco)sel.innerHTML='<option value="">— Sin especificar —</option>';opts.forEach(o=>{const opt=document.createElement('option');opt.value=o;opt.textContent=o;sel.appendChild(opt);});if(val)sel.value=val;}
   function limpiar(obj){const r={};for(const[k,v]of Object.entries(obj))if(v!==null&&v!==undefined)r[k]=v;return r;}
+  // Al escalar un preparado de stock por cantidad de envases, solo se multiplican las
+  // unidades ABSOLUTAS (ml, g, mg, mcg, UI). Las de concentración (%, ‰, mg/ml, g/ml,
+  // mcg/ml, UI/ml) y c.s.p NO se multiplican: son una proporción que ya queda bien
+  // reflejada porque cantidad_total escala solo (calcular_gramos hace cantidad% × cantidad_total).
+  const UNID_CONCENTRACION = ['%','‰','mg/ml','g/ml','mcg/ml','UI/ml','c.s.p'];
+  function escalarCantidadComponente(cantidad, unidad, envases){
+    if(cantidad==null) return null;
+    if(UNID_CONCENTRACION.includes(unidad)) return cantidad;
+    return +(cantidad*envases).toFixed(4);
+  }
   function abrirModal(id){document.getElementById(id).classList.add('open');}
   function cerrarModal(id){document.getElementById(id).classList.remove('open');}
   function fmtFecha(iso){if(!iso)return '—';const[y,m,d]=iso.slice(0,10).split('-');return `${d}/${m}/${y}`;}
