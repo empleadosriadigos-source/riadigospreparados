@@ -2225,7 +2225,7 @@
           ? [
               ...linea('FORMULA STOCK:'),
               ...linea(prep.formula_stock_nombre||''),
-              ...linea('ENVASES: '+(envasesTxt||'___________')),
+              ...linea('ENVASES: '+(envases!=null?envases:'___________')),
             ]
           : [
               ...linea('COMPONENTES:'),
@@ -2244,7 +2244,7 @@
         return btoa(String.fromCharCode(...bytes));
       }
 
-      const todosLosDatos = [...datosCli, ...datosFarm];
+      const todosLosDatos = esStock ? [...datosFarm] : [...datosCli, ...datosFarm];
       await qz.print(config, [{type:'raw', format:'base64', data: toB64(todosLosDatos)}]);
       mostrarToast('✓ Cupones impresos','ok');
     }catch(e){
