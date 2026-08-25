@@ -376,10 +376,10 @@
     <div class="modal-body">
       <div class="field-group"><label>Nombre <span style="color:var(--danger)">*</span></label><input type="text" id="eosNombre"/></div>
       <div class="field-row">
-        <div class="field-group"><label>Admite genéricos</label>
+        <div class="field-group"><label>¿La obra social cubre genéricos en reemplazo de la marca recetada?</label>
           <select id="eosGenericos"><option value="">—</option><option value="true">Sí</option><option value="false">No</option></select>
         </div>
-        <div class="field-group"><label>Genérico en receta</label>
+        <div class="field-group"><label>¿Requiere que el médico recete por nombre genérico (no por marca)?</label>
           <select id="eosGenericoReceta"><option value="">—</option><option value="true">Sí</option><option value="false">No</option></select>
         </div>
       </div>
@@ -973,8 +973,8 @@
     osActualId=id;
     document.getElementById('detalleOSNombre').textContent=o.nombre;
     document.getElementById('detalleOSBody').innerHTML=`
-      <div class="os-detalle-row"><span class="os-detalle-label">Admite genéricos</span><span class="os-detalle-val">${chip(o.admite_genericos)}</span></div>
-      <div class="os-detalle-row"><span class="os-detalle-label">Genérico en receta</span><span class="os-detalle-val">${chip(o.generico_en_receta)}</span></div>
+      <div class="os-detalle-row"><span class="os-detalle-label">¿La obra social cubre genéricos en reemplazo de la marca recetada?</span><span class="os-detalle-val">${chip(o.admite_genericos)}</span></div>
+      <div class="os-detalle-row"><span class="os-detalle-label">¿Requiere que el médico recete por nombre genérico (no por marca)?</span><span class="os-detalle-val">${chip(o.generico_en_receta)}</span></div>
       <div class="os-detalle-row"><span class="os-detalle-label">Modificar nro afiliado</span><span class="os-detalle-val">${chip(o.se_puede_modificar_afiliado)}</span></div>
       <div class="os-detalle-row"><span class="os-detalle-label">Diagnóstico requerido</span><span class="os-detalle-val">${chip(o.diagnostico_requerido)}</span></div>
       ${o.recetario?`<div class="os-detalle-row"><span class="os-detalle-label">Recetario</span><span class="os-detalle-val">${escHtml(o.recetario)}</span></div>`:''}
