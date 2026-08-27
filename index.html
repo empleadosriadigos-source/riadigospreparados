@@ -78,6 +78,7 @@
     .icon-btn-delete{background:#FDECEA;border-color:#F5C6C2;color:var(--danger);}
     .icon-btn-edit{background:#E8F4FB;border-color:#C0DFF0;color:var(--accent2);}
     .icon-btn-print{background:#F0F7EE;border-color:#C3DFB8;color:#5A8A3A;}
+    .icon-btn:disabled{background:#EDEDED;border-color:#D5D5D5;color:#9A9A9A;cursor:default;opacity:1;}
     .card-bottom-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:12px;}
 
     .cli-item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);}
@@ -2086,10 +2087,17 @@
 
   async function imprimirDesdeCard(e, id){
     e.stopPropagation();
-    const prep = preparados.find(p=>p.id===id);
-    if(!prep) return;
-    await cargarComponentes(prep);
-    await imprimirCupones(prep);
+    const btn = e.currentTarget;
+    if(btn.disabled) return; // ya hay una impresión en curso para este cupón, ignora el toque repetido
+    btn.disabled = true;
+    try{
+      const prep = preparados.find(p=>p.id===id);
+      if(!prep) return;
+      await cargarComponentes(prep);
+      await imprimirCupones(prep);
+    } finally {
+      btn.disabled = false; // se reactiva siempre, haya salido bien o con error
+    }
   }
 
   async function conectarQZ(){
@@ -2127,7 +2135,14 @@
       const BOLD_OFF  = [0x1B,0x45,0x00];      // negrita off
       const CENTER    = [0x1B,0x61,0x01];      // centrar
       const LEFT      = [0x1B,0x61,0x00];      // izquierda
-      const CUT       = [0x1D,0x56,0x00];      // corte total (formato clásico GS V 0, más compatible con clones)
+      // Corte con feed incorporado en el mismo comando (GS V 66 n = 1D 56 42 n): la impresora
+      // avanza el papel hasta la posición de corte + n unidades y corta, todo en un solo comando
+      // atómico de 4 bytes. Reemplaza al esquema anterior (varios LF sueltos + GS V 0), que dependía
+      // de que llegaran varios bytes independientes en orden antes del corte — según el manual de
+      // programación de la RPT008, el corte se ignora en silencio si el comando no llega intacto al
+      // principio de una línea, lo cual encaja con el síntoma de "no corta cada tantos tickets sin
+      // razón aparente". n=50 ≈ deja un margen amplio y fijo de avance antes de cortar.
+      const CUT       = [0x1D,0x56,0x42,0x32]; // GS V 66 50 - feed+corte atómico
       const LF        = [0x0A];                // salto de línea
       const LINE      = '________________________________';
       // Fuente doble alto para título
@@ -2197,7 +2212,7 @@
             ]
         ),
         ...sep(),
-        ...LF,...LF,...LF,...LF,
+        ...LF,...LF, // solo espacio visual: el feed real antes del corte ahora lo maneja CUT (GS V 66 n)
         ...CUT,
       ];
 
@@ -2234,9 +2249,8 @@
         ),
         ...sep(),
         ...linea('OBS: '+(obs||'')),
-        ...LF,...LF,
-        ...sep(),
-        ...LF,...LF,...CUT,
+        ...LF,...LF, // solo espacio visual: el feed real antes del corte ahora lo maneja CUT (GS V 66 n)
+        ...CUT,
       ];
 
       // Convertir bytes a Uint8Array y mandar como base64
