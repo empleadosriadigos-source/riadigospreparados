@@ -2270,7 +2270,8 @@
             ]
         ),
         ...sepL(),
-        ...lineaL((forma||cant) ? (forma+(forma&&cant?' ':'')+cant) : '___________'),
+        ...lineaL('Forma farmacéutica: '+(forma||'___________')),
+        ...lineaL('Cantidad: '+(cant||'___________')),
         ...sepL(),
         ...FONT_2H,
         ...lineaL(precio || '$___________'),
