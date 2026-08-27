@@ -2255,15 +2255,16 @@
         ...FONT_NORM,
         ...(fecha ? lineaL(fecha) : []),
         ...lineaL(tel ? 'Tel: '+tel : 'Tel: ___________'),
+        ...lineaL(receta ? 'Receta: #'+receta : 'Receta: ___________'),
         ...sepL(),
         ...(esStock
           ? [
-              ...lineaDosCol('FORMULA STOCK:', receta ? 'Receta: #'+receta : 'Receta: ___________'),
+              ...lineaL('FORMULA STOCK:'),
               ...(prep.formula_stock_nombre ? lineaL(prep.formula_stock_nombre) : []),
               ...lineaL('ENVASES: '+(envases!=null?envases:'___________')),
             ]
           : [
-              ...lineaDosCol('COMPONENTES:', receta ? 'Receta: #'+receta : 'Receta: ___________'),
+              ...lineaL('COMPONENTES:'),
               ...(compsLargoData.length ? compsLargoData : lineaL('___________')),
             ]
         ),
