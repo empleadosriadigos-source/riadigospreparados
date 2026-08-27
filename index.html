@@ -2158,12 +2158,20 @@
       }
       function linea(s){ return [...txt(s),...LF]; }
       function sep(){ return [...txt(LINE),...LF]; }
+      // Indent manual para el contenido alineado a la izquierda: sin esto, ESC a (LEFT) pega
+      // el texto contra el borde del papel, lo que se ve "apretado" al lado del título centrado
+      // (que sí tiene aire natural a los costados por estar centrado).
+      const IND = '  ';
+      function lineaL(s){ return linea(IND+s); }
+      // Separador indentado + un renglón en blanco después, para que las secciones respiren
+      // en vez de quedar una pegada a la otra.
+      function sepL(){ return [...linea(IND+LINE), ...LF]; }
       // Línea con dos datos: uno pegado a la izquierda y otro pegado al margen derecho
       // (ej: "COMPONENTES:" a la izquierda y "Receta: #987" a la derecha, en el mismo renglón)
       function lineaDosCol(izq, der){
         const ancho = LINE.length; // mismo ancho usado por el separador, para que quede alineado
         const espacio = Math.max(1, ancho - izq.length - der.length);
-        return linea(izq + ' '.repeat(espacio) + der);
+        return lineaL(izq + ' '.repeat(espacio) + der);
       }
       // '‰' (tanto por mil) no existe en la tabla PC850 de la impresora y cae a '?'.
       // Solo para texto que va al ticket, se reemplaza por 'o/oo'. En pantalla se sigue mostrando el símbolo real.
@@ -2191,7 +2199,7 @@
         const nom = (c.droga_nombre||'');
         const det = c.cantidad!=null ? String(c.cantidad)+(c.unidad?' '+unidadImp(c.unidad):'') : '';
         const linePad = (nom+'                      ').slice(0,22)+det;
-        return linea(linePad);
+        return lineaL(linePad);
       }).flat();
 
       // Preparado de stock: en vez de fórmula/componentes, mostrar nombre + cantidad de envases
@@ -2210,22 +2218,22 @@
         ...linea('Preparados Magistrales'),
         ...sep(),
         ...LEFT, ...FONT_2H,
-        ...linea('#'+cupon),
-        ...linea(cliente||'___________'),
+        ...lineaL('#'+cupon),
+        ...lineaL(cliente||'___________'),
         ...FONT_NORM,
-        ...(fecha ? linea(fecha) : []),
-        ...(tel ? linea('Tel: '+tel) : []),
-        ...sep(),
+        ...(fecha ? lineaL(fecha) : []),
+        ...(tel ? lineaL('Tel: '+tel) : []),
+        ...sepL(),
         ...(esStock
-          ? linea(prep.formula_stock_nombre + (envasesTxt ? ' '+envasesTxt : ''))
+          ? lineaL(prep.formula_stock_nombre + (envasesTxt ? ' '+envasesTxt : ''))
           : [
-              ...((forma||cant) ? linea(forma+(forma&&cant?' ':'')+cant) : []),
-              ...(compsCorto ? linea(compsCorto) : []),
+              ...((forma||cant) ? lineaL(forma+(forma&&cant?' ':'')+cant) : []),
+              ...(compsCorto ? lineaL(compsCorto) : []),
             ]
         ),
-        ...sep(),
+        ...sepL(),
         ...FONT_2H,
-        ...linea(precio || '$___________'),
+        ...lineaL(precio || '$___________'),
         ...FONT_NORM,
         ...LF,...LF, // solo espacio visual: el feed real antes del corte ahora lo maneja CUT (GS V 66 n)
         ...CUT,
@@ -2242,31 +2250,31 @@
         ...linea('Preparados Magistrales'),
         ...sep(),
         ...LEFT, ...FONT_2H,
-        ...linea('#'+cupon),
-        ...linea(cliente||'___________'),
+        ...lineaL('#'+cupon),
+        ...lineaL(cliente||'___________'),
         ...FONT_NORM,
-        ...(fecha ? linea(fecha) : []),
-        ...linea(tel ? 'Tel: '+tel : 'Tel: ___________'),
-        ...sep(),
+        ...(fecha ? lineaL(fecha) : []),
+        ...lineaL(tel ? 'Tel: '+tel : 'Tel: ___________'),
+        ...sepL(),
         ...(esStock
           ? [
               ...lineaDosCol('FORMULA STOCK:', receta ? 'Receta: #'+receta : 'Receta: ___________'),
-              ...linea(prep.formula_stock_nombre||''),
-              ...linea('ENVASES: '+(envases!=null?envases:'___________')),
+              ...(prep.formula_stock_nombre ? lineaL(prep.formula_stock_nombre) : []),
+              ...lineaL('ENVASES: '+(envases!=null?envases:'___________')),
             ]
           : [
               ...lineaDosCol('COMPONENTES:', receta ? 'Receta: #'+receta : 'Receta: ___________'),
-              ...(compsLargoData.length ? compsLargoData : linea('___________')),
+              ...(compsLargoData.length ? compsLargoData : lineaL('___________')),
             ]
         ),
-        ...sep(),
-        ...linea((forma||cant) ? (forma+(forma&&cant?' ':'')+cant) : '___________'),
-        ...sep(),
+        ...sepL(),
+        ...lineaL((forma||cant) ? (forma+(forma&&cant?' ':'')+cant) : '___________'),
+        ...sepL(),
         ...FONT_2H,
-        ...linea(precio || '$___________'),
+        ...lineaL(precio || '$___________'),
         ...FONT_NORM,
-        ...sep(),
-        ...linea('OBS: '+(obs||'')),
+        ...sepL(),
+        ...lineaL('OBS: '+(obs||'')),
         ...(obs ? [] : [...LF,...LF,...LF]), // espacio para escribir a mano si no hay observación digital
         ...LF,...LF, // solo espacio visual: el feed real antes del corte ahora lo maneja CUT (GS V 66 n)
         ...CUT,
