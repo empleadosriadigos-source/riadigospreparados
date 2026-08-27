@@ -2145,8 +2145,10 @@
       const CUT       = [0x1D,0x56,0x42,0x32]; // GS V 66 50 - feed+corte atómico
       const LF        = [0x0A];                // salto de línea
       const LINE      = '________________________________';
-      // Fuente doble alto para título
+      // Tamaños de fuente (ESC ! n): normal, doble alto (para cupón/cliente/precio),
+      // y doble alto+ancho (para el título, el más grande de todos)
       const FONT_2H   = [0x1B,0x21,0x10];      // doble alto
+      const FONT_BIG  = [0x1B,0x21,0x30];      // doble alto + doble ancho (título)
       const FONT_NORM = [0x1B,0x21,0x00];      // normal
 
       // Mapa de caracteres especiales a PC850
@@ -2156,6 +2158,13 @@
       }
       function linea(s){ return [...txt(s),...LF]; }
       function sep(){ return [...txt(LINE),...LF]; }
+      // Línea con dos datos: uno pegado a la izquierda y otro pegado al margen derecho
+      // (ej: "COMPONENTES:" a la izquierda y "Receta: #987" a la derecha, en el mismo renglón)
+      function lineaDosCol(izq, der){
+        const ancho = LINE.length; // mismo ancho usado por el separador, para que quede alineado
+        const espacio = Math.max(1, ancho - izq.length - der.length);
+        return linea(izq + ' '.repeat(espacio) + der);
+      }
       // '‰' (tanto por mil) no existe en la tabla PC850 de la impresora y cae a '?'.
       // Solo para texto que va al ticket, se reemplaza por 'o/oo'. En pantalla se sigue mostrando el símbolo real.
       function unidadImp(u){ return u === '‰' ? 'o/oo' : (u || ''); }
@@ -2194,24 +2203,30 @@
       const datosCli = [
         ...INIT,
         ...CHARSET,
-        ...CENTER, ...FONT_2H, ...BOLD_ON,
-        ...linea('Laboratorio*'),
-        ...FONT_NORM, ...linea('Preparados Magistrales'),
-        ...BOLD_OFF,
+        ...BOLD_ON, // todo el ticket va en negrita
+        ...CENTER, ...FONT_BIG,
+        ...linea('RIADIGOS SM'),
+        ...FONT_NORM,
+        ...linea('Preparados Magistrales'),
         ...sep(),
-        ...LEFT,
-        ...linea('#'+cupon+'   '+fecha),
-        ...linea(cliente),
+        ...LEFT, ...FONT_2H,
+        ...linea('#'+cupon),
+        ...linea(cliente||'___________'),
+        ...FONT_NORM,
+        ...(fecha ? linea(fecha) : []),
         ...(tel ? linea('Tel: '+tel) : []),
         ...sep(),
         ...(esStock
-          ? linea(prep.formula_stock_nombre + (envasesTxt ? ' - '+envasesTxt : ''))
+          ? linea(prep.formula_stock_nombre + (envasesTxt ? ' '+envasesTxt : ''))
           : [
-              ...((forma||cant) ? linea(forma+(forma&&cant?' - ':'')+cant) : []),
+              ...((forma||cant) ? linea(forma+(forma&&cant?' ':'')+cant) : []),
               ...(compsCorto ? linea(compsCorto) : []),
             ]
         ),
         ...sep(),
+        ...FONT_2H,
+        ...linea(precio || '$___________'),
+        ...FONT_NORM,
         ...LF,...LF, // solo espacio visual: el feed real antes del corte ahora lo maneja CUT (GS V 66 n)
         ...CUT,
       ];
@@ -2220,35 +2235,39 @@
       const datosFarm = [
         ...INIT,
         ...CHARSET,
-        ...CENTER, ...FONT_2H, ...BOLD_ON,
-        ...linea('Laboratorio*'),
-        ...FONT_NORM, ...linea('Preparados Magistrales'),
-        ...BOLD_OFF,
+        ...BOLD_ON, // todo el ticket va en negrita
+        ...CENTER, ...FONT_BIG,
+        ...linea('RIADIGOS SM'),
+        ...FONT_NORM,
+        ...linea('Preparados Magistrales'),
         ...sep(),
-        ...LEFT,
-        ...linea('CUPON: #'+cupon),
-        ...linea(receta ? 'RECETA: #'+receta : 'RECETA: ___________'),
-        ...linea('FECHA: '+fecha),
-        ...linea('CLIENTE: '+cliente),
-        ...linea(tel ? 'TEL: '+tel : 'TEL: ___________'),
-        ...sep(),
-        ...linea('FORMA: '+(forma||'___________')),
-        ...linea('CANTIDAD: '+(cant||'___________')),
-        ...linea('PRECIO: '+(precio||'___________')),
+        ...LEFT, ...FONT_2H,
+        ...linea('#'+cupon),
+        ...linea(cliente||'___________'),
+        ...FONT_NORM,
+        ...(fecha ? linea(fecha) : []),
+        ...linea(tel ? 'Tel: '+tel : 'Tel: ___________'),
         ...sep(),
         ...(esStock
           ? [
-              ...linea('FORMULA STOCK:'),
+              ...lineaDosCol('FORMULA STOCK:', receta ? 'Receta: #'+receta : 'Receta: ___________'),
               ...linea(prep.formula_stock_nombre||''),
               ...linea('ENVASES: '+(envases!=null?envases:'___________')),
             ]
           : [
-              ...linea('COMPONENTES:'),
+              ...lineaDosCol('COMPONENTES:', receta ? 'Receta: #'+receta : 'Receta: ___________'),
               ...(compsLargoData.length ? compsLargoData : linea('___________')),
             ]
         ),
         ...sep(),
+        ...linea((forma||cant) ? (forma+(forma&&cant?' ':'')+cant) : '___________'),
+        ...sep(),
+        ...FONT_2H,
+        ...linea(precio || '$___________'),
+        ...FONT_NORM,
+        ...sep(),
         ...linea('OBS: '+(obs||'')),
+        ...(obs ? [] : [...LF,...LF,...LF]), // espacio para escribir a mano si no hay observación digital
         ...LF,...LF, // solo espacio visual: el feed real antes del corte ahora lo maneja CUT (GS V 66 n)
         ...CUT,
       ];
