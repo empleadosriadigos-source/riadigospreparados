@@ -2163,9 +2163,10 @@
       // (que sí tiene aire natural a los costados por estar centrado).
       const IND = '  ';
       function lineaL(s){ return linea(IND+s); }
-      // Separador indentado + un renglón en blanco después, para que las secciones respiren
-      // en vez de quedar una pegada a la otra.
-      function sepL(){ return [...linea(IND+LINE), ...LF]; }
+      // Separador CENTRADO (no en LEFT) + un renglón en blanco después: como LINE es más corto
+      // que el ancho total del papel, si fuera LEFT quedaría pegado al margen izquierdo con un
+      // hueco a la derecha — centrado se ve parejo, igual que el título.
+      function sepL(){ return [...CENTER, ...linea(LINE), ...LEFT, ...LF]; }
       // Línea con dos datos: uno pegado a la izquierda y otro pegado al margen derecho
       // (ej: "COMPONENTES:" a la izquierda y "Receta: #987" a la derecha, en el mismo renglón)
       function lineaDosCol(izq, der){
