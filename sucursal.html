@@ -266,7 +266,6 @@
       </div>
       <div class="field-row">
         <div class="field-group"><label>Fecha de recepción <span style="color:var(--danger)">*</span></label><input type="date" id="pFecha"/></div>
-        <div class="field-group"><label>Nro Receta</label><input type="number" id="pReceta"/></div>
       </div>
       <div class="field-group"><label>Observación del preparado</label><textarea id="pObs" rows="2" placeholder="Detalles técnicos de la preparación..."></textarea></div>
 
@@ -674,7 +673,7 @@ async function confirmarCancelacionModal(){
 // ── Cargar preparado (modal, idéntico en espíritu al de index.html) ─────
 function abrirModalPedido(){ limpiarFormPedido(); abrirModal('modalPedido'); }
 function limpiarFormPedido(){
-  ['pReceta','pCantTotal','pObs'].forEach(id=>document.getElementById(id).value='');
+  ['pCantTotal','pObs'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('pClienteInput').value=''; document.getElementById('pClienteId').value='';
   document.getElementById('pTelefono').value=''; document.getElementById('pTelefono').classList.remove('field-invalid');
   document.getElementById('pForma').value=''; document.getElementById('pUnidad').value='';
@@ -705,7 +704,6 @@ async function guardarPedido(){
 
     const nuevoPrep = await sbPost('preparados', limpiar({
       nro_cupon_nuevo: cupon,
-      nro_receta: parseInt(document.getElementById('pReceta').value) || null,
       cliente_id: cliId,
       fecha_recepcion: document.getElementById('pFecha').value || null,
       estado: 'Petición sucursal',
