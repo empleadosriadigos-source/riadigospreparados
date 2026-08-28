@@ -640,6 +640,7 @@ function crearTarjeta(p){
     cuerpo += `<span class="badge badge-retirar">Para retirar</span>`;
   } else {
     cuerpo += `<span class="badge badge-prep">En preparación</span>`;
+    if(p.precio_venta!=null) cuerpo += `<div class="card-precio">$${p.precio_venta}</div>`;
   }
 
   cuerpo += renderMiniChat(p);
