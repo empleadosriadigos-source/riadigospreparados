@@ -437,7 +437,11 @@ let ultimoHashSuc = null;
 async function cargarTodo(){
   if(primeraCargaSuc) document.getElementById('kanbanStatus').textContent = 'Cargando…';
   try{
-    const preps = await sbGet(`preparados?origen_sucursal=eq.${encodeURIComponent(SUCURSAL_NOMBRE)}&estado=neq.Entregado&eliminado_en=is.null&order=created_at.desc`);
+    const [preps, clientesFrescos] = await Promise.all([
+      sbGet(`preparados?origen_sucursal=eq.${encodeURIComponent(SUCURSAL_NOMBRE)}&estado=neq.Entregado&eliminado_en=is.null&order=created_at.desc`),
+      sbGet('clientes?order=nombre.asc&select=id,nombre,telefono')
+    ]);
+    clientes = clientesFrescos;
     const compMap = {}, comMap = {};
     if(preps.length>0){
       const ids = preps.map(p=>p.id).join(',');
@@ -995,6 +999,8 @@ function solicitarRecarga(){
 function suscribirRealtime(){
   sbAuth.channel('preparados-sucursal')
     .on('postgres_changes', {event:'*', schema:'public', table:'preparados'}, () => solicitarRecarga())
+    .on('postgres_changes', {event:'*', schema:'public', table:'componentes'}, () => solicitarRecarga())
+    .on('postgres_changes', {event:'*', schema:'public', table:'clientes'}, () => solicitarRecarga())
     .on('postgres_changes', {event:'*', schema:'public', table:'preparado_comentarios'}, payload => {
       const pid = payload.new?.preparado_id || payload.old?.preparado_id;
       if(pid) refrescarChat(pid);
