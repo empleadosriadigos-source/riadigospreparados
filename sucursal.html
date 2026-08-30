@@ -458,7 +458,7 @@ async function cargarTodo(){
     nuevos.forEach(p=>{
       nuevosEstados[p.id] = p.estado;
       const anterior = estadosConocidos[p.id];
-      if(anterior !== undefined && anterior !== 'Esperando confirmación sucursal' && p.estado === 'Esperando confirmación sucursal'){
+      if(anterior !== undefined && anterior !== 'Precio propuesto' && p.estado === 'Precio propuesto'){
         abrirPopup(p);
       }
     });
@@ -479,14 +479,14 @@ async function cargarTodo(){
 
 function nombreCliente(id){ const c = clientes.find(x=>x.id===id); return c ? c.nombre : '(cliente)'; }
 
-const ESTADOS_PETICION = ['Petición sucursal','Rechazado sucursal'];
-const ESTADOS_ACEPTADO = ['Esperando confirmación sucursal','Cancelado sucursal'];
-const ESTADOS_PREP = ['Asignar precio','En laboratorio'];
-const ESTADOS_RETIRAR = ['Para retirar'];
+const ESTADOS_PETICION = ['Pedido nuevo','Rechazado'];
+const ESTADOS_ACEPTADO = ['Precio propuesto','Cancelado por sucursal'];
+const ESTADOS_PREP = ['Sin precio','En laboratorio'];
+const ESTADOS_RETIRAR = ['Listo para retirar'];
 const DIAS_LIMPIEZA_KANBAN = 3; // rechazados/cancelados se ocultan del kanban pasado este tiempo; siguen en "Buscar anteriores"
 
 function estaExpiradoDelKanban(p){
-  if(p.estado!=='Rechazado sucursal' && p.estado!=='Cancelado sucursal') return false;
+  if(p.estado!=='Rechazado' && p.estado!=='Cancelado por sucursal') return false;
   const fecha = p.fecha_cambio_estado || p.created_at;
   if(!fecha) return false;
   const dias = (Date.now() - new Date(fecha).getTime()) / 86400000;
@@ -552,7 +552,7 @@ function chatMensajesHtml(p){
   const msgs = p.comentarios||[];
   if(!msgs.length){
     if(p.mensaje_sucursal){
-      const rechazo = p.estado==='Rechazado sucursal';
+      const rechazo = p.estado==='Rechazado';
       return `<div class="chat-bubble ${rechazo?'chat-rechazo':'chat-recibido'}"><div class="chat-bubble-label">${rechazo?'Rechazado por San Martín':'San Martín'}</div>${escHtml(p.mensaje_sucursal)}</div>`;
     }
     return '<div class="minichat-empty">Sin mensajes todavía</div>';
@@ -607,9 +607,9 @@ function crearTarjeta(p){
   const div = document.createElement('div');
   div.dataset.id = p.id;
   let claseExtra = '';
-  if(p.estado==='Rechazado sucursal') claseExtra=' card-rechazado';
-  else if(p.estado==='Cancelado sucursal') claseExtra=' card-cancelado';
-  else if(p.estado==='Para retirar') claseExtra=' card-retirar';
+  if(p.estado==='Rechazado') claseExtra=' card-rechazado';
+  else if(p.estado==='Cancelado por sucursal') claseExtra=' card-cancelado';
+  else if(p.estado==='Listo para retirar') claseExtra=' card-retirar';
   div.className = 'card'+claseExtra;
   const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:''].filter(Boolean);
 
@@ -627,20 +627,20 @@ function crearTarjeta(p){
     <div class="card-drogas">${drogasHtml(p)}</div>
     ${p.observaciones?`<div style="font-size:12px;color:var(--muted);background:var(--bg);border-radius:6px;padding:6px 8px;margin-top:8px;"><strong>Observación:</strong> ${escHtml(p.observaciones)}</div>`:''}`;
 
-  if(p.estado==='Petición sucursal'){
+  if(p.estado==='Pedido nuevo'){
     cuerpo += `<span class="badge badge-espera">Esperando respuesta</span>`;
-  } else if(p.estado==='Rechazado sucursal'){
+  } else if(p.estado==='Rechazado'){
     cuerpo += `<span class="badge badge-rechazo">Rechazado</span>`;
-  } else if(p.estado==='Esperando confirmación sucursal'){
+  } else if(p.estado==='Precio propuesto'){
     cuerpo += `<span class="badge badge-precio">Precio propuesto</span>`;
     cuerpo += `<div class="card-precio">${p.precio_venta!=null?'$'+p.precio_venta:'A confirmar'}</div>`;
     cuerpo += `<div class="card-acciones">
       <button class="btn btn-ghost btn-sm" onclick="pedirCancelarPedido('${p.id}')">Cancelar</button>
       <button class="btn btn-primary btn-sm" onclick="confirmarPedido('${p.id}','${p.precio_venta!=null}')">Confirmar</button>
     </div>`;
-  } else if(p.estado==='Cancelado sucursal'){
+  } else if(p.estado==='Cancelado por sucursal'){
     cuerpo += `<span class="badge badge-cancel">Cancelado</span>`;
-  } else if(p.estado==='Para retirar'){
+  } else if(p.estado==='Listo para retirar'){
     cuerpo += `<span class="badge badge-retirar">Para retirar</span>`;
   } else {
     cuerpo += `<span class="badge badge-prep">En preparación</span>`;
@@ -655,14 +655,14 @@ function crearTarjeta(p){
 async function confirmarPedido(id, tienePrecioStr){
   const tienePrecio = tienePrecioStr === 'true';
   try{
-    await sbPatch('preparados', id, { estado: tienePrecio ? 'En laboratorio' : 'Asignar precio' });
+    await sbPatch('preparados', id, { estado: tienePrecio ? 'En laboratorio' : 'Sin precio' });
     mostrarToast('Pedido confirmado','ok');
     cargarTodo();
   }catch(err){ mostrarToast('Error: '+err.message,'err'); }
 }
 async function cancelarPedido(id){
   try{
-    await sbPatch('preparados', id, { estado: 'Cancelado sucursal' });
+    await sbPatch('preparados', id, { estado: 'Cancelado por sucursal' });
     mostrarToast('Pedido cancelado','ok');
     cargarTodo();
   }catch(err){ mostrarToast('Error: '+err.message,'err'); }
@@ -711,7 +711,7 @@ async function guardarPedido(){
       nro_cupon_nuevo: cupon,
       cliente_id: cliId,
       fecha_recepcion: document.getElementById('pFecha').value || null,
-      estado: 'Petición sucursal',
+      estado: 'Pedido nuevo',
       origen_sucursal: SUCURSAL_NOMBRE,
       forma_farmaceutica: document.getElementById('pForma').value || null,
       cantidad_total: parseFloat(document.getElementById('pCantTotal').value) || null,
@@ -760,13 +760,13 @@ function onFormaChange(pref){
 // ── Historial / repetir pedido (idéntico en espíritu a preparados.html, acotado a esta sucursal) ─
 let historial = [];
 const ESTADO_LABEL_HIST = {
-  'Petición sucursal': {txt:'Esperando respuesta', cls:'badge-espera'},
-  'Rechazado sucursal': {txt:'Rechazado', cls:'badge-rechazo'},
-  'Esperando confirmación sucursal': {txt:'Precio propuesto', cls:'badge-precio'},
-  'Cancelado sucursal': {txt:'Cancelado', cls:'badge-cancel'},
-  'Asignar precio': {txt:'En preparación', cls:'badge-prep'},
+  'Pedido nuevo': {txt:'Esperando respuesta', cls:'badge-espera'},
+  'Rechazado': {txt:'Rechazado', cls:'badge-rechazo'},
+  'Precio propuesto': {txt:'Precio propuesto', cls:'badge-precio'},
+  'Cancelado por sucursal': {txt:'Cancelado', cls:'badge-cancel'},
+  'Sin precio': {txt:'En preparación', cls:'badge-prep'},
   'En laboratorio': {txt:'En preparación', cls:'badge-prep'},
-  'Para retirar': {txt:'Para retirar', cls:'badge-retirar'},
+  'Listo para retirar': {txt:'Para retirar', cls:'badge-retirar'},
   'Entregado': {txt:'Entregado', cls:'badge-cancel'}
 };
 

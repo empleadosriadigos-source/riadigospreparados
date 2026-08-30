@@ -4,7 +4,22 @@
 // se refleja en ambas páginas. Debe coincidir con los CHECK de la
 // base de datos (tablas preparados y componentes).
 
-const ESTADOS   = ['Asignar precio','En laboratorio','Para retirar','Entregado'];
+const ESTADOS   = ['Sin precio','En laboratorio','Listo para retirar','Entregado'];
+// Estados de negociación con sucursal (no aparecen en ESTADOS porque no son parte
+// del combo de edición manual en index.html/preparados.html; se asignan solo por código).
+const ESTADOS_SUCURSAL = ['Pedido nuevo','Precio propuesto','Rechazado','Cancelado por sucursal'];
+// Qué texto ve la sucursal en sucursal.html para cada estado interno (para mostrar
+// el tag "sucursal ve" en index.html). Ver crearTarjeta() en sucursal.html.
+const ESTADO_TAG_SUCURSAL = {
+  'Pedido nuevo': 'Esperando respuesta',
+  'Precio propuesto': 'Precio propuesto',
+  'Rechazado': 'Rechazado',
+  'Cancelado por sucursal': 'Cancelado',
+  'Sin precio': 'En preparación',
+  'En laboratorio': 'En preparación',
+  'Listo para retirar': 'Para retirar',
+  'Entregado': 'Entregado'
+};
 const FORMAS    = ['Solución','Loción','Crema','Crema de enjuague','Ungüento','Gel','Spray','Shampoo','Cápsulas','Suspensión','Jarabe','Gotas','Polvo','Sobres','Oro Base','Glóbulos'];
 const UNIDADES  = ['ml','g','mg','unidades','UI'];
 const UNID_COMP = ['ml','g','mg','%','‰','mcg','UI','c.s.p','mg/ml','g/ml','mcg/ml','UI/ml'];

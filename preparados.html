@@ -159,9 +159,9 @@
     <select id="filtroEstado" onchange="filtrar()">
       <option value="Entregado">Entregado</option>
       <option value="">Todos los estados</option>
-      <option value="Asignar precio">Asignar precio</option>
+      <option value="Sin precio">Sin precio</option>
       <option value="En laboratorio">En laboratorio</option>
-      <option value="Para retirar">Para retirar</option>
+      <option value="Listo para retirar">Listo para retirar</option>
     </select>
     <span class="count" id="countBadge"></span>
   </div>
@@ -475,7 +475,7 @@
   }
 
   function pillEstado(estado){
-    const cls={'Asignar precio':'pill-asignar','En laboratorio':'pill-lab','Para retirar':'pill-retirar','Entregado':'pill-entregado'}[estado]||'pill-entregado';
+    const cls={'Sin precio':'pill-asignar','En laboratorio':'pill-lab','Listo para retirar':'pill-retirar','Entregado':'pill-entregado'}[estado]||'pill-entregado';
     return `<span class="pill-estado ${cls}">${escHtml(estado??'—')}</span>`;
   }
 
@@ -548,7 +548,7 @@
 
   async function recuperar(id){
     const p=resultadosFiltrados.find(x=>x.id===id);if(!p)return;
-    try{await sbPatch('preparados',id,{estado:'Para retirar'});p.estado='Para retirar';mostrarToast('✓ Recuperado → Para retirar','ok');await filtrar();}
+    try{await sbPatch('preparados',id,{estado:'Listo para retirar'});p.estado='Listo para retirar';mostrarToast('✓ Recuperado → Listo para retirar','ok');await filtrar();}
     catch(err){mostrarToast('Error: '+err.message,'err');}
   }
 
@@ -691,7 +691,7 @@
         nro_cupon:tipoCupon==='viejo'?cuponViejo:null,
         cliente_id:clienteId,
         fecha_recepcion:hoy,
-        estado:'Asignar precio',
+        estado:'Sin precio',
         forma_farmaceutica:p.forma_farmaceutica,
         cantidad_total:p.cantidad_total,
         unidad:p.unidad,

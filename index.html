@@ -45,11 +45,14 @@
     .kanban-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:stretch;}
     @media(max-width:800px){.kanban-cols{grid-template-columns:1fr;}.kanban-toolbar{position:static;}}
     .col{background:#E8E4DA;border-radius:var(--radius);border:1px solid var(--border);min-height:200px;display:flex;flex-direction:column;}
-    .col-header{padding:12px 14px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:106px;z-index:40;background:#E8E4DA;border-radius:var(--radius) var(--radius) 0 0;}
+    .col-header{padding:12px 14px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:106px;z-index:40;background:#E8E4DA;border-radius:var(--radius) var(--radius) 0 0;flex-wrap:wrap;row-gap:6px;}
+    .col-header-left{display:flex;flex-direction:column;gap:4px;}
     .col-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;}
     .col-dot{width:10px;height:10px;border-radius:50%;}
     .dot-asignar{background:#D97706;}.dot-lab{background:#2563EB;}.dot-retirar{background:var(--accent);}
     .col-count{font-size:12px;color:var(--muted);background:var(--surface);border-radius:20px;padding:2px 8px;font-weight:600;}
+    .sucursal-tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;text-transform:none;letter-spacing:0;color:#6B3FA0;background:#F0E6FA;border:1px solid #D9C2ED;border-radius:20px;padding:2px 8px;white-space:nowrap;width:fit-content;}
+    .drawer-card .sucursal-tag{margin-top:6px;}
     .col-body{padding:10px;display:flex;flex-direction:column;gap:8px;flex:1;min-height:500px;}
     .col-body.drag-over{background:rgba(104,169,204,0.12);border-radius:6px;}
     .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:grab;box-shadow:var(--shadow);transition:box-shadow 0.15s,transform 0.1s;user-select:none;}
@@ -369,21 +372,30 @@
   <div class="kanban-cols" id="kanbanCols" style="display:none;">
     <div class="col">
       <div class="col-header">
-        <div class="col-title"><div class="col-dot dot-asignar"></div>Asignar precio</div>
+        <div class="col-header-left">
+          <div class="col-title"><div class="col-dot dot-asignar"></div>Sin precio</div>
+          <span class="sucursal-tag">👁 Sucursal ve: "En preparación"</span>
+        </div>
         <div class="col-count" id="count-asignar">0</div>
       </div>
       <div class="col-body" id="body-asignar"></div>
     </div>
     <div class="col">
       <div class="col-header">
-        <div class="col-title"><div class="col-dot dot-lab"></div>En laboratorio</div>
+        <div class="col-header-left">
+          <div class="col-title"><div class="col-dot dot-lab"></div>En laboratorio</div>
+          <span class="sucursal-tag">👁 Sucursal ve: "En preparación"</span>
+        </div>
         <div class="col-count" id="count-lab">0</div>
       </div>
       <div class="col-body" id="body-lab"></div>
     </div>
     <div class="col">
       <div class="col-header">
-        <div class="col-title"><div class="col-dot dot-retirar"></div>Para retirar</div>
+        <div class="col-header-left">
+          <div class="col-title"><div class="col-dot dot-retirar"></div>Listo para retirar</div>
+          <span class="sucursal-tag">👁 Sucursal ve: "Para retirar"</span>
+        </div>
         <div class="col-count" id="count-retirar">0</div>
       </div>
       <div class="col-body" id="body-retirar"></div>
@@ -718,9 +730,9 @@
     document.getElementById('btnGoogleLogin').addEventListener('click', iniciarSesionGoogle);
   });
 
-  const ESTADOS_KANBAN = ['Asignar precio','En laboratorio','Para retirar'];
-  const COL_BODY  = {'Asignar precio':'body-asignar','En laboratorio':'body-lab','Para retirar':'body-retirar'};
-  const COL_COUNT = {'Asignar precio':'count-asignar','En laboratorio':'count-lab','Para retirar':'count-retirar'};
+  const ESTADOS_KANBAN = ['Sin precio','En laboratorio','Listo para retirar'];
+  const COL_BODY  = {'Sin precio':'body-asignar','En laboratorio':'body-lab','Listo para retirar':'body-retirar'};
+  const COL_COUNT = {'Sin precio':'count-asignar','En laboratorio':'count-lab','Listo para retirar':'count-retirar'};
 
   let preparados = [], drogas = [], clientes = [];
   let dragId = null, prepActual = null, cbDrogaIdx = null, clienteCB = null;
@@ -744,7 +756,7 @@
     poblarUnidadGlobal('unidadGlobalPNF');
     poblarSelect('pEstado', ESTADOS.filter(e=>e!=='Entregado'), false);
     poblarSelect('eEstado', ESTADOS, false);
-    document.getElementById('pEstado').value = 'Asignar precio';
+    document.getElementById('pEstado').value = 'Sin precio';
     cargarTodo();
     cargarFormulasStock();
     suscribirRealtime();
@@ -1032,10 +1044,10 @@
   }
 
   function renderKanban() {
-    const counts = {'Asignar precio':0,'En laboratorio':0,'Para retirar':0};
+    const counts = {'Sin precio':0,'En laboratorio':0,'Listo para retirar':0};
     const termino = document.getElementById('kanbanSearch')?.value.trim() || '';
     let visibles = 0, total = 0;
-    const porColumna = {'Asignar precio':[], 'En laboratorio':[], 'Para retirar':[]};
+    const porColumna = {'Sin precio':[], 'En laboratorio':[], 'Listo para retirar':[]};
 
     preparados.forEach(p => {
       if(!ESTADOS_KANBAN.includes(p.estado)) return;
@@ -1138,8 +1150,8 @@
   function cerrarDrawer(){ document.getElementById('drawerOverlay').classList.remove('open'); }
 
   function renderDrawer(){
-    const nuevas = preparados.filter(p => p.estado === 'Petición sucursal');
-    const esperando = preparados.filter(p => p.estado === 'Esperando confirmación sucursal');
+    const nuevas = preparados.filter(p => p.estado === 'Pedido nuevo');
+    const esperando = preparados.filter(p => p.estado === 'Precio propuesto');
     const badge = document.getElementById('bellBadge');
     const total = nuevas.length + esperando.length;
     badge.style.display = total > 0 ? 'flex' : 'none';
@@ -1221,7 +1233,8 @@
         <strong>${escHtml(p.cliente_nombre||'—')}</strong>
         <span class="badge-sucursal">${escHtml(p.origen_sucursal||'')}</span>
       </div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">${escHtml(partes.join(' · '))}</div>
+      <span class="sucursal-tag">👁 Sucursal ve: "Esperando respuesta"</span>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;margin-top:6px;">${escHtml(partes.join(' · '))}</div>
       <div class="card-drogas">${drogasResumenHtml(p)}</div>
       ${p.observaciones?`<div style="font-size:12px;color:var(--muted);background:var(--bg);border-radius:6px;padding:6px 8px;margin-top:8px;"><strong>Observación:</strong> ${escHtml(p.observaciones)}</div>`:''}
       <div class="field-group" style="margin-top:10px;margin-bottom:0;">
@@ -1245,7 +1258,8 @@
         <strong>${escHtml(p.cliente_nombre||'—')}</strong>
         <span class="badge-sucursal">${escHtml(p.origen_sucursal||'')}</span>
       </div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">${escHtml(partes.join(' · '))}</div>
+      <span class="sucursal-tag">👁 Sucursal ve: "Precio propuesto"</span>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;margin-top:6px;">${escHtml(partes.join(' · '))}</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Esperando que confirmen en ${escHtml(p.origen_sucursal||'la sucursal')}</div>
       <div class="field-group" style="margin-bottom:6px;">
         <label>Precio</label>
@@ -1260,7 +1274,7 @@
     const input = document.getElementById('precio-nueva-'+id);
     const precio = input && input.value ? Number(input.value) : null;
     try{
-      await sbPatch('preparados', id, { estado:'Esperando confirmación sucursal', precio_venta: precio });
+      await sbPatch('preparados', id, { estado:'Precio propuesto', precio_venta: precio });
       mostrarToast('Solicitud aceptada, esperando confirmación de la sucursal', 'ok');
       cargarTodo();
     }catch(err){ mostrarToast('Error: '+err.message, 'err'); }
@@ -1270,7 +1284,7 @@
   function rechazarSolicitud(id){ rechazarTargetId = id; abrirModal('modalRechazar'); }
   async function confirmarRechazo(){
     try{
-      await sbPatch('preparados', rechazarTargetId, { estado:'Rechazado sucursal' });
+      await sbPatch('preparados', rechazarTargetId, { estado:'Rechazado' });
       mostrarToast('Solicitud rechazada', 'ok');
       cerrarModal('modalRechazar');
       cargarTodo();
@@ -1663,7 +1677,7 @@
     document.getElementById('pForma').value='';document.getElementById('pUnidad').value='';
     document.getElementById('pUnidadHint').textContent='';
     document.getElementById('pFecha').value=new Date().toISOString().slice(0,10);
-    document.getElementById('pEstado').value='Asignar precio';
+    document.getElementById('pEstado').value='Sin precio';
     document.getElementById('compRowsNuevo').innerHTML='';
     document.getElementById('unidadGlobalNuevo').value='';
     document.getElementById('tipoCuponNuevo').checked=true;
