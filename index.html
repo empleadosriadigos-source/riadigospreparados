@@ -45,14 +45,14 @@
     .kanban-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:stretch;}
     @media(max-width:800px){.kanban-cols{grid-template-columns:1fr;}.kanban-toolbar{position:static;}}
     .col{background:#E8E4DA;border-radius:var(--radius);border:1px solid var(--border);min-height:200px;display:flex;flex-direction:column;}
-    .col-header{padding:12px 14px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:106px;z-index:40;background:#E8E4DA;border-radius:var(--radius) var(--radius) 0 0;flex-wrap:wrap;row-gap:6px;}
+    .col-header{padding:12px 14px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:106px;z-index:40;background:#E8E4DA;border-radius:var(--radius) var(--radius) 0 0;}
     .col-header-left{display:flex;flex-direction:column;gap:4px;}
     .col-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;}
     .col-dot{width:10px;height:10px;border-radius:50%;}
     .dot-asignar{background:#D97706;}.dot-lab{background:#2563EB;}.dot-retirar{background:var(--accent);}
     .col-count{font-size:12px;color:var(--muted);background:var(--surface);border-radius:20px;padding:2px 8px;font-weight:600;}
-    .sucursal-tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;text-transform:none;letter-spacing:0;color:#6B3FA0;background:#F0E6FA;border:1px solid #D9C2ED;border-radius:20px;padding:2px 8px;white-space:nowrap;width:fit-content;}
-    .drawer-card .sucursal-tag{margin-top:6px;}
+    .sucursal-tag-card{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:#6B3FA0;background:#F0E6FA;border:1px solid #D9C2ED;border-radius:20px;padding:2px 8px;margin:6px 0 0;white-space:nowrap;width:fit-content;}
+    .drawer-card .sucursal-tag-card{margin-top:6px;}
     .col-body{padding:10px;display:flex;flex-direction:column;gap:8px;flex:1;min-height:500px;}
     .col-body.drag-over{background:rgba(104,169,204,0.12);border-radius:6px;}
     .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:grab;box-shadow:var(--shadow);transition:box-shadow 0.15s,transform 0.1s;user-select:none;}
@@ -374,7 +374,6 @@
       <div class="col-header">
         <div class="col-header-left">
           <div class="col-title"><div class="col-dot dot-asignar"></div>Sin precio</div>
-          <span class="sucursal-tag">👁 Sucursal ve: "En preparación"</span>
         </div>
         <div class="col-count" id="count-asignar">0</div>
       </div>
@@ -384,7 +383,6 @@
       <div class="col-header">
         <div class="col-header-left">
           <div class="col-title"><div class="col-dot dot-lab"></div>En laboratorio</div>
-          <span class="sucursal-tag">👁 Sucursal ve: "En preparación"</span>
         </div>
         <div class="col-count" id="count-lab">0</div>
       </div>
@@ -394,7 +392,6 @@
       <div class="col-header">
         <div class="col-header-left">
           <div class="col-title"><div class="col-dot dot-retirar"></div>Listo para retirar</div>
-          <span class="sucursal-tag">👁 Sucursal ve: "Para retirar"</span>
         </div>
         <div class="col-count" id="count-retirar">0</div>
       </div>
@@ -1124,6 +1121,7 @@
           <button class="icon-btn icon-btn-delete" onclick="abrirBorrar(event,'${p.id}')" title="Eliminar">${svgD}</button>
         </div>
       </div>
+      ${p.origen_sucursal?`<div class="sucursal-tag-card">👁 En sucursal se ve: "${escHtml(ESTADO_TAG_SUCURSAL[p.estado]||p.estado)}"</div>`:''}
       <div class="card-contact">
         <div class="card-contact-row">${svgP}<span class="card-cliente-text">${resaltar(p.cliente_nombre || (!!p.formula_stock_id?('📦 '+(p.formula_stock_nombre||'Fórmula eliminada')):'—'), termino)}</span></div>
         <div class="card-contact-row">${svgT}<span class="card-tel-text">${resaltar(p.cliente_telefono||'',termino)}</span></div>
@@ -1233,7 +1231,7 @@
         <strong>${escHtml(p.cliente_nombre||'—')}</strong>
         <span class="badge-sucursal">${escHtml(p.origen_sucursal||'')}</span>
       </div>
-      <span class="sucursal-tag">👁 Sucursal ve: "Esperando respuesta"</span>
+      <span class="sucursal-tag-card">👁 Sucursal ve: "Esperando respuesta"</span>
       <div style="font-size:12px;color:var(--muted);margin-bottom:6px;margin-top:6px;">${escHtml(partes.join(' · '))}</div>
       <div class="card-drogas">${drogasResumenHtml(p)}</div>
       ${p.observaciones?`<div style="font-size:12px;color:var(--muted);background:var(--bg);border-radius:6px;padding:6px 8px;margin-top:8px;"><strong>Observación:</strong> ${escHtml(p.observaciones)}</div>`:''}
@@ -1258,7 +1256,7 @@
         <strong>${escHtml(p.cliente_nombre||'—')}</strong>
         <span class="badge-sucursal">${escHtml(p.origen_sucursal||'')}</span>
       </div>
-      <span class="sucursal-tag">👁 Sucursal ve: "Precio propuesto"</span>
+      <span class="sucursal-tag-card">👁 Sucursal ve: "Precio propuesto"</span>
       <div style="font-size:12px;color:var(--muted);margin-bottom:6px;margin-top:6px;">${escHtml(partes.join(' · '))}</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Esperando que confirmen en ${escHtml(p.origen_sucursal||'la sucursal')}</div>
       <div class="field-group" style="margin-bottom:6px;">
