@@ -30,6 +30,36 @@ function getAuthHeaders(extra){
   return Object.assign({'apikey':SB_KEY,'Authorization':'Bearer '+(SB_TOKEN||SB_KEY)}, extra||{});
 }
 
+// Cuando la pestaña queda mucho tiempo en segundo plano (o la compu se
+// suspende), el refresco automático de token de supabase-js puede no
+// dispararse a tiempo. La sesión vieja en memoria queda "vencida" del lado
+// del servidor, y como el JWT sigue teniendo formato válido, PostgREST no
+// devuelve 401 sino que las policies de RLS simplemente no encuentran el
+// email del usuario y la escritura se rechaza con un mensaje críptico tipo
+// "new row violates row-level security policy". Estas dos funciones
+// detectan ese caso, intentan refrescar la sesión una vez y reintentan.
+function esErrorDeSesionVencida(msg){
+  if(!msg) return false;
+  const m = msg.toLowerCase();
+  return m.includes('row-level security') || m.includes('jwt expired') || m.includes('invalid jwt') || m.includes('pgrst301');
+}
+async function sbConReintentoDeSesion(ejecutar){
+  try{
+    return await ejecutar();
+  }catch(err){
+    if(!esErrorDeSesionVencida(err.message)) throw err;
+    try{
+      const {data, error} = await sbAuth.auth.refreshSession();
+      if(!error && data && data.session){
+        SB_TOKEN = data.session.access_token;
+        return await ejecutar();
+      }
+    }catch(err2){ /* sigue al mensaje de abajo */ }
+    if(typeof mostrarLogin === 'function') mostrarLogin();
+    throw new Error('Tu sesión expiró. Volvé a iniciar sesión e intentá de nuevo.');
+  }
+}
+
 async function sbGet(path, all=false){
   const h=getAuthHeaders();
   if(!all){
@@ -52,18 +82,24 @@ async function sbGet(path, all=false){
 }
 
 async function sbPost(table,body){
-  const resp=await fetch(`${SB_URL}/${table}`,{method:'POST',headers:getAuthHeaders({'Content-Type':'application/json','Prefer':'return=representation'}),body:JSON.stringify(body)});
-  if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
-  return resp.json();
+  return sbConReintentoDeSesion(async () => {
+    const resp = await fetch(`${SB_URL}/${table}`,{method:'POST',headers:getAuthHeaders({'Content-Type':'application/json','Prefer':'return=representation'}),body:JSON.stringify(body)});
+    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
+    return resp.json();
+  });
 }
 
 async function sbPatch(table,id,body){
-  const resp=await fetch(`${SB_URL}/${table}?id=eq.${id}`,{method:'PATCH',headers:getAuthHeaders({'Content-Type':'application/json','Prefer':'return=representation'}),body:JSON.stringify(body)});
-  if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
-  return resp.json();
+  return sbConReintentoDeSesion(async () => {
+    const resp = await fetch(`${SB_URL}/${table}?id=eq.${id}`,{method:'PATCH',headers:getAuthHeaders({'Content-Type':'application/json','Prefer':'return=representation'}),body:JSON.stringify(body)});
+    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
+    return resp.json();
+  });
 }
 
 async function sbDelete(path){
-  const resp=await fetch(`${SB_URL}/${path}`,{method:'DELETE',headers:getAuthHeaders()});
-  if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
+  return sbConReintentoDeSesion(async () => {
+    const resp = await fetch(`${SB_URL}/${path}`,{method:'DELETE',headers:getAuthHeaders()});
+    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
+  });
 }

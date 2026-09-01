@@ -985,10 +985,12 @@ async function guardarClienteModal(){
 
 // ── RPC helper (next_cupon_nuevo) ─────────────────────────────────
 async function sbRpc(fn){
-  const h=getAuthHeaders(); h['Content-Type']='application/json';
-  const resp=await fetch(`${SB_URL}/rpc/${fn}`,{method:'POST',headers:h,body:'null'});
-  if(!resp.ok){ const e=await resp.json().catch(()=>({})); throw new Error(e.message||'HTTP '+resp.status); }
-  return resp.json();
+  return sbConReintentoDeSesion(async () => {
+    const h=getAuthHeaders(); h['Content-Type']='application/json';
+    const resp=await fetch(`${SB_URL}/rpc/${fn}`,{method:'POST',headers:h,body:'null'});
+    if(!resp.ok){ const e=await resp.json().catch(()=>({})); throw new Error(e.message||'HTTP '+resp.status); }
+    return resp.json();
+  });
 }
 
 // ── Popup en tiempo real ─────────────────────────────────────────
