@@ -2,6 +2,16 @@
 // IMPORTANTE: este archivo debe cargarse (via <script src="supabase-shared.js">)
 // DESPUES de la libreria supabase-js y ANTES del <script> propio de cada pagina.
 //
+// ⚠️ CACHE: los 6 HTML que lo cargan lo hacen como "supabase-shared.js?v=N".
+// Cada vez que se modifique este archivo hay que subir ese "N" en los 6
+// lugares (clientes.html, etiquetas.html, index.html, preparados.html,
+// reporte.html, sucursal.html) — si no, los navegadores que ya lo tenían en
+// caché van a seguir usando la versión vieja del archivo (aunque el HTML que
+// lo referencia sí se actualice), y funciones nuevas como
+// sbConReintentoDeSesion van a tirar "is not defined" hasta que el usuario
+// haga un hard refresh. grep -rn "supabase-shared.js?v=" *.html para
+// encontrar todos los lugares a actualizar.
+//
 // El login con Google (iniciarSesionGoogle/cerrarSesion), mostrar/ocultar la
 // pantalla de login (mostrarApp/mostrarLogin) y el arranque de cada pagina
 // (initApp) se mantienen en cada HTML por separado, porque dependen de los
