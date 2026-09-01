@@ -501,10 +501,12 @@ function reconciliarColumna(body, items, mensajeVacio){
   const usados = new Set();
   items.forEach(p=>{
     const sig = JSON.stringify(p);
-    let nodo = existentes.get(p.id);
+    const anterior = existentes.get(p.id);
+    let nodo = anterior;
     if(!nodo || nodo.dataset.sig !== sig){
       nodo = crearTarjeta(p);
       nodo.dataset.sig = sig;
+      if(anterior && anterior !== nodo) anterior.remove(); // evita dejar la card vieja duplicada en el DOM
     }
     usados.add(p.id);
     body.appendChild(nodo); // si ya estaba en el DOM, solo lo reordena
