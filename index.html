@@ -211,6 +211,14 @@
     .chat-bubble.chat-propio{background:#EAF6E4;border:1px solid #CFE9C2;border-top-right-radius:3px;color:#3D5C30;margin-left:auto;}
     .chat-bubble.chat-propio .chat-bubble-label{color:#3D7A2A;}
     .minichat{border:1px solid var(--border);border-radius:8px;margin-top:8px;background:var(--bg);overflow:hidden;}
+    .minichat-header{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;cursor:pointer;background:var(--surface);user-select:none;}
+    .minichat-header:hover{background:var(--bg);}
+    .minichat-header-label{font-size:11.5px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:5px;}
+    .minichat-header-count{font-size:10px;font-weight:700;color:#fff;background:var(--accent);border-radius:10px;padding:1px 6px;}
+    .minichat-toggle-icon{font-size:10px;color:var(--muted);transition:transform .15s;}
+    .minichat-body{border-top:1px solid var(--border);}
+    .minichat.minichat-collapsed .minichat-body{display:none;}
+    .minichat.minichat-collapsed .minichat-header{border-top:none;}
     .minichat-messages{height:130px;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px;scroll-behavior:smooth;}
     .minichat-empty{font-size:11px;color:var(--muted);text-align:center;margin:auto;}
     .minichat-input-row{display:flex;gap:6px;padding:6px;border-top:1px solid var(--border);background:var(--surface);}
@@ -1173,6 +1181,10 @@
 
   // ── Minichat por preparado (tamaño fijo, scrolleable, tiempo real puntual) ─
   let draftComentarios = {};
+  // Estado de apertura de cada minichat. Por defecto colapsado (no está en el
+  // objeto => falsy => colapsado); solo queda abierto si el usuario lo abrió
+  // a mano en esta sesión.
+  let chatAbierto = {};
   function chatMensajesHtml(p){
     const msgs = p.comentarios||[];
     if(!msgs.length){
@@ -1188,13 +1200,30 @@
     }).join('');
   }
   function renderMiniChat(p){
-    return `<div class="minichat">
-      <div class="minichat-messages" id="chatmsg-${p.id}">${chatMensajesHtml(p)}</div>
-      <div class="minichat-input-row">
-        <input type="text" id="chatinput-${p.id}" placeholder="Escribir…" value="${escHtml(draftComentarios[p.id]||'')}" oninput="draftComentarios['${p.id}']=this.value" onkeydown="if(event.key==='Enter'){enviarComentarioChat('${p.id}')}"/>
-        <button class="btn btn-primary btn-sm" onclick="enviarComentarioChat('${p.id}')">➤</button>
+    const abierto = !!chatAbierto[p.id];
+    const cantMsgs = (p.comentarios||[]).length;
+    return `<div class="minichat${abierto?'':' minichat-collapsed'}" id="minichat-${p.id}">
+      <div class="minichat-header" onclick="toggleMiniChat(event,'${p.id}')">
+        <span class="minichat-header-label">💬 Chat${cantMsgs?` <span class="minichat-header-count">${cantMsgs}</span>`:''}</span>
+        <span class="minichat-toggle-icon" id="minichat-icon-${p.id}">${abierto?'▲':'▼'}</span>
+      </div>
+      <div class="minichat-body">
+        <div class="minichat-messages" id="chatmsg-${p.id}">${chatMensajesHtml(p)}</div>
+        <div class="minichat-input-row">
+          <input type="text" id="chatinput-${p.id}" placeholder="Escribir…" value="${escHtml(draftComentarios[p.id]||'')}" oninput="draftComentarios['${p.id}']=this.value" onkeydown="if(event.key==='Enter'){enviarComentarioChat('${p.id}')}" onclick="event.stopPropagation()"/>
+          <button class="btn btn-primary btn-sm" onclick="enviarComentarioChat('${p.id}')">➤</button>
+        </div>
       </div>
     </div>`;
+  }
+  function toggleMiniChat(e, id){
+    if(e) e.stopPropagation();
+    chatAbierto[id] = !chatAbierto[id];
+    const el = document.getElementById('minichat-'+id);
+    const icon = document.getElementById('minichat-icon-'+id);
+    if(el) el.classList.toggle('minichat-collapsed', !chatAbierto[id]);
+    if(icon) icon.textContent = chatAbierto[id] ? '▲' : '▼';
+    if(chatAbierto[id]) scrollChatAbajo(id);
   }
   function scrollChatAbajo(id){ const el = document.getElementById('chatmsg-'+id); if(el) el.scrollTop = el.scrollHeight; }
   function scrollTodosLosChats(){ document.querySelectorAll('.minichat-messages').forEach(el => el.scrollTop = el.scrollHeight); }
