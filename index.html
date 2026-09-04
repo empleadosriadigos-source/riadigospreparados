@@ -1214,8 +1214,9 @@
     const nuevas = preparados.filter(p => p.estado === 'Pedido nuevo');
     const esperando = preparados.filter(p => p.estado === 'Precio propuesto');
     const bellBtn = document.getElementById('bellBtnSolicitudes');
-    const total = nuevas.length + esperando.length;
-    if (bellBtn) bellBtn.classList.toggle('has-alert', total > 0);
+    // La campana solo resalta con pedidos nuevos genuinos (acción nuestra pendiente).
+    // "Precio propuesto" ya lo respondimos: queda apagada hasta la próxima interacción de la sucursal.
+    if (bellBtn) bellBtn.classList.toggle('has-alert', nuevas.length > 0);
 
     const contNuevas = document.getElementById('drawerNuevas');
     contNuevas.innerHTML = nuevas.length ? '' : '<p class="drawer-empty">No hay solicitudes nuevas.</p>';
