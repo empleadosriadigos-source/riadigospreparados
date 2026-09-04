@@ -224,6 +224,14 @@
     .minichat-input-row{display:flex;gap:6px;padding:6px;border-top:1px solid var(--border);background:var(--surface);}
     .minichat-input-row input{flex:1;padding:5px 10px;border:1px solid var(--border);border-radius:20px;font-size:12px;background:var(--bg);outline:none;}
     .minichat-input-row button{border-radius:20px;padding:5px 12px;}
+    .btn-adjuntar{border-radius:20px;padding:5px 10px;background:var(--bg);border:1px solid var(--border);cursor:pointer;font-size:13px;line-height:1;}
+    .chat-img{display:block;max-width:150px;max-height:150px;border-radius:8px;cursor:pointer;background:var(--bg);min-height:60px;min-width:60px;object-fit:cover;}
+    .chat-img[data-cargada="0"]{opacity:.45;}
+    .img-ampliada-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:400;align-items:center;justify-content:center;padding:16px;}
+    .img-ampliada-overlay.open{display:flex;}
+    .img-ampliada-overlay img{max-width:100%;max-height:82vh;border-radius:8px;}
+    .img-ampliada-acciones{position:absolute;top:16px;right:16px;display:flex;gap:8px;}
+    .img-ampliada-acciones button{background:rgba(255,255,255,0.9);border:none;border-radius:20px;padding:8px 14px;font-size:13px;cursor:pointer;}
     .card.card-item-collapsed .minichat{display:none;}
     .popup{background:var(--surface);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,.25);max-width:380px;width:100%;padding:26px 24px;text-align:center;animation:modalIn .16s ease;}
     .popup h3{font-size:16px;margin-bottom:4px;}
@@ -706,12 +714,20 @@
   </div>
 </div>
 
+<div class="img-ampliada-overlay" id="imgAmpliadaOverlay" onclick="if(event.target===this) cerrarImagenAmpliada()">
+  <div class="img-ampliada-acciones">
+    <button onclick="imprimirImagenAmpliada()">🖨 Imprimir</button>
+    <button onclick="cerrarImagenAmpliada()">✕</button>
+  </div>
+  <img id="imgAmpliadaEl" src="" alt="Imagen del chat"/>
+</div>
+
 <div id="toast"></div>
 
 </div><!-- /appRoot -->
 
 <script src="constantes.js"></script>
-<script src="supabase-shared.js?v=2"></script>
+<script src="supabase-shared.js?v=3"></script>
 <script>
   // ── Autenticación (Supabase Auth + Google OAuth) ────────────────────────
   // SB_URL, SB_KEY, sbAuth, SB_TOKEN, getAuthHeaders, sbGet/sbPost/sbPatch/sbDelete,
@@ -1148,6 +1164,7 @@
         <button class="icon-btn icon-btn-print" onclick="imprimirDesdeCard(event,'${p.id}')" title="Imprimir cupón">${svgPrint}</button>
       </div>
       ${p.origen_sucursal?renderMiniChat(p):''}`;
+    cargarImagenesPendientes(div);
     return div;
   }
 
@@ -1185,6 +1202,12 @@
   // objeto => falsy => colapsado); solo queda abierto si el usuario lo abrió
   // a mano en esta sesión.
   let chatAbierto = {};
+  function chatMensajeContenido(c){
+    const partes = [];
+    if(c.imagen_url) partes.push(`<img class="chat-img" data-path="${escHtml(c.imagen_url)}" data-cargada="0" onclick="if(this.dataset.cargada==='1') verImagenAmpliada(this.src)"/>`);
+    if(c.texto) partes.push(escHtml(c.texto));
+    return partes.join('');
+  }
   function chatMensajesHtml(p){
     const msgs = p.comentarios||[];
     if(!msgs.length){
@@ -1196,8 +1219,38 @@
     return msgs.map(c=>{
       const propio = c.autor_tipo==='admin';
       const label = propio ? 'San Martín' : (p.origen_sucursal||'Sucursal');
-      return `<div class="chat-bubble ${propio?'chat-propio':'chat-recibido'}"><div class="chat-bubble-label">${escHtml(label)}</div>${escHtml(c.texto)}</div>`;
+      return `<div class="chat-bubble ${propio?'chat-propio':'chat-recibido'}"><div class="chat-bubble-label">${escHtml(label)}</div>${chatMensajeContenido(c)}</div>`;
     }).join('');
+  }
+  // Firma y carga las imágenes recién insertadas que todavía no tienen src.
+  function cargarImagenesPendientes(cont){
+    if(!cont) return;
+    const imgs = cont.querySelectorAll('img.chat-img[data-cargada="0"]');
+    imgs.forEach(async img => {
+      const path = img.dataset.path;
+      try{
+        const url = await sbFirmarImagen('chat-imagenes', path);
+        img.src = url;
+        img.dataset.cargada = '1';
+      }catch(err){ /* silencioso: la miniatura queda atenuada si falla */ }
+    });
+  }
+  function verImagenAmpliada(src){
+    document.getElementById('imgAmpliadaEl').src = src;
+    document.getElementById('imgAmpliadaOverlay').classList.add('open');
+  }
+  function cerrarImagenAmpliada(){
+    document.getElementById('imgAmpliadaOverlay').classList.remove('open');
+    document.getElementById('imgAmpliadaEl').src = '';
+  }
+  // Abre la imagen sola en una pestaña nueva y dispara el diálogo de
+  // impresión del navegador (no usa QZ Tray, eso es solo para los tickets).
+  function imprimirImagenAmpliada(){
+    const src = document.getElementById('imgAmpliadaEl').src;
+    if(!src) return;
+    const w = window.open('', '_blank');
+    w.document.write(`<html><head><title>Imprimir imagen</title></head><body style="margin:0;display:flex;align-items:center;justify-content:center;"><img src="${src}" style="max-width:100%;" onload="print()"/></body></html>`);
+    w.document.close();
   }
   function renderMiniChat(p){
     const abierto = !!chatAbierto[p.id];
@@ -1210,11 +1263,36 @@
       <div class="minichat-body">
         <div class="minichat-messages" id="chatmsg-${p.id}">${chatMensajesHtml(p)}</div>
         <div class="minichat-input-row">
-          <input type="text" id="chatinput-${p.id}" placeholder="Escribir…" value="${escHtml(draftComentarios[p.id]||'')}" oninput="draftComentarios['${p.id}']=this.value" onkeydown="if(event.key==='Enter'){enviarComentarioChat('${p.id}')}" onclick="event.stopPropagation()"/>
+          <button class="btn-adjuntar" title="Adjuntar imagen" onclick="event.stopPropagation();document.getElementById('chatfile-${p.id}').click()">📎</button>
+          <input type="file" id="chatfile-${p.id}" accept="image/*" style="display:none" onclick="event.stopPropagation()" onchange="if(this.files[0]) manejarImagenChat('${p.id}', this.files[0]); this.value='';"/>
+          <input type="text" id="chatinput-${p.id}" placeholder="Escribir o pegar una imagen (Ctrl+V)…" value="${escHtml(draftComentarios[p.id]||'')}" oninput="draftComentarios['${p.id}']=this.value" onkeydown="if(event.key==='Enter'){enviarComentarioChat('${p.id}')}" onpaste="pegarImagenChat(event,'${p.id}')" onclick="event.stopPropagation()"/>
           <button class="btn btn-primary btn-sm" onclick="enviarComentarioChat('${p.id}')">➤</button>
         </div>
       </div>
     </div>`;
+  }
+  function pegarImagenChat(event, id){
+    const items = (event.clipboardData||{}).items || [];
+    for(const item of items){
+      if(item.type && item.type.startsWith('image/')){
+        event.preventDefault();
+        const file = item.getAsFile();
+        if(file) manejarImagenChat(id, file);
+        return;
+      }
+    }
+  }
+  async function manejarImagenChat(id, file){
+    if(!file.type || !file.type.startsWith('image/')){ mostrarToast('El archivo tiene que ser una imagen','err'); return; }
+    mostrarToast('Subiendo imagen…','ok');
+    try{
+      const blob = await comprimirImagen(file);
+      const nombre = `${Date.now()}_${Math.random().toString(36).slice(2,8)}.jpg`;
+      const path = `${id}/${nombre}`;
+      await sbSubirImagen('chat-imagenes', path, blob);
+      await sbPost('preparado_comentarios', {preparado_id:id, autor_tipo:'admin', texto:'', imagen_url:path});
+      await refrescarChat(id);
+    }catch(err){ mostrarToast('Error al subir la imagen: '+err.message,'err'); }
   }
   function toggleMiniChat(e, id){
     if(e) e.stopPropagation();
@@ -1247,7 +1325,7 @@
       const p = preparados.find(x=>x.id===id);
       if(p) p.comentarios = coments;
       const cont = document.getElementById('chatmsg-'+id);
-      if(cont && p){ cont.innerHTML = chatMensajesHtml(p); scrollChatAbajo(id); }
+      if(cont && p){ cont.innerHTML = chatMensajesHtml(p); cargarImagenesPendientes(cont); scrollChatAbajo(id); }
     }catch(err){ /* silencioso */ }
   }
 
@@ -1273,6 +1351,7 @@
         <button class="btn btn-primary btn-sm" onclick="aceptarSolicitud('${p.id}')">Aceptar</button>
       </div>
       ${renderMiniChat(p)}`;
+    cargarImagenesPendientes(div);
     return div;
   }
 
@@ -1294,6 +1373,7 @@
       </div>
       <button class="btn btn-ghost btn-sm" onclick="guardarPrecioEsperando('${p.id}')">Guardar precio</button>
       ${renderMiniChat(p)}`;
+    cargarImagenesPendientes(div);
     return div;
   }
 

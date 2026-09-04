@@ -113,3 +113,48 @@ async function sbDelete(path){
     if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
   });
 }
+
+// ── Imágenes del minichat (adjuntas a preparado_comentarios) ───────────────
+// Bucket privado 'chat-imagenes' en Supabase Storage. Convención de ruta:
+// {preparado_id}/{nombre archivo}. Las RLS de storage.objects reusan la misma
+// regla que preparado_comentarios (admin ve todo, sucursal solo lo suyo).
+
+// Recomprime en el cliente antes de subir: la mayoría de fotos de celular
+// pesan 2-4 MB, esto las deja en el orden de 100-300 KB sin perder legibilidad,
+// que es lo que importa para conexiones de sucursal.
+async function comprimirImagen(file, maxAncho=1100, calidad=0.72){
+  const bitmap = await createImageBitmap(file);
+  const escala = Math.min(1, maxAncho / bitmap.width);
+  const w = Math.max(1, Math.round(bitmap.width * escala));
+  const h = Math.max(1, Math.round(bitmap.height * escala));
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', calidad));
+}
+
+async function sbSubirImagen(bucket, path, blob){
+  return sbConReintentoDeSesion(async () => {
+    const resp = await fetch(`${SB_URL_BASE}/storage/v1/object/${bucket}/${path}`,{
+      method:'POST',
+      headers:getAuthHeaders({'Content-Type':blob.type||'image/jpeg'}),
+      body:blob
+    });
+    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
+    return resp.json();
+  });
+}
+
+// URL firmada temporal (1h por defecto) para ver una imagen del bucket privado.
+async function sbFirmarImagen(bucket, path, expiresIn=3600){
+  return sbConReintentoDeSesion(async () => {
+    const resp = await fetch(`${SB_URL_BASE}/storage/v1/object/sign/${bucket}/${path}`,{
+      method:'POST',
+      headers:getAuthHeaders({'Content-Type':'application/json'}),
+      body:JSON.stringify({expiresIn})
+    });
+    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
+    const data = await resp.json();
+    return SB_URL_BASE + '/storage/v1' + data.signedURL;
+  });
+}
