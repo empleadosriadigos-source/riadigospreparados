@@ -93,6 +93,13 @@
   .ss-action{padding:8px 12px;cursor:pointer;font-size:13px;color:var(--accent);font-weight:600;border-top:1px solid var(--border);background:#F0FAF0;}
   .ss-action:hover{background:var(--accent);color:#fff;}
   .ss-empty{padding:8px 12px;font-size:13px;color:var(--muted);}
+  .badge-stock{display:inline-block;background:#FCEBD5;color:#9A5B0C;border:1px solid #F0CB98;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:2px 8px;border-radius:20px;white-space:nowrap;}
+  .card-cupon .badge-stock,.hist-item-cliente .badge-stock{margin-left:6px;}
+  .stock-picker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+  .stock-picker-btn{border:1px solid var(--border,#ddd);background:var(--surface,#fff);border-radius:10px;padding:14px 10px;font-size:13px;font-weight:600;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;}
+  .stock-picker-btn:hover{border-color:var(--accent);background:var(--accent-bg,#F0F7FF);}
+  .stock-chip-seleccionada{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--accent);background:var(--accent-bg,#F0F7FF);color:var(--accent);border-radius:20px;padding:8px 16px;font-size:14px;font-weight:700;cursor:pointer;}
+  .stock-chip-seleccionada::after{content:'✎ cambiar';font-weight:400;font-size:11px;opacity:.75;margin-left:4px;}
   .sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px;margin-top:4px;}
   .comp-editor{border:1px solid var(--border);border-radius:6px;overflow:visible;margin-bottom:8px;}
   .comp-unidad-global-row{display:flex;align-items:center;justify-content:space-between;gap:6px;}
@@ -277,21 +284,57 @@
       <div class="field-group"><label>Observación del preparado</label><textarea id="pObs" rows="2" placeholder="Detalles técnicos de la preparación..."></textarea></div>
 
       <div class="modal-sep"></div>
-      <div class="sec-title">Componentes</div>
-      <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div class="comp-unidad-global-row">Unidad<select id="unidadGlobalNuevo" onchange="aplicarUnidadGlobal('compRowsNuevo',this)"></select></div><div></div></div><div id="compRowsNuevo"></div></div>
-      <button class="btn btn-ghost btn-sm" onclick="agregarCompRow('compRowsNuevo')">+ Agregar componente</button>
-      <div class="field-row-3" style="margin-top:14px;">
-        <div class="field-group"><label>Forma farmacéutica</label><select id="pForma" onchange="onFormaChange('p')"><option value="">— Sin especificar —</option></select></div>
-        <div class="field-group">
-          <label>Cantidad total</label>
-          <input type="number" id="pCantTotal" step="any" min="0"/>
-        </div>
-        <div class="field-group"><label>Unidad</label><select id="pUnidad"><option value="">— Sin especificar —</option></select></div>
+
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+        <button class="btn btn-ghost btn-sm" id="btnTogglePreparadosStock" onclick="togglePreparadosStock()" style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>
+          <span id="btnTogglePreparadosStockLabel">Preparados de stock</span>
+        </button>
       </div>
+
+      <!-- Sección normal: se reemplaza por la de stock según el modo -->
+      <div id="seccionPrepNormal">
+        <div class="sec-title">Componentes</div>
+        <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div class="comp-unidad-global-row">Unidad<select id="unidadGlobalNuevo" onchange="aplicarUnidadGlobal('compRowsNuevo',this)"></select></div><div></div></div><div id="compRowsNuevo"></div></div>
+        <button class="btn btn-ghost btn-sm" onclick="agregarCompRow('compRowsNuevo')">+ Agregar componente</button>
+        <div class="field-row-3" style="margin-top:14px;">
+          <div class="field-group"><label>Forma farmacéutica</label><select id="pForma" onchange="onFormaChange('p')"><option value="">— Sin especificar —</option></select></div>
+          <div class="field-group">
+            <label>Cantidad total</label>
+            <input type="number" id="pCantTotal" step="any" min="0"/>
+          </div>
+          <div class="field-group"><label>Unidad</label><select id="pUnidad"><option value="">— Sin especificar —</option></select></div>
+        </div>
+      </div>
+
+      <!-- Fórmula ya elegida: nombre (tocar para volver a elegir) + cantidad de envases -->
+      <div id="seccionStockSeleccionada" style="display:none;">
+        <div class="sec-title">Fórmula elegida</div>
+        <button type="button" class="stock-chip-seleccionada" id="btnFormulaSeleccionadaNombre" onclick="volverAPickerStock()"></button>
+        <div class="field-group" style="margin-top:12px;max-width:220px;">
+          <label>Cantidad de envases <span style="color:var(--danger)">*</span></label>
+          <input type="number" id="pEnvases" min="1" step="1" value="1" oninput="regenerarPreviewStock()"/>
+        </div>
+      </div>
+
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="cerrarModal('modalPedido')">Cancelar</button>
       <button class="btn btn-primary" id="btnGuardarPrep" onclick="guardarPedido()">Enviar a San Martín</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal elegir fórmula de stock (sin alta de fórmulas: eso solo se hace desde San Martín) -->
+<div class="modal-overlay" id="modalStockPicker">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <h2>Preparados de stock</h2>
+      <button class="modal-close" onclick="cerrarStockPicker()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="stockPickerGrid" class="stock-picker-grid"></div>
+      <p id="stockPickerVacio" style="display:none;color:var(--muted);font-size:13px;padding:10px 0;">No hay fórmulas de stock activas todavía.</p>
     </div>
   </div>
 </div>
@@ -399,6 +442,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
 // ── Estado local ─────────────────────────────────────────────────
 let clientes = [], drogas = [], preparados = [];
 let clienteCB = null, cbDrogaIdx = null;
+let formulasStock = [], formulasStockComponentes = {}, formulaStockSeleccionada = null;
 
 function mostrarToast(msg,tipo=''){ const t=document.getElementById('toast'); t.textContent=msg; t.className='show '+tipo; setTimeout(()=>t.className='',3500); }
 function limpiar(obj){ const r={}; for(const [k,v] of Object.entries(obj)) if(v!==null&&v!==undefined) r[k]=v; return r; }
@@ -437,6 +481,7 @@ async function initApp(){
     ]);
   }catch(err){ mostrarToast('Error cargando datos: '+err.message,'err'); }
   cargarTodo();
+  cargarFormulasStock();
   suscribirRealtime();
 }
 document.addEventListener('click', e => { if(!e.target.closest('.ss-wrap')) cerrarTodasSS(); });
@@ -684,7 +729,7 @@ function crearTarjeta(p){
 
   let cuerpo = `
     <div class="card-top">
-      <div class="card-cupon">${p.nro_cupon_nuevo!=null?'#'+p.nro_cupon_nuevo:''}</div>
+      <div class="card-cupon">${p.nro_cupon_nuevo!=null?'#'+p.nro_cupon_nuevo:''}${!!p.formula_stock_id?'<span class="badge-stock">📦 Stock</span>':''}</div>
     </div>
     <div class="card-contact">
       <span class="card-cliente-text">${escHtml(p.cliente_nombre||nombreCliente(p.cliente_id))}</span>
@@ -746,6 +791,98 @@ async function confirmarCancelacionModal(){
 }
 
 // ── Cargar preparado (modal, idéntico en espíritu al de index.html) ─────
+// ── Fórmulas de stock (solo elegir y usar; el alta/edición se hace desde San Martín) ──
+// Escala los mismos campos ratio-fijo que usa la ficha 'Fórmulas de stock' de San Martín:
+// las unidades de concentración (%, mg/ml, etc.) no se multiplican por la cantidad de envases.
+const UNID_CONCENTRACION = ['%','‰','mg/ml','g/ml','mcg/ml','UI/ml','c.s.p'];
+function escalarCantidadComponente(cantidad, unidad, envases){
+  if(cantidad==null) return null;
+  if(UNID_CONCENTRACION.includes(unidad)) return cantidad;
+  return +(cantidad*envases).toFixed(4);
+}
+async function cargarFormulasStock(){
+  try{
+    const [formulas, comps] = await Promise.all([
+      sbGet('formulas_stock?activo=eq.true&order=nombre.asc'),
+      sbGet('formula_stock_componentes?select=*,drogas(nombre)&order=id.asc'),
+    ]);
+    formulasStock = formulas;
+    formulasStockComponentes = {};
+    comps.forEach(c=>{
+      if(!formulasStockComponentes[c.formula_stock_id]) formulasStockComponentes[c.formula_stock_id]=[];
+      formulasStockComponentes[c.formula_stock_id].push({droga_id:c.droga_id, droga_nombre:c.drogas?.nombre||'', cantidad:c.cantidad, unidad:c.unidad});
+    });
+    renderStockPickerGrid();
+  }catch(err){ mostrarToast('Error al cargar fórmulas de stock: '+err.message,'err'); }
+}
+function renderStockPickerGrid(){
+  const grid=document.getElementById('stockPickerGrid');
+  if(!grid) return;
+  grid.innerHTML = formulasStock.map(f=>
+    `<button type="button" class="stock-picker-btn" onclick="seleccionarFormulaStock('${f.id}')">${escHtml(f.nombre)}</button>`
+  ).join('');
+  document.getElementById('stockPickerVacio').style.display = formulasStock.length ? 'none' : '';
+}
+function abrirStockPicker(){
+  cerrarModal('modalPedido');
+  renderStockPickerGrid();
+  abrirModal('modalStockPicker');
+}
+function cerrarStockPicker(){
+  cerrarModal('modalStockPicker');
+  abrirModal('modalPedido');
+}
+function volverAPickerStock(){
+  abrirStockPicker();
+}
+function seleccionarFormulaStock(id){
+  formulaStockSeleccionada = formulasStock.find(f=>f.id===id) || null;
+  if(!formulaStockSeleccionada) return;
+  document.getElementById('btnFormulaSeleccionadaNombre').textContent = formulaStockSeleccionada.nombre;
+  document.getElementById('pEnvases').value='1';
+  regenerarPreviewStock();
+  cerrarModal('modalStockPicker');
+  abrirModal('modalPedido');
+  mostrarVistaPrep('seleccionada');
+}
+function regenerarPreviewStock(){
+  if(!formulaStockSeleccionada) return;
+  document.getElementById('compRowsNuevo').innerHTML='';
+  const envases = parseFloat(document.getElementById('pEnvases').value)||0;
+  document.getElementById('pForma').value = formulaStockSeleccionada.forma_farmaceutica||'';
+  onFormaChange('p');
+  document.getElementById('pUnidad').value = formulaStockSeleccionada.unidad||'';
+  document.getElementById('pCantTotal').value = envases>0 ? +(formulaStockSeleccionada.cantidad_base*envases).toFixed(4) : '';
+  (formulasStockComponentes[formulaStockSeleccionada.id]||[]).forEach(c=>{
+    const cant = envases>0 ? escalarCantidadComponente(c.cantidad, c.unidad, envases) : null;
+    agregarCompRow('compRowsNuevo', {drogaId:c.droga_id, nombre:c.droga_nombre, cantidad:cant, unidad:c.unidad});
+  });
+}
+// vistaPrepModal: 'normal' | 'seleccionada' (fórmula elegida + cantidad de envases), dentro de modalPedido
+let vistaPrepModal = 'normal';
+function mostrarVistaPrep(v){
+  vistaPrepModal = v;
+  document.getElementById('seccionPrepNormal').style.display        = v==='normal' ? '' : 'none';
+  document.getElementById('seccionStockSeleccionada').style.display = v==='seleccionada' ? '' : 'none';
+  document.getElementById('btnTogglePreparadosStockLabel').textContent = v==='normal' ? 'Preparados de stock' : 'Preparado normal';
+}
+function togglePreparadosStock(){
+  if(vistaPrepModal==='normal'){
+    abrirStockPicker();
+  } else {
+    volverANormalPrep();
+  }
+}
+function volverANormalPrep(){
+  formulaStockSeleccionada=null;
+  document.getElementById('compRowsNuevo').innerHTML='';
+  document.getElementById('pForma').value='';
+  document.getElementById('pUnidad').value='';
+  document.getElementById('pCantTotal').value='';
+  onFormaChange('p');
+  mostrarVistaPrep('normal');
+}
+
 function abrirModalPedido(){ limpiarFormPedido(); abrirModal('modalPedido'); }
 function limpiarFormPedido(){
   ['pCantTotal','pObs'].forEach(id=>document.getElementById(id).value='');
@@ -755,10 +892,18 @@ function limpiarFormPedido(){
   document.getElementById('pFecha').value = new Date().toISOString().slice(0,10);
   document.getElementById('compRowsNuevo').innerHTML='';
   document.getElementById('unidadGlobalNuevo').value='';
+  formulaStockSeleccionada=null;
+  document.getElementById('pEnvases').value='1';
+  mostrarVistaPrep('normal');
 }
 
 async function guardarPedido(){
+  const modoStock = vistaPrepModal==='seleccionada' && !!formulaStockSeleccionada;
   if(!document.getElementById('pForma').value){ mostrarToast('Seleccioná una forma farmacéutica','err'); return; }
+  if(modoStock){
+    const envasesChk = parseInt(document.getElementById('pEnvases').value);
+    if(!envasesChk||envasesChk<1){ mostrarToast('Ingresá una cantidad de envases válida','err'); return; }
+  }
   const cliId = document.getElementById('pClienteId').value;
   if(!cliId){ mostrarToast('Seleccioná un cliente','err'); return; }
   const telInput = document.getElementById('pTelefono');
@@ -780,6 +925,8 @@ async function guardarPedido(){
     const nuevoPrep = await sbPost('preparados', limpiar({
       nro_cupon_nuevo: cupon,
       cliente_id: cliId,
+      formula_stock_id: modoStock ? formulaStockSeleccionada.id : null,
+      cantidad_envases: modoStock ? parseInt(document.getElementById('pEnvases').value) : null,
       fecha_recepcion: document.getElementById('pFecha').value || null,
       estado: 'Pedido nuevo',
       origen_sucursal: SUCURSAL_NOMBRE,
@@ -887,7 +1034,7 @@ function renderHistorial(lista){
     if(p.nro_receta) extra += `<div class="hist-item-meta" style="margin-top:2px;">Receta #${p.nro_receta}</div>`;
     div.innerHTML = `
       <div class="hist-item-top">
-        <span class="hist-item-cliente">#${p.nro_cupon_nuevo??'—'} · ${escHtml(p.cliente_nombre||'—')}</span>
+        <span class="hist-item-cliente">#${p.nro_cupon_nuevo??'—'} · ${escHtml(p.cliente_nombre||'—')}${!!p.formula_stock_id?'<span class="badge-stock">📦 Stock</span>':''}</span>
         <span class="badge ${info.cls}">${info.txt}</span>
       </div>
       <div class="hist-item-meta">${fmtFecha(p.fecha_recepcion)} · ${escHtml(partes.join(' · '))}</div>
