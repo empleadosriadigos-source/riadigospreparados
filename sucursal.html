@@ -263,7 +263,7 @@
     <div class="modal-body">
       <div class="field-row">
         <div class="field-group">
-          <label>Cliente <span style="color:var(--danger)">*</span></label>
+          <label>Cliente <span style="color:var(--danger)" id="pClienteReq">*</span></label>
           <div style="display:flex;gap:6px;">
             <div class="ss-wrap" style="flex:1;">
               <input type="text" id="pClienteInput" placeholder="Buscar cliente…" oninput="filtrarSSCliente('p')" onfocus="abrirSSCliente('p')" autocomplete="off"/>
@@ -274,7 +274,7 @@
           </div>
         </div>
         <div class="field-group">
-          <label>Teléfono <span style="color:var(--danger)">*</span></label>
+          <label>Teléfono <span style="color:var(--danger)" id="pTelefonoReq">*</span></label>
           <input type="text" id="pTelefono" placeholder="Teléfono del cliente" oninput="this.classList.remove('field-invalid')"/>
         </div>
       </div>
@@ -732,7 +732,7 @@ function crearTarjeta(p){
       <div class="card-cupon">${p.nro_cupon_nuevo!=null?'#'+p.nro_cupon_nuevo:''}${!!p.formula_stock_id?'<span class="badge-stock">📦 Stock</span>':''}</div>
     </div>
     <div class="card-contact">
-      <span class="card-cliente-text">${escHtml(p.cliente_nombre||nombreCliente(p.cliente_id))}</span>
+      <span class="card-cliente-text">${escHtml(p.cliente_id ? (p.cliente_nombre||nombreCliente(p.cliente_id)) : (p.formula_stock_id ? ('📦 '+nombreFormulaStock(p.formula_stock_id)) : '—'))}</span>
       <span class="card-tel-text">${escHtml(p.cliente_telefono||'')}</span>
       <span class="card-tel-text">${fmtFecha(p.fecha_recepcion)}</span>
     </div>
@@ -803,7 +803,7 @@ function escalarCantidadComponente(cantidad, unidad, envases){
 async function cargarFormulasStock(){
   try{
     const [formulas, comps] = await Promise.all([
-      sbGet('formulas_stock?activo=eq.true&order=nombre.asc'),
+      sbGet('formulas_stock?order=nombre.asc'),
       sbGet('formula_stock_componentes?select=*,drogas(nombre)&order=id.asc'),
     ]);
     formulasStock = formulas;
@@ -813,15 +813,21 @@ async function cargarFormulasStock(){
       formulasStockComponentes[c.formula_stock_id].push({droga_id:c.droga_id, droga_nombre:c.drogas?.nombre||'', cantidad:c.cantidad, unidad:c.unidad});
     });
     renderStockPickerGrid();
+    renderKanban();
   }catch(err){ mostrarToast('Error al cargar fórmulas de stock: '+err.message,'err'); }
 }
 function renderStockPickerGrid(){
   const grid=document.getElementById('stockPickerGrid');
   if(!grid) return;
-  grid.innerHTML = formulasStock.map(f=>
+  const activas = formulasStock.filter(f=>f.activo);
+  grid.innerHTML = activas.map(f=>
     `<button type="button" class="stock-picker-btn" onclick="seleccionarFormulaStock('${f.id}')">${escHtml(f.nombre)}</button>`
   ).join('');
-  document.getElementById('stockPickerVacio').style.display = formulasStock.length ? 'none' : '';
+  document.getElementById('stockPickerVacio').style.display = activas.length ? 'none' : '';
+}
+function nombreFormulaStock(id){
+  const f = formulasStock.find(x=>x.id===id);
+  return f ? f.nombre : 'Fórmula eliminada';
 }
 function abrirStockPicker(){
   cerrarModal('modalPedido');
@@ -865,6 +871,8 @@ function mostrarVistaPrep(v){
   document.getElementById('seccionPrepNormal').style.display        = v==='normal' ? '' : 'none';
   document.getElementById('seccionStockSeleccionada').style.display = v==='seleccionada' ? '' : 'none';
   document.getElementById('btnTogglePreparadosStockLabel').textContent = v==='normal' ? 'Preparados de stock' : 'Preparado normal';
+  document.getElementById('pClienteReq').style.display = v==='normal' ? '' : 'none';
+  document.getElementById('pTelefonoReq').style.display = v==='normal' ? '' : 'none';
 }
 function togglePreparadosStock(){
   if(vistaPrepModal==='normal'){
@@ -905,10 +913,10 @@ async function guardarPedido(){
     if(!envasesChk||envasesChk<1){ mostrarToast('Ingresá una cantidad de envases válida','err'); return; }
   }
   const cliId = document.getElementById('pClienteId').value;
-  if(!cliId){ mostrarToast('Seleccioná un cliente','err'); return; }
+  if(!modoStock && !cliId){ mostrarToast('Seleccioná un cliente','err'); return; }
   const telInput = document.getElementById('pTelefono');
   const telVal = telInput.value.trim();
-  if(!telVal){ telInput.classList.add('field-invalid'); mostrarToast('Completá el teléfono del cliente','err'); return; }
+  if(cliId && !telVal){ telInput.classList.add('field-invalid'); mostrarToast('Completá el teléfono del cliente','err'); return; }
   telInput.classList.remove('field-invalid');
 
   const btn = document.getElementById('btnGuardarPrep');
@@ -916,15 +924,17 @@ async function guardarPedido(){
   try{
     const cupon = await sbRpc('next_cupon_nuevo');
 
-    const cliActual = clientes.find(c=>c.id===cliId);
-    if(cliActual && (cliActual.telefono||'')!==telVal){
-      await sbPatch('clientes', cliId, {telefono: telVal});
-      cliActual.telefono = telVal;
+    if(cliId){
+      const cliActual = clientes.find(c=>c.id===cliId);
+      if(cliActual && (cliActual.telefono||'')!==telVal){
+        await sbPatch('clientes', cliId, {telefono: telVal});
+        cliActual.telefono = telVal;
+      }
     }
 
     const nuevoPrep = await sbPost('preparados', limpiar({
       nro_cupon_nuevo: cupon,
-      cliente_id: cliId,
+      cliente_id: cliId||null,
       formula_stock_id: modoStock ? formulaStockSeleccionada.id : null,
       cantidad_envases: modoStock ? parseInt(document.getElementById('pEnvases').value) : null,
       fecha_recepcion: document.getElementById('pFecha').value || null,
@@ -1034,7 +1044,7 @@ function renderHistorial(lista){
     if(p.nro_receta) extra += `<div class="hist-item-meta" style="margin-top:2px;">Receta #${p.nro_receta}</div>`;
     div.innerHTML = `
       <div class="hist-item-top">
-        <span class="hist-item-cliente">#${p.nro_cupon_nuevo??'—'} · ${escHtml(p.cliente_nombre||'—')}${!!p.formula_stock_id?'<span class="badge-stock">📦 Stock</span>':''}</span>
+        <span class="hist-item-cliente">#${p.nro_cupon_nuevo??'—'} · ${escHtml(p.cliente_nombre || (p.formula_stock_id?('📦 '+(p.formula_stock_nombre||'Fórmula eliminada')):'—'))}${!!p.formula_stock_id?'<span class="badge-stock">📦 Stock</span>':''}</span>
         <span class="badge ${info.cls}">${info.txt}</span>
       </div>
       <div class="hist-item-meta">${fmtFecha(p.fecha_recepcion)} · ${escHtml(partes.join(' · '))}</div>
