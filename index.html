@@ -221,6 +221,11 @@
     .drawer-card-actions{display:flex;gap:8px;margin-top:8px;}
     .drawer-card-actions .btn{flex:1;}
     .drawer-empty{font-size:12px;color:var(--muted);}
+    .drawer-cancel-card{background:#FDECEC;border:1px solid #F3A9A9;border-radius:8px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+    .drawer-cancel-card .txt strong{color:var(--danger);display:block;font-size:13px;margin-bottom:2px;}
+    .drawer-cancel-card .txt span{font-size:12px;color:var(--muted);}
+    .drawer-cancel-dismiss{background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;line-height:1;padding:2px 4px;flex-shrink:0;}
+    .drawer-cancel-dismiss:hover{opacity:0.7;}
     .chat-bubble{border-radius:12px;padding:7px 11px;font-size:12.5px;line-height:1.35;max-width:88%;}
     .chat-bubble-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;opacity:0.75;}
     .chat-bubble.chat-recibido{background:#E8F4FB;border:1px solid #C0DFF0;border-top-left-radius:3px;color:#2C5F73;}
@@ -370,6 +375,8 @@
       <button class="modal-close" onclick="cerrarDrawer()">✕</button>
     </div>
     <div class="drawer-body">
+      <div class="drawer-section-title" id="drawerCanceladasTitle" style="display:none;">Canceladas por sucursal</div>
+      <div id="drawerCanceladas"></div>
       <div class="drawer-section-title">Nuevas solicitudes</div>
       <div id="drawerNuevas"></div>
       <div class="drawer-section-title">Esperando confirmación</div>
@@ -1213,10 +1220,18 @@
   function renderDrawer(){
     const nuevas = preparados.filter(p => p.estado === 'Pedido nuevo');
     const esperando = preparados.filter(p => p.estado === 'Precio propuesto');
+    const canceladas = preparados.filter(p => p.estado === 'Cancelado por sucursal');
     const bellBtn = document.getElementById('bellBtnSolicitudes');
-    // La campana solo resalta con pedidos nuevos genuinos (acción nuestra pendiente).
+    // La campana resalta con pedidos nuevos genuinos y con cancelaciones sin descartar
+    // (ambas son interacciones de la sucursal que requieren nuestra atención).
     // "Precio propuesto" ya lo respondimos: queda apagada hasta la próxima interacción de la sucursal.
-    if (bellBtn) bellBtn.classList.toggle('has-alert', nuevas.length > 0);
+    if (bellBtn) bellBtn.classList.toggle('has-alert', nuevas.length > 0 || canceladas.length > 0);
+
+    const titleCanceladas = document.getElementById('drawerCanceladasTitle');
+    const contCanceladas = document.getElementById('drawerCanceladas');
+    titleCanceladas.style.display = canceladas.length ? '' : 'none';
+    contCanceladas.innerHTML = '';
+    canceladas.forEach(p => contCanceladas.appendChild(crearDrawerCardCancelada(p)));
 
     const contNuevas = document.getElementById('drawerNuevas');
     contNuevas.innerHTML = nuevas.length ? '' : '<p class="drawer-empty">No hay solicitudes nuevas.</p>';
@@ -1226,6 +1241,25 @@
     contEsperando.innerHTML = esperando.length ? '' : '<p class="drawer-empty">Nada esperando confirmación.</p>';
     esperando.forEach(p => contEsperando.appendChild(crearDrawerCardEsperando(p)));
     scrollTodosLosChats();
+  }
+
+  function crearDrawerCardCancelada(p){
+    const div = document.createElement('div');
+    div.className = 'drawer-cancel-card';
+    div.innerHTML = `
+      <div class="txt">
+        <strong>Pedido cancelado</strong>
+        <span>${escHtml(p.cliente_nombre||'—')} · ${escHtml(p.origen_sucursal||'Sucursal')}</span>
+      </div>
+      <button class="drawer-cancel-dismiss" title="Descartar" onclick="descartarCancelado('${p.id}')">✕</button>`;
+    return div;
+  }
+
+  async function descartarCancelado(id){
+    try{
+      await sbPatch('preparados', id, { eliminado_en: new Date().toISOString() });
+      cargarTodo();
+    }catch(err){ mostrarToast('Error al descartar: '+err.message, 'err'); }
   }
 
   function drogasResumenHtml(p){
