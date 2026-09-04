@@ -25,6 +25,25 @@
     .topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0;}
     #btnActualizar{background:none;border:1px solid #555;color:#ccc;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;}
     #btnActualizar:hover{background:#444;}
+
+    /* --- Menú hamburguesa + drawer lateral (izquierda) --- */
+    .hamburger-btn{background:none;border:1px solid #555;color:#ccc;width:34px;height:34px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .hamburger-btn:hover{background:#444;}
+    .side-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:250;}
+    .side-overlay.open{display:block;}
+    .side-drawer{position:fixed;top:0;left:-300px;width:280px;max-width:88vw;height:100%;background:var(--surface);box-shadow:4px 0 20px rgba(0,0,0,0.2);z-index:260;transition:left 0.2s;display:flex;flex-direction:column;}
+    .side-overlay.open .side-drawer{left:0;}
+    .side-drawer-header{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .side-drawer-header h2{font-size:15px;font-weight:700;}
+    .side-drawer-body{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:4px;}
+    .side-nav-link{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:8px;font-size:13.5px;font-weight:600;color:var(--text);text-decoration:none;border:none;background:none;cursor:pointer;text-align:left;width:100%;}
+    .side-nav-link:hover{background:var(--bg);}
+    .side-nav-link svg{flex-shrink:0;color:var(--muted);}
+
+    /* --- Notificaciones destacadas (sin número, solo color) --- */
+    .bell-btn.has-alert{background:#FF6A3D;border-color:#FF6A3D;color:#fff;animation:bellGlow 1.6s ease-in-out infinite;}
+    .bell-btn.has-alert:hover{background:#F0552A;}
+    @keyframes bellGlow{0%,100%{box-shadow:0 0 0 0 rgba(255,106,61,0.55);}50%{box-shadow:0 0 0 6px rgba(255,106,61,0);}}
     .drop-zone{position:fixed;left:50%;transform:translateX(-50%);bottom:-38px;z-index:70;width:280px;height:70px;background:#3a3a3a;border:2px dashed #666;border-bottom:none;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:center;gap:8px;color:#aaa;font-size:14px;font-weight:700;transition:bottom 0.25s ease,background 0.2s,border-color 0.2s,color 0.2s;cursor:default;user-select:none;box-shadow:0 -6px 18px rgba(0,0,0,0.22);padding-top:6px;}
     .drop-zone.drag-active{bottom:0;background:#1A5C3A;border-color:var(--accent);color:#fff;}
     .drop-zone.drag-over{background:var(--accent);border-color:#fff;color:#fff;transform:translateX(-50%) scale(1.05);}
@@ -258,6 +277,8 @@
       html{font-size:14px;}
       .topbar{overflow-x:auto;-webkit-overflow-scrolling:touch;}
       .nav-btn,.btn,#btnActualizar,.btn-logout{min-height:44px;}
+      .hamburger-btn,.bell-btn{min-height:38px;min-width:38px;}
+      .side-nav-link{min-height:44px;}
       .modal{width:100%;height:100%;max-width:100%;max-height:100%;border-radius:0;}
       .field-row{grid-template-columns:1fr!important;}
       .field-row-3{grid-template-columns:1fr!important;}
@@ -289,28 +310,14 @@
 </div>
 
 <div class="topbar">
+  <button class="hamburger-btn" onclick="toggleSideMenu()" title="Menú">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
   <div class="topbar-brand">Laboratorio</div>
   <div class="topbar-sep"></div>
   <button class="nav-btn nav-btn-green" onclick="abrirModalPreparado()">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     Cargar preparado
-  </button>
-  <div class="topbar-sep"></div>
-  <a class="nav-btn nav-btn-dark" href="reporte.html">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-    Reporte de drogas
-  </a>
-  <a class="nav-btn nav-btn-dark" href="preparados.html">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    Buscar preparados anteriores
-  </a>
-  <a class="nav-btn nav-btn-dark" href="etiquetas.html">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-    Etiquetas
-  </a>
-  <button class="nav-btn nav-btn-dark" onclick="abrirModalFormulasStock()">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
-    Fórmulas de stock
   </button>
 
   <div class="topbar-right">
@@ -318,14 +325,40 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
     </button>
     <div class="bell-wrap">
-      <button class="bell-btn" onclick="toggleDrawer()" title="Solicitudes de sucursal">
+      <button class="bell-btn" id="bellBtnSolicitudes" onclick="toggleDrawer()" title="Solicitudes de sucursal">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
       </button>
-      <span class="bell-badge" id="bellBadge">0</span>
     </div>
     <span class="user-chip" id="userNombre"></span>
     <button class="btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
     <button id="btnActualizar" onclick="cargarTodo()">↺ Actualizar</button>
+  </div>
+</div>
+
+<div class="side-overlay" id="sideOverlay" onclick="if(event.target===this) cerrarSideMenu()">
+  <div class="side-drawer">
+    <div class="side-drawer-header">
+      <h2>Menú</h2>
+      <button class="modal-close" onclick="cerrarSideMenu()">✕</button>
+    </div>
+    <div class="side-drawer-body">
+      <a class="side-nav-link" href="reporte.html">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Reporte de drogas
+      </a>
+      <a class="side-nav-link" href="preparados.html">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Buscar preparados anteriores
+      </a>
+      <a class="side-nav-link" href="etiquetas.html">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        Etiquetas
+      </a>
+      <button class="side-nav-link" onclick="cerrarSideMenu();abrirModalFormulasStock()">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+        Fórmulas de stock
+      </button>
+    </div>
   </div>
 </div>
 
@@ -1168,6 +1201,10 @@
     return div;
   }
 
+  // ── Menú lateral de navegación (izquierda) ──────────────────────────────
+  function toggleSideMenu(){ document.getElementById('sideOverlay').classList.toggle('open'); }
+  function cerrarSideMenu(){ document.getElementById('sideOverlay').classList.remove('open'); }
+
   // ── Drawer de solicitudes de sucursal ───────────────────────────────────
   function toggleDrawer(){ document.getElementById('drawerOverlay').classList.toggle('open'); }
   function cerrarDrawer(){ document.getElementById('drawerOverlay').classList.remove('open'); }
@@ -1175,10 +1212,9 @@
   function renderDrawer(){
     const nuevas = preparados.filter(p => p.estado === 'Pedido nuevo');
     const esperando = preparados.filter(p => p.estado === 'Precio propuesto');
-    const badge = document.getElementById('bellBadge');
+    const bellBtn = document.getElementById('bellBtnSolicitudes');
     const total = nuevas.length + esperando.length;
-    badge.style.display = total > 0 ? 'flex' : 'none';
-    badge.textContent = total;
+    if (bellBtn) bellBtn.classList.toggle('has-alert', total > 0);
 
     const contNuevas = document.getElementById('drawerNuevas');
     contNuevas.innerHTML = nuevas.length ? '' : '<p class="drawer-empty">No hay solicitudes nuevas.</p>';
