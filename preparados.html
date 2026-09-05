@@ -331,7 +331,7 @@
 </div><!-- /appRoot -->
 
 <script src="constantes.js"></script>
-<script src="supabase-shared.js?v=3"></script>
+<script src="supabase-shared.js?v=4"></script>
 <script>
   // SB_URL, SB_KEY, sbAuth, SB_TOKEN, getAuthHeaders, sbGet/sbPost/sbPatch/sbDelete,
   // iniciarSesionGoogle y cerrarSesion vienen de supabase-shared.js
@@ -411,7 +411,7 @@
     setStatus('<span class="spinner"></span> Buscando…');
     try{
       const h=getAuthHeaders();h['Content-Type']='application/json';
-      const resp=await fetch(`${SB_URL}/rpc/buscar_preparados`,{
+      const resp=await fetchConTimeout(`${SB_URL}/rpc/buscar_preparados`,{
         method:'POST',headers:h,
         body:JSON.stringify({termino:q||null,filtro_estado:estado||null,pagina:paginaActual,por_pagina:POR_PAGINA,orden_col:sortCol,orden_dir:sortDir})
       });
@@ -557,7 +557,13 @@
     try{
       const comps = await sbGet('componentes_con_droga?preparado_id=eq.'+p.id);
       p.componentes = comps;
-    }catch(e){ p.componentes=[]; }
+    }catch(e){
+      // No marcamos p.componentes=[] acá: eso quedaría "cacheado" como si el
+      // preparado realmente no tuviera droga, y la próxima vez que se pida
+      // (ej. al imprimir) ya no reintentaría la carga. Dejamos componentes
+      // sin definir para que el próximo llamado a esta función vuelva a intentar.
+      mostrarToast('No se pudieron cargar los componentes: '+e.message,'err');
+    }
   }
 
   async function abrirEditar(id){
@@ -669,7 +675,7 @@
     if(tipoCupon==='nuevo'){
       try{
         const h=getAuthHeaders();h['Content-Type']='application/json';
-        const resp=await fetch(`${SB_URL}/rpc/next_cupon_nuevo`,{method:'POST',headers:h,body:'null'});
+        const resp=await fetchConTimeout(`${SB_URL}/rpc/next_cupon_nuevo`,{method:'POST',headers:h,body:'null'});
         if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||'HTTP '+resp.status);}
         cupon=await resp.json();
         if(!cupon && cupon!==0){mostrarToast('Error al obtener número de cupón','err');return;}
@@ -699,7 +705,12 @@
         observaciones:document.getElementById('rObs').value||null
       }));
       const prepId=nuevo[0].id;
-      for(const c of p.componentes){await sbPost('componentes',limpiar({preparado_id:prepId,droga_id:c.droga_id,cantidad:c.cantidad,unidad:c.unidad}));}
+      try{
+        for(const c of p.componentes){await sbPost('componentes',limpiar({preparado_id:prepId,droga_id:c.droga_id,cantidad:c.cantidad,unidad:c.unidad}));}
+      }catch(errComp){
+        try{ await sbDelete('preparados?id=eq.'+prepId); }catch(errRollback){ /* best-effort */ }
+        throw errComp;
+      }
       mostrarToast('✓ Preparado creado','ok');cerrarModal('modalRepetir');await cargarTodo();
     }catch(err){mostrarToast('Error: '+err.message,'err');}
     btn.disabled=false;btn.textContent='↺ Crear preparado';

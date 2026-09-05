@@ -166,7 +166,7 @@
 
 </div><!-- /appRoot -->
 
-<script src="supabase-shared.js?v=3"></script>
+<script src="supabase-shared.js?v=4"></script>
 <script>
   // SB_URL, SB_KEY, sbAuth, SB_TOKEN, getAuthHeaders, sbGet/sbPost/sbPatch/sbDelete,
   // iniciarSesionGoogle y cerrarSesion vienen de supabase-shared.js
@@ -213,7 +213,7 @@
     let res, totalCount;
     try{
       const h=getAuthHeaders();h['Content-Type']='application/json';
-      const resp=await fetch(`${SB_URL}/rpc/buscar_preparados`,{
+      const resp=await fetchConTimeout(`${SB_URL}/rpc/buscar_preparados`,{
         method:'POST',headers:h,
         body:JSON.stringify({termino:q||null,filtro_estado:estado||null,pagina:1,por_pagina:TOPE_RESULTADOS})
       });
@@ -226,6 +226,7 @@
     todos = res;
 
     // Cargar componentes de los preparados encontrados, para mostrarlos en la tabla
+    let fallóComponentes=false;
     if(res.length > 0){
       setStatus('<span class="spinner"></span> Cargando componentes…');
       const ids = res.map(p=>p.id).join(',');
@@ -233,11 +234,12 @@
         const comps = await sbGet('componentes_con_droga?preparado_id=in.('+ids+')');
         const cm={};comps.forEach(c=>{if(!cm[c.preparado_id])cm[c.preparado_id]=[];cm[c.preparado_id].push(c);});
         res.forEach(p=>{ p.componentes=cm[p.id]||[]; });
-      }catch(e){}
+      }catch(e){ fallóComponentes=true; }
     }
 
     setStatus('');
     renderTabla(res);
+    if(fallóComponentes) mostrarToast('⚠ No se pudieron cargar los componentes de algunos preparados — revisá antes de imprimir','err');
 
     if(totalCount > TOPE_RESULTADOS){
       setStatus(`Mostrando los primeros ${TOPE_RESULTADOS} de ${totalCount} resultados — escribí en el buscador para acotar.`);

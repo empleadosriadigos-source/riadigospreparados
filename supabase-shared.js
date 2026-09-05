@@ -40,6 +40,24 @@ function getAuthHeaders(extra){
   return Object.assign({'apikey':SB_KEY,'Authorization':'Bearer '+(SB_TOKEN||SB_KEY)}, extra||{});
 }
 
+// Todas las llamadas a Supabase pasan por acá en vez de fetch() directo.
+// Sin esto, si la conexión se cuelga a mitad de una petición (típico en
+// wifi de sucursal), el await queda esperando para siempre: un botón que
+// dice "Guardando…" se queda así sin límite, sin error, sin forma de que
+// el usuario sepa que tiene que reintentar.
+async function fetchConTimeout(url, options={}, ms=20000){
+  const controller = new AbortController();
+  const timer = setTimeout(()=>controller.abort(), ms);
+  try{
+    return await fetch(url, {...options, signal: controller.signal});
+  }catch(err){
+    if(err.name === 'AbortError') throw new Error('Se agotó el tiempo de espera. Revisá tu conexión e intentá de nuevo.');
+    throw err;
+  }finally{
+    clearTimeout(timer);
+  }
+}
+
 // Cuando la pestaña queda mucho tiempo en segundo plano (o la compu se
 // suspende), el refresco automático de token de supabase-js puede no
 // dispararse a tiempo. La sesión vieja en memoria queda "vencida" del lado
@@ -71,29 +89,31 @@ async function sbConReintentoDeSesion(ejecutar){
 }
 
 async function sbGet(path, all=false){
-  const h=getAuthHeaders();
-  if(!all){
-    const resp=await fetch(`${SB_URL}/${path}`,{headers:h});
-    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
-    return resp.json();
-  }
-  // Supabase impone un limite de filas por request (db.max_rows) que un
-  // ?limit= mas alto no puede superar; hay que paginar con el header Range.
-  const pageSize=1000;
-  let offset=0, out=[], page;
-  do{
-    const resp=await fetch(`${SB_URL}/${path}`,{headers:{...h,'Range-Unit':'items','Range':`${offset}-${offset+pageSize-1}`}});
-    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
-    page=await resp.json();
-    out=out.concat(page);
-    offset+=pageSize;
-  }while(page.length===pageSize);
-  return out;
+  return sbConReintentoDeSesion(async () => {
+    const h=getAuthHeaders();
+    if(!all){
+      const resp=await fetchConTimeout(`${SB_URL}/${path}`,{headers:h});
+      if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
+      return resp.json();
+    }
+    // Supabase impone un limite de filas por request (db.max_rows) que un
+    // ?limit= mas alto no puede superar; hay que paginar con el header Range.
+    const pageSize=1000;
+    let offset=0, out=[], page;
+    do{
+      const resp=await fetchConTimeout(`${SB_URL}/${path}`,{headers:{...h,'Range-Unit':'items','Range':`${offset}-${offset+pageSize-1}`}});
+      if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
+      page=await resp.json();
+      out=out.concat(page);
+      offset+=pageSize;
+    }while(page.length===pageSize);
+    return out;
+  });
 }
 
 async function sbPost(table,body){
   return sbConReintentoDeSesion(async () => {
-    const resp = await fetch(`${SB_URL}/${table}`,{method:'POST',headers:getAuthHeaders({'Content-Type':'application/json','Prefer':'return=representation'}),body:JSON.stringify(body)});
+    const resp = await fetchConTimeout(`${SB_URL}/${table}`,{method:'POST',headers:getAuthHeaders({'Content-Type':'application/json','Prefer':'return=representation'}),body:JSON.stringify(body)});
     if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
     return resp.json();
   });
@@ -101,7 +121,7 @@ async function sbPost(table,body){
 
 async function sbPatch(table,id,body){
   return sbConReintentoDeSesion(async () => {
-    const resp = await fetch(`${SB_URL}/${table}?id=eq.${id}`,{method:'PATCH',headers:getAuthHeaders({'Content-Type':'application/json','Prefer':'return=representation'}),body:JSON.stringify(body)});
+    const resp = await fetchConTimeout(`${SB_URL}/${table}?id=eq.${id}`,{method:'PATCH',headers:getAuthHeaders({'Content-Type':'application/json','Prefer':'return=representation'}),body:JSON.stringify(body)});
     if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
     return resp.json();
   });
@@ -109,7 +129,7 @@ async function sbPatch(table,id,body){
 
 async function sbDelete(path){
   return sbConReintentoDeSesion(async () => {
-    const resp = await fetch(`${SB_URL}/${path}`,{method:'DELETE',headers:getAuthHeaders()});
+    const resp = await fetchConTimeout(`${SB_URL}/${path}`,{method:'DELETE',headers:getAuthHeaders()});
     if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
   });
 }
@@ -135,7 +155,7 @@ async function comprimirImagen(file, maxAncho=1100, calidad=0.72){
 
 async function sbSubirImagen(bucket, path, blob){
   return sbConReintentoDeSesion(async () => {
-    const resp = await fetch(`${SB_URL_BASE}/storage/v1/object/${bucket}/${path}`,{
+    const resp = await fetchConTimeout(`${SB_URL_BASE}/storage/v1/object/${bucket}/${path}`,{
       method:'POST',
       headers:getAuthHeaders({'Content-Type':blob.type||'image/jpeg'}),
       body:blob
@@ -148,7 +168,7 @@ async function sbSubirImagen(bucket, path, blob){
 // URL firmada temporal (1h por defecto) para ver una imagen del bucket privado.
 async function sbFirmarImagen(bucket, path, expiresIn=3600){
   return sbConReintentoDeSesion(async () => {
-    const resp = await fetch(`${SB_URL_BASE}/storage/v1/object/sign/${bucket}/${path}`,{
+    const resp = await fetchConTimeout(`${SB_URL_BASE}/storage/v1/object/sign/${bucket}/${path}`,{
       method:'POST',
       headers:getAuthHeaders({'Content-Type':'application/json'}),
       body:JSON.stringify({expiresIn})

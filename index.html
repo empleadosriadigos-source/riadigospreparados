@@ -768,7 +768,7 @@
 </div><!-- /appRoot -->
 
 <script src="constantes.js"></script>
-<script src="supabase-shared.js?v=3"></script>
+<script src="supabase-shared.js?v=4"></script>
 <script>
   // ── Autenticación (Supabase Auth + Google OAuth) ────────────────────────
   // SB_URL, SB_KEY, sbAuth, SB_TOKEN, getAuthHeaders, sbGet/sbPost/sbPatch/sbDelete,
@@ -896,7 +896,15 @@
         renderDrawer();
       }
     } catch(err) {
-      if(primeraCarga) setKanbanStatus('Error al cargar: ' + err.message, true);
+      if(primeraCarga){
+        setKanbanStatus('Error al cargar: ' + err.message, true);
+      } else {
+        // Recarga silenciosa (polling/Realtime) que falló: no tapamos el
+        // kanban con un spinner, pero sí avisamos — antes esto se ignoraba
+        // por completo y la pantalla podía quedar con datos viejos sin que
+        // nadie se diera cuenta.
+        mostrarToast('⚠ No se pudo actualizar: ' + err.message, 'err');
+      }
     }
   }
 
@@ -996,20 +1004,40 @@
         activo:document.getElementById('fsActivo').checked,
       });
       let formulaId=id;
+      let idsComponentesViejos=[];
       if(id){
         await sbPatch('formulas_stock',id,payload);
-        await sbDelete('formula_stock_componentes?formula_stock_id=eq.'+id);
+        // Guardamos los ids viejos para borrarlos recién al final, una vez
+        // que los nuevos ya se insertaron con éxito (ver más abajo). Antes
+        // se borraba primero y se reinsertaba después: si fallaba a mitad
+        // de camino, la fórmula quedaba con componentes incompletos.
+        const viejos=await sbGet('formula_stock_componentes?formula_stock_id=eq.'+id+'&select=id');
+        idsComponentesViejos=viejos.map(c=>c.id);
       }else{
         const nueva=await sbPost('formulas_stock',payload);
         formulaId=nueva[0].id;
       }
       const rows=document.querySelectorAll('#compRowsFormula .comp-row');
-      for(const row of rows){
-        const drugId=row.querySelector('.comp-drug-id').value;
-        const cant=parseFloat(row.querySelector('.comp-cant').value)||null;
-        const unid=row.querySelector('.comp-unid').value||null;
-        if(!drugId) continue;
-        await sbPost('formula_stock_componentes',limpiar({formula_stock_id:formulaId,droga_id:drugId,cantidad:cant,unidad:unid}));
+      try{
+        for(const row of rows){
+          const drugId=row.querySelector('.comp-drug-id').value;
+          const cant=parseFloat(row.querySelector('.comp-cant').value)||null;
+          const unid=row.querySelector('.comp-unid').value||null;
+          if(!drugId) continue;
+          await sbPost('formula_stock_componentes',limpiar({formula_stock_id:formulaId,droga_id:drugId,cantidad:cant,unidad:unid}));
+        }
+      }catch(errComp){
+        if(!id){
+          // Fórmula nueva: si falló un componente a mitad de camino, se borra
+          // la fórmula recién creada para que reintentar no duplique.
+          try{ await sbDelete('formulas_stock?id=eq.'+formulaId); }catch(errRollback){ /* best-effort */ }
+        }
+        // Si era edición, los componentes viejos todavía no se tocaron —
+        // la fórmula queda con los datos anteriores, no a medias.
+        throw errComp;
+      }
+      if(id && idsComponentesViejos.length){
+        await sbDelete('formula_stock_componentes?id=in.('+idsComponentesViejos.join(',')+')');
       }
       mostrarToast('✓ Fórmula guardada','ok');
       await cargarFormulasStock();
@@ -1719,14 +1747,19 @@
         }));
         // Si cambió la cantidad de envases, hay que reescalar los componentes guardados
         // (los usa el reporte de consumo de drogas) para que sigan reflejando lo real.
+        // Insertamos los nuevos primero y recién después borramos los viejos
+        // (por id explícito, no por preparado_id): si algo falla a mitad de
+        // camino, el preparado se queda con los componentes anteriores en
+        // vez de quedar con menos droga de la que corresponde.
         if(envases !== prepActual.cantidad_envases && f){
-          await sbDelete('componentes?preparado_id=eq.'+prepActual.id);
+          const idsViejos = prepActual.componentes.map(c=>c.id);
           const receta = formulasStockComponentes[f.id]||[];
           for(const c of receta){
             if(!c.droga_id) continue;
             const cant = escalarCantidadComponente(c.cantidad, c.unidad, envases);
             await sbPost('componentes',limpiar({preparado_id:prepActual.id,droga_id:c.droga_id,cantidad:cant,unidad:c.unidad}));
           }
+          if(idsViejos.length) await sbDelete('componentes?id=in.('+idsViejos.join(',')+')');
         }
         mostrarToast('✓ Guardado','ok');cerrarModal('modalEditar');await cargarTodo();
         btn.disabled=false;btn.textContent='Guardar cambios';
@@ -1772,6 +1805,7 @@
   }
 
   async function guardarPreparado(){
+    const btn=document.getElementById('btnGuardarPrep');
     const modoStock = vistaPrepModal==='seleccionada' && !!formulaStockSeleccionada;
     const tipoNuevo = document.getElementById('tipoCuponNuevo').checked;
     // Validar forma farmacéutica obligatoria
@@ -1785,7 +1819,7 @@
       try{
         const h=getAuthHeaders();
         h['Content-Type']='application/json';
-        const resp = await fetch(`${SB_URL}/rpc/next_cupon_nuevo`,{method:'POST',headers:h,body:'null'});
+        const resp = await fetchConTimeout(`${SB_URL}/rpc/next_cupon_nuevo`,{method:'POST',headers:h,body:'null'});
         if(!resp.ok){ const e=await resp.json().catch(()=>({})); throw new Error(e.message||'HTTP '+resp.status); }
         cupon = await resp.json();
         if(!cupon && cupon !== 0){ mostrarToast('Error al obtener número de cupón','err'); btn.disabled=false; btn.textContent='Guardar preparado'; return; }
@@ -1800,7 +1834,7 @@
     const telVal=telInput.value.trim();
     if(cliId && !telVal){telInput.classList.add('field-invalid');mostrarToast('Completá el teléfono del cliente','err');return;}
     telInput.classList.remove('field-invalid');
-    const btn=document.getElementById('btnGuardarPrep');btn.disabled=true;btn.textContent='Guardando…';
+    btn.disabled=true;btn.textContent='Guardando…';
     try{
       if(cliId){
         const cliActual=clientes.find(c=>c.id===cliId);
@@ -1827,12 +1861,20 @@
       }));
       const prepId=nuevoPrep[0].id;
       const rows=document.querySelectorAll('#compRowsNuevo .comp-row');
-      for(const row of rows){
-        const drugId=row.querySelector('.comp-drug-id').value;
-        const cant=parseFloat(row.querySelector('.comp-cant').value)||null;
-        const unid=row.querySelector('.comp-unid').value||null;
-        if(!drugId) continue;
-        await sbPost('componentes',limpiar({preparado_id:prepId,droga_id:drugId,cantidad:cant,unidad:unid}));
+      try{
+        for(const row of rows){
+          const drugId=row.querySelector('.comp-drug-id').value;
+          const cant=parseFloat(row.querySelector('.comp-cant').value)||null;
+          const unid=row.querySelector('.comp-unid').value||null;
+          if(!drugId) continue;
+          await sbPost('componentes',limpiar({preparado_id:prepId,droga_id:drugId,cantidad:cant,unidad:unid}));
+        }
+      }catch(errComp){
+        // Si falló un componente a mitad de camino, el preparado ya quedó
+        // creado con datos incompletos. Se lo borra para que reintentar
+        // "Guardar" no termine creando un pedido duplicado.
+        try{ await sbDelete('preparados?id=eq.'+prepId); }catch(errRollback){ /* best-effort */ }
+        throw errComp;
       }
       mostrarToast('✓ Preparado cargado','ok');
       cerrarModal('modalPreparado');
@@ -1966,12 +2008,17 @@
       }));
       const formulaId=nueva[0].id;
       const rows=document.querySelectorAll('#compRowsPNF .comp-row');
-      for(const row of rows){
-        const drugId=row.querySelector('.comp-drug-id').value;
-        const cant=parseFloat(row.querySelector('.comp-cant').value)||null;
-        const unid=row.querySelector('.comp-unid').value||null;
-        if(!drugId) continue;
-        await sbPost('formula_stock_componentes',limpiar({formula_stock_id:formulaId,droga_id:drugId,cantidad:cant,unidad:unid}));
+      try{
+        for(const row of rows){
+          const drugId=row.querySelector('.comp-drug-id').value;
+          const cant=parseFloat(row.querySelector('.comp-cant').value)||null;
+          const unid=row.querySelector('.comp-unid').value||null;
+          if(!drugId) continue;
+          await sbPost('formula_stock_componentes',limpiar({formula_stock_id:formulaId,droga_id:drugId,cantidad:cant,unidad:unid}));
+        }
+      }catch(errComp){
+        try{ await sbDelete('formulas_stock?id=eq.'+formulaId); }catch(errRollback){ /* best-effort */ }
+        throw errComp;
       }
       mostrarToast('✓ Fórmula agregada','ok');
       await cargarFormulasStock();

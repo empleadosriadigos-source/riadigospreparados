@@ -140,7 +140,7 @@
 
 </div><!-- /appRoot -->
 
-<script src="supabase-shared.js?v=3"></script>
+<script src="supabase-shared.js?v=4"></script>
 <script>
   // SB_URL, SB_KEY, sbAuth, SB_TOKEN, getAuthHeaders, sbGet/sbPost/sbPatch/sbDelete,
   // iniciarSesionGoogle y cerrarSesion vienen de supabase-shared.js
@@ -184,7 +184,7 @@
     try{
       // El calculo y la suma se hacen en el servidor (funcion reporte_consumo_drogas),
       // sin importar cuantos preparados o componentes haya en el periodo.
-      const resp=await fetch(`${SB_URL}/rpc/reporte_consumo_drogas`,{
+      const resp=await fetchConTimeout(`${SB_URL}/rpc/reporte_consumo_drogas`,{
         method:'POST',
         headers:getAuthHeaders({'Content-Type':'application/json'}),
         body:JSON.stringify({desde,hasta})

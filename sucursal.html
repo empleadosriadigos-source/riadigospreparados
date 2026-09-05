@@ -418,7 +418,7 @@
 </div>
 
 <script src="constantes.js"></script>
-<script src="supabase-shared.js?v=3"></script>
+<script src="supabase-shared.js?v=4"></script>
 <script>
 let SUCURSAL_NOMBRE = null;
 
@@ -530,7 +530,11 @@ async function cargarTodo(){
     primeraCargaSuc = false;
     if(huboCambios) renderKanban();
   }catch(err){
-    if(primeraCargaSuc) document.getElementById('kanbanStatus').textContent = 'Error al cargar: '+err.message;
+    if(primeraCargaSuc){
+      document.getElementById('kanbanStatus').textContent = 'Error al cargar: '+err.message;
+    } else {
+      mostrarToast('⚠ No se pudo actualizar: '+err.message, 'err');
+    }
   }
 }
 
@@ -947,12 +951,20 @@ async function guardarPedido(){
     }));
     const prepId = nuevoPrep[0].id;
     const rows = document.querySelectorAll('#compRowsNuevo .comp-row');
-    for(const row of rows){
-      const drugId = row.querySelector('.comp-drug-id').value;
-      const cant = parseFloat(row.querySelector('.comp-cant').value) || null;
-      const unid = row.querySelector('.comp-unid').value || null;
-      if(!drugId) continue;
-      await sbPost('componentes', limpiar({preparado_id: prepId, droga_id: drugId, cantidad: cant, unidad: unid}));
+    try{
+      for(const row of rows){
+        const drugId = row.querySelector('.comp-drug-id').value;
+        const cant = parseFloat(row.querySelector('.comp-cant').value) || null;
+        const unid = row.querySelector('.comp-unid').value || null;
+        if(!drugId) continue;
+        await sbPost('componentes', limpiar({preparado_id: prepId, droga_id: drugId, cantidad: cant, unidad: unid}));
+      }
+    }catch(errComp){
+      // Si falló un componente a mitad de camino, el pedido ya se creó a
+      // medias. Se lo borra para que reintentar "Enviar a San Martín" no
+      // termine mandando el mismo pedido duplicado.
+      try{ await sbDelete('preparados?id=eq.'+prepId); }catch(errRollback){ /* best-effort */ }
+      throw errComp;
     }
     mostrarToast('✓ Pedido enviado a San Martín','ok');
     cerrarModal('modalPedido');
@@ -1213,7 +1225,7 @@ async function guardarClienteModal(){
 async function sbRpc(fn){
   return sbConReintentoDeSesion(async () => {
     const h=getAuthHeaders(); h['Content-Type']='application/json';
-    const resp=await fetch(`${SB_URL}/rpc/${fn}`,{method:'POST',headers:h,body:'null'});
+    const resp=await fetchConTimeout(`${SB_URL}/rpc/${fn}`,{method:'POST',headers:h,body:'null'});
     if(!resp.ok){ const e=await resp.json().catch(()=>({})); throw new Error(e.message||'HTTP '+resp.status); }
     return resp.json();
   });
