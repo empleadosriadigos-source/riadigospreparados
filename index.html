@@ -2534,6 +2534,15 @@
         ...(obs ? [] : [...LF,...LF,...LF]), // espacio para escribir a mano si no hay observación digital
         ...LF,...LF, // solo espacio visual: el feed real antes del corte ahora lo maneja CUT (GS V 66 n)
         ...CUT,
+        // Colchón después del corte: este ticket (farmacia) siempre es el
+        // último byte de todo el trabajo de impresión. Si no hay nada
+        // después del CUT, el driver/USB a veces da por terminado el envío
+        // antes de que la impresora reciba/ejecute esos últimos 4 bytes,
+        // y el corte (acción mecánica, no instantánea) queda a mitad de
+        // camino. Estas líneas en blanco de más no se imprimen en este
+        // ticket (van después del corte, ya en el papel nuevo) — son
+        // descartables si algo se trunca, en vez de que se trunque el corte.
+        ...LF,...LF,...LF,...LF,...LF,...LF,
       ];
 
       // Convertir bytes a Uint8Array y mandar como base64
