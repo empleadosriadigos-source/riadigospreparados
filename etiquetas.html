@@ -205,9 +205,14 @@
     });
   }
 
+  // Token de peticion: descarta respuestas de busquedas viejas si una mas
+  // nueva ya está en curso (ej. cambiaste el filtro de estado mientras la
+  // búsqueda anterior todavía no había respondido).
+  let _filtroToken=0;
   async function _filtrarExec(){
     const q=document.getElementById('buscador').value.trim();
     const estado=document.getElementById('filtroEstado').value;
+    const miToken=++_filtroToken;
 
     setStatus('<span class="spinner"></span> Buscando…');
     let res, totalCount;
@@ -219,9 +224,10 @@
       });
       if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
       const filas=await resp.json();
+      if(miToken!==_filtroToken) return; // llego tarde, ya hay una busqueda mas nueva en curso
       totalCount = filas.length ? Number(filas[0].total_count) : 0;
       res = filas.map(p=>({...p,componentes:[]}));
-    }catch(err){setStatus('Error al buscar: '+err.message,true);return;}
+    }catch(err){ if(miToken===_filtroToken) setStatus('Error al buscar: '+err.message,true); return; }
 
     todos = res;
 
@@ -232,9 +238,10 @@
       const ids = res.map(p=>p.id).join(',');
       try{
         const comps = await sbGet('componentes_con_droga?preparado_id=in.('+ids+')');
+        if(miToken!==_filtroToken) return; // llego tarde
         const cm={};comps.forEach(c=>{if(!cm[c.preparado_id])cm[c.preparado_id]=[];cm[c.preparado_id].push(c);});
         res.forEach(p=>{ p.componentes=cm[p.id]||[]; });
-      }catch(e){ fallóComponentes=true; }
+      }catch(e){ if(miToken!==_filtroToken) return; fallóComponentes=true; }
     }
 
     setStatus('');
@@ -326,11 +333,14 @@
       let etiquetas=[];
       let vtoFaltante=false;
       cards.forEach(card=>{
-        const vto=card.querySelector('.cfg-vto').value.trim();
-        if(!vto||vto.length<5){vtoFaltante=true;card.querySelector('.cfg-vto').style.borderColor='#C0392B';}
-        else card.querySelector('.cfg-vto').style.borderColor='';
+        const inp=card.querySelector('.cfg-vto');
+        const vto=inp.value.trim();
+        const m=vto.match(/^(\d{2})\/(\d{2})$/);
+        const mesValido=m && Number(m[1])>=1 && Number(m[1])<=12;
+        if(!mesValido){vtoFaltante=true;inp.style.borderColor='#C0392B';}
+        else inp.style.borderColor='';
       });
-      if(vtoFaltante){mostrarToast('Completá el vencimiento de todos los preparados','err');btn.disabled=false;btn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar Word`;return;}
+      if(vtoFaltante){mostrarToast('Completá un vencimiento válido (MM/AA) para todos los preparados','err');btn.disabled=false;btn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar Word`;return;}
       cards.forEach(card=>{
         const id=card.dataset.id;const p=todos.find(x=>x.id===id);if(!p)return;
         const f=p;const uso=card.dataset.uso||usoGlobalActual;const vto=card.querySelector('.cfg-vto').value.trim()||'—';
