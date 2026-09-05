@@ -2349,13 +2349,18 @@
   }
 
   async function conectarQZ(){
-    if(qzConectado) return true;
+    // No confiamos solo en qzConectado: si QZ Tray se cerró o colgó sin
+    // disparar setClosedCallbacks (pasa en la práctica), esa variable queda
+    // en true aunque la conexión esté muerta. isActive() le pregunta el
+    // estado real a la librería.
+    if(qz.websocket.isActive()) return true;
     try{
       await qz.websocket.connect();
       qzConectado = true;
       return true;
     }catch(e){
       console.warn('QZ Tray no disponible:', e);
+      qzConectado = false;
       return false;
     }
   }
@@ -2537,7 +2542,10 @@
       }
 
       const todosLosDatos = esStock ? [...datosFarm] : [...datosCli, ...datosFarm];
-      await qz.print(config, [{type:'raw', format:'base64', data: toB64(todosLosDatos)}]);
+      await Promise.race([
+        qz.print(config, [{type:'raw', format:'base64', data: toB64(todosLosDatos)}]),
+        new Promise((_,reject)=>setTimeout(()=>reject(new Error('La impresora no respondió a tiempo. Revisá que esté encendida y con papel.')), 15000))
+      ]);
       mostrarToast('✓ Cupones impresos','ok');
     }catch(e){
       mostrarToast('Error al imprimir: '+e.message,'err');
