@@ -285,7 +285,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="cerrarModal('modalClienteOS')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarClienteOS()">Guardar</button>
+      <button class="btn btn-primary" id="btnGuardarClienteOS" onclick="guardarClienteOS()">Guardar</button>
     </div>
   </div>
 </div>
@@ -310,7 +310,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="cerrarModal('modalClienteMed')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarClienteMed()">Guardar</button>
+      <button class="btn btn-primary" id="btnGuardarClienteMed" onclick="guardarClienteMed()">Guardar</button>
     </div>
   </div>
 </div>
@@ -328,7 +328,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="cerrarModal('modalClienteProd')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarClienteProd()">Guardar</button>
+      <button class="btn btn-primary" id="btnGuardarClienteProd" onclick="guardarClienteProd()">Guardar</button>
     </div>
   </div>
 </div>
@@ -617,7 +617,10 @@
       renderFijados();
       cerrarModal('modalFijar');
       mostrarToast('✓ Cliente fijado','ok');
-    }catch(e){ mostrarToast('Error: '+e.message,'err'); }
+    }catch(e){
+      if(/duplicate key|unique constraint/i.test(e.message)){ mostrarToast('Ya está fijado','err'); }
+      else{ mostrarToast('Error: '+e.message,'err'); }
+    }
   }
 
   // ══ CLIENTES ══════════════════════════════════════════════════════
@@ -721,7 +724,10 @@
       ]);
       clienteOSList=os; clienteMedList=meds; clienteProdList=prods;
       renderClienteOSList(); renderClienteMedList(); renderClienteProdList();
-    }catch(e){ mostrarToast('Error al cargar datos del cliente: '+e.message,'err'); }
+    }catch(e){
+      document.getElementById('ecOSList').innerHTML='<div style="color:var(--danger);font-size:12px;">Error al cargar</div>';
+      mostrarToast('Error al cargar datos del cliente: '+e.message,'err');
+    }
   }
 
   // ── Obras sociales del cliente ──
@@ -746,7 +752,7 @@
     try{
       const planes=await sbGet(`planes_os?obra_social_id=eq.${osId}&order=nombre.asc`);
       sel.innerHTML+=planes.map(p=>`<option value="${p.id}">${escHtml(p.nombre)}</option>`).join('');
-    }catch(e){}
+    }catch(e){ mostrarToast('No se pudieron cargar los planes: '+e.message,'err'); }
   }
 
   function abrirNuevaClienteOS(){
@@ -786,6 +792,7 @@
       token:document.getElementById('cosToken').value||null,
       titular:document.getElementById('cosTitular').value||null,
     });
+    const btn=document.getElementById('btnGuardarClienteOS');btn.disabled=true;
     try{
       if(clienteOSEditId){
         await sbPatch('cliente_obras_sociales',clienteOSEditId,body);
@@ -798,6 +805,7 @@
       await cargarSubdatosCliente(clienteEditId);
       cargarTodo();
     }catch(e){ mostrarToast('Error: '+e.message,'err'); }
+    btn.disabled=false;
   }
 
   async function eliminarClienteOS(id){
@@ -857,6 +865,7 @@
       cantidad:document.getElementById('cmCantidad').value||null,
       codigo_barras:document.getElementById('cmCodigo').value||null,
     });
+    const btn=document.getElementById('btnGuardarClienteMed');btn.disabled=true;
     try{
       if(clienteMedEditId){
         await sbPatch('cliente_medicamentos',clienteMedEditId,body);
@@ -868,6 +877,7 @@
       cerrarModal('modalClienteMed');
       await cargarSubdatosCliente(clienteEditId);
     }catch(e){ mostrarToast('Error: '+e.message,'err'); }
+    btn.disabled=false;
   }
 
   async function eliminarClienteMed(id){
@@ -920,6 +930,7 @@
       nombre,
       codigo_barras:document.getElementById('cpCodigo').value||null,
     });
+    const btn=document.getElementById('btnGuardarClienteProd');btn.disabled=true;
     try{
       if(clienteProdEditId){
         await sbPatch('cliente_productos',clienteProdEditId,body);
@@ -931,6 +942,7 @@
       cerrarModal('modalClienteProd');
       await cargarSubdatosCliente(clienteEditId);
     }catch(e){ mostrarToast('Error: '+e.message,'err'); }
+    btn.disabled=false;
   }
 
   async function eliminarClienteProd(id){
