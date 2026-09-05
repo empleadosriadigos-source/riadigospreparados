@@ -418,7 +418,7 @@
   // pantalla intermedia) es distinto a las demas y se mantiene como estaba.
 
   function limpiar(o){ return Object.fromEntries(Object.entries(o).filter(([,v])=>v!=null&&v!=='')); }
-  function escHtml(s){ const d=document.createElement('div');d.textContent=s??'';return d.innerHTML; }
+  function escHtml(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
   function mostrarToast(msg,tipo='ok'){
     const t=document.getElementById('toast');
