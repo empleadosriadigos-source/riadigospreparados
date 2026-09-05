@@ -1490,12 +1490,15 @@
   let rechazarTargetId = null;
   function rechazarSolicitud(id){ rechazarTargetId = id; abrirModal('modalRechazar'); }
   async function confirmarRechazo(){
+    const btn=document.querySelector('#modalRechazar .btn-danger');
+    if(btn) btn.disabled=true;
     try{
       await sbPatch('preparados', rechazarTargetId, { estado:'Rechazado' });
       mostrarToast('Solicitud rechazada', 'ok');
       cerrarModal('modalRechazar');
       cargarTodo();
     }catch(err){ mostrarToast('Error: '+err.message, 'err'); }
+    if(btn) btn.disabled=false;
   }
 
   async function guardarPrecioEsperando(id){
@@ -1707,7 +1710,12 @@
     try{
       const comps = await sbGet('componentes_con_droga?preparado_id=eq.'+p.id);
       p.componentes = comps;
-    }catch(e){ p.componentes=[]; }
+    }catch(e){
+      // No cachear como [] acá: eso impediría reintentar la próxima vez
+      // que se pida (ej. al imprimir), quedando "cacheado" como si el
+      // preparado no tuviera droga por un fallo de red transitorio.
+      mostrarToast('No se pudieron cargar los componentes: '+e.message,'err');
+    }
   }
 
   async function guardarEdicion(){
