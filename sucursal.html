@@ -143,7 +143,7 @@
   .chat-bubble.chat-rechazo .chat-bubble-label{color:var(--danger);}
   .chat-bubble.chat-propio{background:#EAF6E4;border:1px solid #CFE9C2;border-top-right-radius:3px;color:#3D5C30;margin-left:auto;}
   .chat-bubble.chat-propio .chat-bubble-label{color:#3D7A2A;}
-  .minichat{border:1px solid var(--border);border-radius:8px;margin-top:8px;background:var(--bg);overflow:hidden;}
+  .minichat{border:1px solid var(--border);border-radius:8px;margin-top:8px;background:var(--bg);overflow:hidden;position:relative;}
   .minichat-messages{height:130px;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px;scroll-behavior:smooth;}
   .minichat-empty{font-size:11px;color:var(--muted);text-align:center;margin:auto;}
   .minichat-input-row{display:flex;gap:6px;padding:6px;border-top:1px solid var(--border);background:var(--surface);}
@@ -152,6 +152,9 @@
   .btn-adjuntar{border-radius:20px;padding:5px 10px;background:var(--bg);border:1px solid var(--border);cursor:pointer;font-size:13px;line-height:1;}
   .chat-img{display:block;max-width:150px;max-height:150px;border-radius:8px;cursor:pointer;background:var(--bg);min-height:60px;min-width:60px;object-fit:cover;}
   .chat-img[data-cargada="0"]{opacity:.45;}
+  .minichat.dragover{outline:2px dashed var(--primary,#2d7dd2);outline-offset:-2px;background:rgba(45,125,210,0.06);}
+  .minichat-drop-hint{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:12px;color:var(--primary,#2d7dd2);background:rgba(255,255,255,0.85);pointer-events:none;text-align:center;padding:8px;border-radius:8px;}
+  .minichat.dragover .minichat-drop-hint{display:flex;}
   .img-ampliada-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:300;align-items:center;justify-content:center;padding:16px;}
   .img-ampliada-overlay.open{display:flex;}
   .img-ampliada-overlay img{max-width:100%;max-height:88vh;border-radius:8px;}
@@ -656,12 +659,13 @@ function cerrarImagenAmpliada(){
   document.getElementById('imgAmpliadaEl').src = '';
 }
 function renderMiniChat(p){
-  return `<div class="minichat">
+  return `<div class="minichat" ondragover="dragOverChat(event)" ondragleave="dragLeaveChat(event)" ondrop="dropImagenChat(event,'${p.id}')">
+    <div class="minichat-drop-hint">Soltá la imagen acá para subirla 📷</div>
     <div class="minichat-messages" id="chatmsg-${p.id}">${chatMensajesHtml(p)}</div>
     <div class="minichat-input-row">
       <button class="btn-adjuntar" title="Adjuntar imagen" onclick="document.getElementById('chatfile-${p.id}').click()">📎</button>
       <input type="file" id="chatfile-${p.id}" accept="image/*" style="display:none" onchange="if(this.files[0]) manejarImagenChat('${p.id}', this.files[0]); this.value='';"/>
-      <input type="text" id="chatinput-${p.id}" placeholder="Escribir o pegar una imagen (Ctrl+V)…" value="${escHtml(draftComentarios[p.id]||'')}" oninput="draftComentarios['${p.id}']=this.value" onkeydown="if(event.key==='Enter'){enviarComentarioChat('${p.id}')}" onpaste="pegarImagenChat(event,'${p.id}')"/>
+      <input type="text" id="chatinput-${p.id}" placeholder="Escribir, pegar (Ctrl+V) o arrastrar una imagen…" value="${escHtml(draftComentarios[p.id]||'')}" oninput="draftComentarios['${p.id}']=this.value" onkeydown="if(event.key==='Enter'){enviarComentarioChat('${p.id}')}" onpaste="pegarImagenChat(event,'${p.id}')"/>
       <button class="btn btn-primary btn-sm" onclick="enviarComentarioChat('${p.id}')">➤</button>
     </div>
   </div>`;
@@ -677,6 +681,60 @@ function pegarImagenChat(event, id){
     }
   }
   // si no hay imagen en el portapapeles, se deja seguir el pegado normal de texto
+}
+function dragOverChat(event){
+  // Necesario para habilitar el drop (por defecto el navegador lo bloquea).
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'copy';
+  event.currentTarget.classList.add('dragover');
+}
+function dragLeaveChat(event){
+  // currentTarget es el .minichat; si el mouse sigue dentro de un hijo (p.ej. al
+  // pasar sobre el hint) relatedTarget lo contiene y no hay que sacar la clase.
+  if(event.currentTarget.contains(event.relatedTarget)) return;
+  event.currentTarget.classList.remove('dragover');
+}
+// Intenta extraer una URL de imagen de lo que trae el drag (por si el navegador
+// no entregó un File directo, p.ej. al arrastrar una <img> desde otra pestaña).
+function extraerUrlImagenDeDrag(dt){
+  const html = dt.getData && dt.getData('text/html');
+  if(html){
+    const m = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+    if(m) return m[1];
+  }
+  const uri = dt.getData && dt.getData('text/uri-list');
+  if(uri && /^https?:/i.test(uri.trim())) return uri.trim();
+  return null;
+}
+async function dropImagenChat(event, id){
+  event.preventDefault();
+  event.currentTarget.classList.remove('dragover');
+  const dt = event.dataTransfer;
+  if(!dt) return;
+
+  // Caso más común: el navegador arma directamente un File con los bytes de la
+  // imagen arrastrada (funciona arrastrando desde WhatsApp Web, el explorador
+  // de archivos, otra pestaña, etc.).
+  const archivo = Array.from(dt.files||[]).find(f => f.type && f.type.startsWith('image/'));
+  if(archivo){ manejarImagenChat(id, archivo); return; }
+
+  // Fallback: si sólo llegó una URL de imagen (sin bytes), se intenta descargar.
+  // Puede fallar por CORS según el origen desde el que se arrastró.
+  const url = extraerUrlImagenDeDrag(dt);
+  if(url){
+    try{
+      mostrarToast('Descargando imagen…','ok');
+      const resp = await fetch(url);
+      const blob = await resp.blob();
+      if(!blob.type || !blob.type.startsWith('image/')) throw new Error('no es una imagen');
+      manejarImagenChat(id, new File([blob], 'imagen.jpg', {type: blob.type}));
+    }catch(err){
+      mostrarToast('No se pudo tomar esa imagen directo del navegador. Probá copiarla (Ctrl+C) y pegarla acá (Ctrl+V).','err');
+    }
+    return;
+  }
+
+  mostrarToast('No se detectó ninguna imagen para subir.','err');
 }
 async function manejarImagenChat(id, file){
   if(!file.type || !file.type.startsWith('image/')){ mostrarToast('El archivo tiene que ser una imagen','err'); return; }
