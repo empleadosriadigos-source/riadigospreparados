@@ -234,6 +234,14 @@
     .chat-bubble.chat-rechazo .chat-bubble-label{color:var(--danger);}
     .chat-bubble.chat-propio{background:#EAF6E4;border:1px solid #CFE9C2;border-top-right-radius:3px;color:#3D5C30;margin-left:auto;}
     .chat-bubble.chat-propio .chat-bubble-label{color:#3D7A2A;}
+    .chat-bubble-acciones{display:flex;gap:8px;justify-content:flex-end;margin-top:2px;}
+    .chat-bubble-acciones button{background:none;border:none;padding:0;font-size:11px;line-height:1;cursor:pointer;opacity:.5;}
+    .chat-bubble-acciones button:hover{opacity:1;}
+    .chat-editado-tag{font-size:10px;opacity:.65;font-style:italic;}
+    .chat-bubble-editando{background:#FFF7DE!important;border-color:#F0DFA0!important;}
+    .chat-edit-input{width:100%;box-sizing:border-box;padding:4px 8px;border-radius:8px;border:1px solid var(--border);font-size:12.5px;background:#fff;margin-top:2px;}
+    .chat-edit-acciones{display:flex;gap:10px;justify-content:flex-end;margin-top:4px;}
+    .chat-edit-acciones button{background:none;border:none;font-size:13px;cursor:pointer;padding:2px 4px;}
     .minichat{border:1px solid var(--border);border-radius:8px;margin-top:8px;background:var(--bg);overflow:hidden;}
     .minichat-header{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;cursor:pointer;background:var(--surface);user-select:none;}
     .minichat-header:hover{background:var(--bg);}
@@ -768,7 +776,7 @@
 </div><!-- /appRoot -->
 
 <script src="constantes.js"></script>
-<script src="supabase-shared.js?v=4"></script>
+<script src="supabase-shared.js?v=5"></script>
 <script>
   // ── Autenticación (Supabase Auth + Google OAuth) ────────────────────────
   // SB_URL, SB_KEY, sbAuth, SB_TOKEN, getAuthHeaders, sbGet/sbPost/sbPatch/sbDelete,
@@ -1302,11 +1310,20 @@
   // objeto => falsy => colapsado); solo queda abierto si el usuario lo abrió
   // a mano en esta sesión.
   let chatAbierto = {};
+  let editandoComentario = {}; // comentario id -> true mientras se está editando su texto
   function chatMensajeContenido(c){
     const partes = [];
     if(c.imagen_url) partes.push(`<img class="chat-img" data-path="${escHtml(c.imagen_url)}" data-cargada="0" onclick="if(this.dataset.cargada==='1') verImagenAmpliada(this.src)"/>`);
-    if(c.texto) partes.push(escHtml(c.texto));
+    if(c.texto) partes.push(escHtml(c.texto) + (c.editado ? ' <span class="chat-editado-tag">(editado)</span>' : ''));
     return partes.join('');
+  }
+  // Botones de editar/borrar de un mensaje propio. Las fotos solo se pueden
+  // borrar (no tiene sentido "editar" una imagen ya subida).
+  function chatBubbleAcciones(prepId, c){
+    const botones = [];
+    if(!c.imagen_url) botones.push(`<button type="button" title="Editar mensaje" onclick="event.stopPropagation();iniciarEdicionComentario('${prepId}','${c.id}')">✏️</button>`);
+    botones.push(`<button type="button" title="Borrar" onclick="event.stopPropagation();borrarComentarioChat('${prepId}','${c.id}')">🗑️</button>`);
+    return `<div class="chat-bubble-acciones">${botones.join('')}</div>`;
   }
   function chatMensajesHtml(p){
     const msgs = p.comentarios||[];
@@ -1319,7 +1336,13 @@
     return msgs.map(c=>{
       const propio = c.autor_tipo==='admin';
       const label = propio ? 'San Martín' : (p.origen_sucursal||'Sucursal');
-      return `<div class="chat-bubble ${propio?'chat-propio':'chat-recibido'}"><div class="chat-bubble-label">${escHtml(label)}</div>${chatMensajeContenido(c)}</div>`;
+      if(propio && editandoComentario[c.id]){
+        return `<div class="chat-bubble chat-propio chat-bubble-editando" onclick="event.stopPropagation()"><div class="chat-bubble-label">${escHtml(label)}</div>
+          <input type="text" class="chat-edit-input" id="chatedit-${c.id}" value="${escHtml(c.texto)}" onkeydown="if(event.key==='Enter'){guardarEdicionComentario('${p.id}','${c.id}')}else if(event.key==='Escape'){cancelarEdicionComentario('${p.id}','${c.id}')}"/>
+          <div class="chat-edit-acciones"><button type="button" title="Guardar" onclick="guardarEdicionComentario('${p.id}','${c.id}')">✔</button><button type="button" title="Cancelar" onclick="cancelarEdicionComentario('${p.id}','${c.id}')">✕</button></div>
+        </div>`;
+      }
+      return `<div class="chat-bubble ${propio?'chat-propio':'chat-recibido'}"><div class="chat-bubble-label">${escHtml(label)}</div>${chatMensajeContenido(c)}${propio?chatBubbleAcciones(p.id,c):''}</div>`;
     }).join('');
   }
   // Firma y carga las imágenes recién insertadas que todavía no tienen src.
@@ -1427,6 +1450,52 @@
       const cont = document.getElementById('chatmsg-'+id);
       if(cont && p){ cont.innerHTML = chatMensajesHtml(p); cargarImagenesPendientes(cont); scrollChatAbajo(id); }
     }catch(err){ /* silencioso */ }
+  }
+  // Re-renderiza los mensajes de un chat con los datos que YA tenemos en
+  // memoria (sin volver a pedirle nada al servidor). Se usa para abrir/cerrar
+  // el modo edición al toque, que es un cambio puramente visual.
+  function rerenderMensajesLocal(id){
+    const p = preparados.find(x=>x.id===id);
+    const cont = document.getElementById('chatmsg-'+id);
+    if(cont && p){ cont.innerHTML = chatMensajesHtml(p); cargarImagenesPendientes(cont); }
+  }
+  function iniciarEdicionComentario(prepId, comentarioId){
+    editandoComentario[comentarioId] = true;
+    rerenderMensajesLocal(prepId);
+    const input = document.getElementById('chatedit-'+comentarioId);
+    if(input){ input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+  }
+  function cancelarEdicionComentario(prepId, comentarioId){
+    delete editandoComentario[comentarioId];
+    rerenderMensajesLocal(prepId);
+  }
+  async function guardarEdicionComentario(prepId, comentarioId){
+    const input = document.getElementById('chatedit-'+comentarioId);
+    if(!input) return;
+    const nuevoTexto = input.value.trim();
+    if(!nuevoTexto){ mostrarToast('El mensaje no puede quedar vacío. Si querés borrarlo, usá 🗑️.','err'); return; }
+    input.disabled = true;
+    try{
+      await sbPatch('preparado_comentarios', comentarioId, {texto: nuevoTexto, editado: true});
+      delete editandoComentario[comentarioId];
+      await refrescarChat(prepId);
+    }catch(err){ mostrarToast('Error al editar: '+err.message,'err'); input.disabled = false; }
+  }
+  // Borra un mensaje propio (texto o imagen). Si tiene imagen, primero se
+  // borra el archivo del bucket (mientras el comentario todavía existe, ver
+  // nota en sbEliminarImagen) y recién después la fila de preparado_comentarios.
+  async function borrarComentarioChat(prepId, comentarioId){
+    if(!confirm('¿Borrar este mensaje? No se puede deshacer.')) return;
+    try{
+      const p = preparados.find(x=>x.id===prepId);
+      const c = p && (p.comentarios||[]).find(x=>x.id===comentarioId);
+      if(c && c.imagen_url){
+        try{ await sbEliminarImagen('chat-imagenes', c.imagen_url); }catch(errImg){ /* si falla igual se intenta borrar el mensaje */ }
+      }
+      await sbDelete(`preparado_comentarios?id=eq.${comentarioId}`);
+      delete editandoComentario[comentarioId];
+      await refrescarChat(prepId);
+    }catch(err){ mostrarToast('Error al borrar: '+err.message,'err'); }
   }
 
   function crearDrawerCardNueva(p){

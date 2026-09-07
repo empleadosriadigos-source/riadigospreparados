@@ -165,6 +165,19 @@ async function sbSubirImagen(bucket, path, blob){
   });
 }
 
+// Borra un archivo del bucket (usado al borrar un mensaje del chat que tiene
+// imagen). Hay que llamarlo ANTES de borrar la fila de preparado_comentarios:
+// la policy de storage que autoriza el borrado valida contra ese comentario
+// (que el autor_tipo sea el propio y que el preparado sea de la sucursal/admin
+// correspondiente), así que si la fila ya no existe, el borrado del archivo
+// se rechaza.
+async function sbEliminarImagen(bucket, path){
+  return sbConReintentoDeSesion(async () => {
+    const resp = await fetchConTimeout(`${SB_URL_BASE}/storage/v1/object/${bucket}/${path}`,{method:'DELETE',headers:getAuthHeaders()});
+    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
+  });
+}
+
 // URL firmada temporal (1h por defecto) para ver una imagen del bucket privado.
 async function sbFirmarImagen(bucket, path, expiresIn=3600){
   return sbConReintentoDeSesion(async () => {
