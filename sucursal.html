@@ -1241,6 +1241,20 @@ async function repetirDesdeHistorial(id){
   document.getElementById('pClienteInput').value = p.cliente_nombre||'';
   document.getElementById('pClienteId').value = p.cliente_id||'';
   document.getElementById('pTelefono').value = p.cliente_telefono||'';
+  if(p.formula_stock_id){
+    const formula = formulasStock.find(f=>f.id===p.formula_stock_id);
+    if(!formula){
+      mostrarToast('La fórmula de stock de este pedido ya no existe, no se puede repetir así','err');
+      return;
+    }
+    formulaStockSeleccionada = formula;
+    document.getElementById('btnFormulaSeleccionadaNombre').textContent = formula.nombre;
+    document.getElementById('pEnvases').value = p.cantidad_envases || 1;
+    regenerarPreviewStock();
+    mostrarVistaPrep('seleccionada');
+    mostrarToast('Datos copiados — revisá y enviá a San Martín','ok');
+    return;
+  }
   document.getElementById('pForma').value = p.forma_farmaceutica||'';
   onFormaChange('p');
   document.getElementById('pUnidad').value = p.unidad||'';
