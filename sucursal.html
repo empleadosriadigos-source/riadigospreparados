@@ -747,7 +747,7 @@ async function dropImagenChat(event, id){
   if(url){
     try{
       mostrarToast('Descargando imagen…','ok');
-      const resp = await fetch(url);
+      const resp = await fetchConTimeout(url);
       const blob = await resp.blob();
       if(!blob.type || !blob.type.startsWith('image/')) throw new Error('no es una imagen');
       manejarImagenChat(id, new File([blob], 'imagen.jpg', {type: blob.type}));
