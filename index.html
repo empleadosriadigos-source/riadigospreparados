@@ -807,6 +807,25 @@
   let preparados = [], drogas = [], clientes = [];
   let dragId = null, prepActual = null, cbDrogaIdx = null, clienteCB = null;
   let formulasStock = [], formulasStockComponentes = {}, formulaStockSeleccionada = null;
+  // Para un preparado de stock: cantidad por ENVASE (la fórmula original), nunca el total
+  // sumado de todos los envases. p.cantidad_total guarda el total escalado (solo lo usa
+  // internamente el reporte de consumo de drogas); acá se reconstruye dividiendo por la
+  // cantidad de envases de ESE preparado puntual, así siempre es correcto aunque la fórmula
+  // se haya editado después.
+  function cantidadPorEnvase(p){
+    if(p.cantidad_total==null) return null;
+    if(p.cantidad_envases) return +(p.cantidad_total/p.cantidad_envases).toFixed(4);
+    return p.cantidad_total;
+  }
+  // Componentes de la fórmula ORIGINAL (sin escalar por envases) para mostrar al usuario.
+  // Los componentes guardados en el preparado (p.componentes) están escalados y son solo
+  // para el reporte de consumo de drogas: nunca se muestran acá.
+  function componentesFormulaHtml(formulaStockId, termino=''){
+    const comps = formulasStockComponentes[formulaStockId] || [];
+    return comps.length
+      ? comps.map(c=>`<div class="card-droga-row"><span class="card-droga-nom">${resaltar(c.droga_nombre||'',termino)}</span><span class="card-droga-cant">${c.cantidad||''} ${c.unidad||''}</span></div>`).join('')
+      : '<div class="card-droga-row" style="color:var(--muted)">Fórmula fija (sin componentes)</div>';
+  }
 
   // ── Init ───────────────────────────────────────────────────────────────
   function initApp() {
@@ -1198,12 +1217,13 @@
     div.className='card'+(antigClase?' '+antigClase:'')+(colapsada?' card-item-collapsed':'');
     div.draggable=true; div.dataset.id=p.id;
     if(antigClase) div.title = `En este estado hace ${dias} día${dias===1?'':'s'}`;
-    const drogasHtml = !!p.formula_stock_id
-      ? `<div class="card-droga-row" style="color:var(--muted)">Fórmula fija · ${p.cantidad_envases||'—'} envase${p.cantidad_envases===1?'':'s'}</div>`
+    const esStock = !!p.formula_stock_id;
+    const drogasHtml = esStock
+      ? componentesFormulaHtml(p.formula_stock_id, termino)
       : (p.componentes.length
           ? p.componentes.map(c=>`<div class="card-droga-row"><span class="card-droga-nom">${resaltar(c.droga_nombre||'',termino)}</span><span class="card-droga-cant">${c.cantidad||''} ${c.unidad||''}</span></div>`).join('')
           : '<div class="card-droga-row" style="color:var(--muted)">Sin componentes</div>');
-    const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:''].filter(Boolean);
+    const partes = [p.forma_farmaceutica, cantidadPorEnvase(p)!=null?`${cantidadPorEnvase(p)}${p.unidad?' '+p.unidad:''}`:'', esStock&&p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
     const precio = p.precio_venta?`$${Number(p.precio_venta).toLocaleString('es-AR',{minimumFractionDigits:2})}`:'';
     const clrCli='#3D7A8A', clrMut='#6B7685';
     const svgP=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${clrCli}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
@@ -1299,6 +1319,7 @@
   }
 
   function drogasResumenHtml(p){
+    if(!!p.formula_stock_id) return componentesFormulaHtml(p.formula_stock_id);
     return p.componentes.length
       ? p.componentes.map(c=>`<div class="card-droga-row"><span class="card-droga-nom">${escHtml(c.droga_nombre||'')}</span><span class="card-droga-cant">${c.cantidad||''} ${c.unidad||''}</span></div>`).join('')
       : '<div style="color:var(--muted);font-size:12px;">Sin componentes</div>';
@@ -1502,7 +1523,7 @@
   function crearDrawerCardNueva(p){
     const div = document.createElement('div');
     div.className = 'drawer-card';
-    const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:''].filter(Boolean);
+    const partes = [p.forma_farmaceutica, cantidadPorEnvase(p)!=null?`${cantidadPorEnvase(p)}${p.unidad?' '+p.unidad:''}`:'', !!p.formula_stock_id&&p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
     div.innerHTML = `
       <div class="drawer-card-top">
         <strong>${escHtml(p.cliente_nombre||'—')}</strong>
@@ -1528,7 +1549,7 @@
   function crearDrawerCardEsperando(p){
     const div = document.createElement('div');
     div.className = 'drawer-card';
-    const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:''].filter(Boolean);
+    const partes = [p.forma_farmaceutica, cantidadPorEnvase(p)!=null?`${cantidadPorEnvase(p)}${p.unidad?' '+p.unidad:''}`:'', !!p.formula_stock_id&&p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
     div.innerHTML = `
       <div class="drawer-card-top">
         <strong>${escHtml(p.cliente_nombre||'—')}</strong>
@@ -2506,30 +2527,43 @@
       const cliente = (prep.cliente_nombre ?? '');
       const tel = prep.cliente_telefono ?? '';
       const forma = prep.forma_farmaceutica ?? '';
-      const cant = prep.cantidad_total != null ? prep.cantidad_total+(prep.unidad?' '+prep.unidad:'') : '';
+      // Preparado de stock: en vez de fórmula/componentes, mostrar nombre + cantidad de envases
+      const esStock = !!prep.formula_stock_id;
+      const envases = esStock ? prep.cantidad_envases : null;
+      const envasesTxt = envases!=null ? (envases+' envase'+(envases===1?'':'s')) : '';
+      // Cantidad de la fórmula ORIGINAL (por envase), nunca el total sumado de todos los
+      // envases: prep.cantidad_total guarda ese total escalado, que solo usa internamente
+      // el reporte de consumo de drogas y jamás debe llegar a un ticket.
+      const cantMostrada = esStock && envases ? +(prep.cantidad_total/envases).toFixed(4) : prep.cantidad_total;
+      const cant = cantMostrada != null ? cantMostrada+(prep.unidad?' '+prep.unidad:'') : '';
       const receta = prep.nro_receta ?? '';
       const precio = prep.precio_venta != null ? '$'+Number(prep.precio_venta).toLocaleString('es-AR') : '';
       const obs = (prep.observaciones ?? '');
 
-      // Componentes resumidos para cliente
-      const compsCorto = (prep.componentes||[]).map(c=>{
+      // Componentes resumidos para cliente (fórmula original, sin escalar, para preparados normales;
+      // para stock se usan los de formulasStockComponentes más abajo, nunca los escalados de prep.componentes)
+      const compsCorto = esStock ? '' : (prep.componentes||[]).map(c=>{
         let s = (c.droga_nombre||'');
         if(c.cantidad!=null) s += ' '+c.cantidad+(c.unidad?' '+unidadImp(c.unidad):'');
         return s;
       }).join(' - ');
 
-      // Componentes detallados para farmacia
-      const compsLargoData = (prep.componentes||[]).map(c=>{
+      // Componentes detallados para farmacia (ídem: para stock nunca se usan los escalados)
+      const compsLargoData = esStock ? [] : (prep.componentes||[]).map(c=>{
         const nom = (c.droga_nombre||'');
         const det = c.cantidad!=null ? String(c.cantidad)+(c.unidad?' '+unidadImp(c.unidad):'') : '';
         const linePad = (nom+'                      ').slice(0,22)+det;
         return lineaL(linePad);
       }).flat();
 
-      // Preparado de stock: en vez de fórmula/componentes, mostrar nombre + cantidad de envases
-      const esStock = !!prep.formula_stock_id;
-      const envases = esStock ? prep.cantidad_envases : null;
-      const envasesTxt = envases!=null ? (envases+' envase'+(envases===1?'':'s')) : '';
+      // Composición ORIGINAL de la fórmula de stock (por envase, sin escalar) para el cupón
+      // de farmacia — nunca los componentes escalados de prep.componentes.
+      const compsFormulaStockData = esStock ? (formulasStockComponentes[prep.formula_stock_id]||[]).map(c=>{
+        const nom = (c.droga_nombre||'');
+        const det = c.cantidad!=null ? String(c.cantidad)+(c.unidad?' '+unidadImp(c.unidad):'') : '';
+        const linePad = (nom+'                      ').slice(0,22)+det;
+        return lineaL(linePad);
+      }).flat() : [];
 
       // ── CUPÓN CLIENTE ────────────────────────────────────────────────
       const datosCli = [
@@ -2586,6 +2620,7 @@
               ...lineaL('FORMULA STOCK:'),
               ...(prep.formula_stock_nombre ? lineaL(prep.formula_stock_nombre) : []),
               ...lineaL('ENVASES: '+(envases!=null?envases:'___________')),
+              ...(compsFormulaStockData.length ? compsFormulaStockData : []),
             ]
           : [
               ...lineaL('COMPONENTES:'),

@@ -457,6 +457,23 @@ document.addEventListener('DOMContentLoaded', ()=>{
 let clientes = [], drogas = [], preparados = [];
 let clienteCB = null, cbDrogaIdx = null;
 let formulasStock = [], formulasStockComponentes = {}, formulaStockSeleccionada = null;
+// Para un preparado de stock: cantidad por ENVASE (la fórmula original), nunca el total
+// sumado de todos los envases. p.cantidad_total guarda el total escalado (solo lo usa
+// internamente el reporte de consumo de drogas, en index.html); acá se reconstruye
+// dividiendo por la cantidad de envases de ESE preparado, así siempre es correcto aunque
+// la fórmula se haya editado después.
+function cantidadPorEnvase(p){
+  if(p.cantidad_total==null) return null;
+  if(p.cantidad_envases) return +(p.cantidad_total/p.cantidad_envases).toFixed(4);
+  return p.cantidad_total;
+}
+// Componentes de la fórmula ORIGINAL (sin escalar por envases) para mostrar al usuario.
+function componentesFormulaHtml(formulaStockId){
+  const comps = formulasStockComponentes[formulaStockId] || [];
+  return comps.length
+    ? comps.map(c=>`<div class="card-droga-row"><span>${escHtml(c.droga_nombre||'')}</span><span style="color:var(--muted);">${c.cantidad||''} ${c.unidad||''}</span></div>`).join('')
+    : '<div class="card-droga-row" style="color:var(--muted)">Fórmula fija (sin componentes)</div>';
+}
 
 function mostrarToast(msg,tipo=''){ const t=document.getElementById('toast'); t.textContent=msg; t.className='show '+tipo; setTimeout(()=>t.className='',3500); }
 function limpiar(obj){ const r={}; for(const [k,v] of Object.entries(obj)) if(v!==null&&v!==undefined) r[k]=v; return r; }
@@ -628,7 +645,7 @@ function renderKanban(){
 
 function drogasHtml(p){
   if(!!p.formula_stock_id){
-    return `<div class="card-droga-row" style="color:var(--muted)">Fórmula fija · ${p.cantidad_envases||'—'} envase${p.cantidad_envases===1?'':'s'}</div>`;
+    return componentesFormulaHtml(p.formula_stock_id);
   }
   return p.componentes.length
     ? p.componentes.map(c=>`<div class="card-droga-row"><span>${escHtml(c.droga_nombre||'')}</span><span style="color:var(--muted);">${c.cantidad||''} ${c.unidad||''}</span></div>`).join('')
@@ -871,7 +888,7 @@ function crearTarjeta(p){
   else if(p.estado==='Cancelado por sucursal') claseExtra=' card-cancelado';
   else if(p.estado==='Listo para retirar') claseExtra=' card-retirar';
   div.className = 'card'+claseExtra;
-  const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:''].filter(Boolean);
+  const partes = [p.forma_farmaceutica, cantidadPorEnvase(p)!=null?`${cantidadPorEnvase(p)}${p.unidad?' '+p.unidad:''}`:'', !!p.formula_stock_id&&p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
   const clrCli='#3D7A8A', clrMut='#6B7685';
   const svgP=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${clrCli}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
   const svgT=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${clrMut}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6.29 6.29l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
@@ -1195,7 +1212,7 @@ function renderHistorial(lista){
   cont.innerHTML = '';
   lista.forEach(p=>{
     const info = ESTADO_LABEL_HIST[p.estado] || {txt:p.estado, cls:'badge-cancel'};
-    const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:''].filter(Boolean);
+    const partes = [p.forma_farmaceutica, cantidadPorEnvase(p)!=null?`${cantidadPorEnvase(p)}${p.unidad?' '+p.unidad:''}`:'', !!p.formula_stock_id&&p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
     const div = document.createElement('div');
     div.className = 'hist-item';
     let extra = p.observaciones ? `<div style="font-size:12px;color:var(--muted);background:var(--surface);border-radius:6px;padding:6px 8px;margin-top:8px;"><strong>Observación:</strong> ${escHtml(p.observaciones)}</div>` : '';
