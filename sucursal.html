@@ -143,7 +143,15 @@
   .chat-bubble.chat-rechazo .chat-bubble-label{color:var(--danger);}
   .chat-bubble.chat-propio{background:#EAF6E4;border:1px solid #CFE9C2;border-top-right-radius:3px;color:#3D5C30;margin-left:auto;}
   .chat-bubble.chat-propio .chat-bubble-label{color:#3D7A2A;}
-  .minichat{border:1px solid var(--border);border-radius:8px;margin-top:8px;background:var(--bg);overflow:hidden;}
+  .chat-bubble-acciones{display:flex;gap:8px;justify-content:flex-end;margin-top:2px;}
+  .chat-bubble-acciones button{background:none;border:none;padding:0;font-size:11px;line-height:1;cursor:pointer;opacity:.5;}
+  .chat-bubble-acciones button:hover{opacity:1;}
+  .chat-editado-tag{font-size:10px;opacity:.65;font-style:italic;}
+  .chat-bubble-editando{background:#FFF7DE!important;border-color:#F0DFA0!important;}
+  .chat-edit-input{width:100%;box-sizing:border-box;padding:4px 8px;border-radius:8px;border:1px solid var(--border);font-size:12.5px;background:#fff;margin-top:2px;}
+  .chat-edit-acciones{display:flex;gap:10px;justify-content:flex-end;margin-top:4px;}
+  .chat-edit-acciones button{background:none;border:none;font-size:13px;cursor:pointer;padding:2px 4px;}
+  .minichat{border:1px solid var(--border);border-radius:8px;margin-top:8px;background:var(--bg);overflow:hidden;position:relative;}
   .minichat-messages{height:130px;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px;scroll-behavior:smooth;}
   .minichat-empty{font-size:11px;color:var(--muted);text-align:center;margin:auto;}
   .minichat-input-row{display:flex;gap:6px;padding:6px;border-top:1px solid var(--border);background:var(--surface);}
@@ -152,6 +160,9 @@
   .btn-adjuntar{border-radius:20px;padding:5px 10px;background:var(--bg);border:1px solid var(--border);cursor:pointer;font-size:13px;line-height:1;}
   .chat-img{display:block;max-width:150px;max-height:150px;border-radius:8px;cursor:pointer;background:var(--bg);min-height:60px;min-width:60px;object-fit:cover;}
   .chat-img[data-cargada="0"]{opacity:.45;}
+  .minichat.dragover{outline:2px dashed var(--primary,#2d7dd2);outline-offset:-2px;background:rgba(45,125,210,0.06);}
+  .minichat-drop-hint{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:12px;color:var(--primary,#2d7dd2);background:rgba(255,255,255,0.85);pointer-events:none;text-align:center;padding:8px;border-radius:8px;}
+  .minichat.dragover .minichat-drop-hint{display:flex;}
   .img-ampliada-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:300;align-items:center;justify-content:center;padding:16px;}
   .img-ampliada-overlay.open{display:flex;}
   .img-ampliada-overlay img{max-width:100%;max-height:88vh;border-radius:8px;}
@@ -418,7 +429,7 @@
 </div>
 
 <script src="constantes.js"></script>
-<script src="supabase-shared.js?v=4"></script>
+<script src="supabase-shared.js?v=5"></script>
 <script>
 let SUCURSAL_NOMBRE = null;
 
@@ -610,12 +621,21 @@ function drogasHtml(p){
 }
 
 let draftComentarios = {}; // id -> texto sin enviar, para no perderlo si se re-renderiza otra card
+let editandoComentario = {}; // comentario id -> true mientras se está editando su texto
 
 function chatMensajeContenido(c){
   const partes = [];
   if(c.imagen_url) partes.push(`<img class="chat-img" data-path="${escHtml(c.imagen_url)}" data-cargada="0" onclick="if(this.dataset.cargada==='1') verImagenAmpliada(this.src)"/>`);
-  if(c.texto) partes.push(escHtml(c.texto));
+  if(c.texto) partes.push(escHtml(c.texto) + (c.editado ? ' <span class="chat-editado-tag">(editado)</span>' : ''));
   return partes.join('');
+}
+// Botones de editar/borrar de un mensaje propio. Las fotos solo se pueden
+// borrar (no tiene sentido "editar" una imagen ya subida).
+function chatBubbleAcciones(prepId, c){
+  const botones = [];
+  if(!c.imagen_url) botones.push(`<button type="button" title="Editar mensaje" onclick="iniciarEdicionComentario('${prepId}','${c.id}')">✏️</button>`);
+  botones.push(`<button type="button" title="Borrar" onclick="borrarComentarioChat('${prepId}','${c.id}')">🗑️</button>`);
+  return `<div class="chat-bubble-acciones">${botones.join('')}</div>`;
 }
 function chatMensajesHtml(p){
   const msgs = p.comentarios||[];
@@ -629,7 +649,13 @@ function chatMensajesHtml(p){
   return msgs.map(c=>{
     const propio = c.autor_tipo==='sucursal';
     const label = propio ? (SUCURSAL_NOMBRE||'Vos') : 'San Martín';
-    return `<div class="chat-bubble ${propio?'chat-propio':'chat-recibido'}"><div class="chat-bubble-label">${escHtml(label)}</div>${chatMensajeContenido(c)}</div>`;
+    if(propio && editandoComentario[c.id]){
+      return `<div class="chat-bubble chat-propio chat-bubble-editando"><div class="chat-bubble-label">${escHtml(label)}</div>
+        <input type="text" class="chat-edit-input" id="chatedit-${c.id}" value="${escHtml(c.texto)}" onkeydown="if(event.key==='Enter'){guardarEdicionComentario('${p.id}','${c.id}')}else if(event.key==='Escape'){cancelarEdicionComentario('${p.id}','${c.id}')}"/>
+        <div class="chat-edit-acciones"><button type="button" title="Guardar" onclick="guardarEdicionComentario('${p.id}','${c.id}')">✔</button><button type="button" title="Cancelar" onclick="cancelarEdicionComentario('${p.id}','${c.id}')">✕</button></div>
+      </div>`;
+    }
+    return `<div class="chat-bubble ${propio?'chat-propio':'chat-recibido'}"><div class="chat-bubble-label">${escHtml(label)}</div>${chatMensajeContenido(c)}${propio?chatBubbleAcciones(p.id,c):''}</div>`;
   }).join('');
 }
 // Recorre un contenedor recién renderizado y firma+carga las imágenes que
@@ -656,12 +682,13 @@ function cerrarImagenAmpliada(){
   document.getElementById('imgAmpliadaEl').src = '';
 }
 function renderMiniChat(p){
-  return `<div class="minichat">
+  return `<div class="minichat" ondragover="dragOverChat(event)" ondragleave="dragLeaveChat(event)" ondrop="dropImagenChat(event,'${p.id}')">
+    <div class="minichat-drop-hint">Soltá la imagen acá para subirla 📷</div>
     <div class="minichat-messages" id="chatmsg-${p.id}">${chatMensajesHtml(p)}</div>
     <div class="minichat-input-row">
       <button class="btn-adjuntar" title="Adjuntar imagen" onclick="document.getElementById('chatfile-${p.id}').click()">📎</button>
       <input type="file" id="chatfile-${p.id}" accept="image/*" style="display:none" onchange="if(this.files[0]) manejarImagenChat('${p.id}', this.files[0]); this.value='';"/>
-      <input type="text" id="chatinput-${p.id}" placeholder="Escribir o pegar una imagen (Ctrl+V)…" value="${escHtml(draftComentarios[p.id]||'')}" oninput="draftComentarios['${p.id}']=this.value" onkeydown="if(event.key==='Enter'){enviarComentarioChat('${p.id}')}" onpaste="pegarImagenChat(event,'${p.id}')"/>
+      <input type="text" id="chatinput-${p.id}" placeholder="Escribir, pegar (Ctrl+V) o arrastrar una imagen…" value="${escHtml(draftComentarios[p.id]||'')}" oninput="draftComentarios['${p.id}']=this.value" onkeydown="if(event.key==='Enter'){enviarComentarioChat('${p.id}')}" onpaste="pegarImagenChat(event,'${p.id}')"/>
       <button class="btn btn-primary btn-sm" onclick="enviarComentarioChat('${p.id}')">➤</button>
     </div>
   </div>`;
@@ -677,6 +704,60 @@ function pegarImagenChat(event, id){
     }
   }
   // si no hay imagen en el portapapeles, se deja seguir el pegado normal de texto
+}
+function dragOverChat(event){
+  // Necesario para habilitar el drop (por defecto el navegador lo bloquea).
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'copy';
+  event.currentTarget.classList.add('dragover');
+}
+function dragLeaveChat(event){
+  // currentTarget es el .minichat; si el mouse sigue dentro de un hijo (p.ej. al
+  // pasar sobre el hint) relatedTarget lo contiene y no hay que sacar la clase.
+  if(event.currentTarget.contains(event.relatedTarget)) return;
+  event.currentTarget.classList.remove('dragover');
+}
+// Intenta extraer una URL de imagen de lo que trae el drag (por si el navegador
+// no entregó un File directo, p.ej. al arrastrar una <img> desde otra pestaña).
+function extraerUrlImagenDeDrag(dt){
+  const html = dt.getData && dt.getData('text/html');
+  if(html){
+    const m = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+    if(m) return m[1];
+  }
+  const uri = dt.getData && dt.getData('text/uri-list');
+  if(uri && /^https?:/i.test(uri.trim())) return uri.trim();
+  return null;
+}
+async function dropImagenChat(event, id){
+  event.preventDefault();
+  event.currentTarget.classList.remove('dragover');
+  const dt = event.dataTransfer;
+  if(!dt) return;
+
+  // Caso más común: el navegador arma directamente un File con los bytes de la
+  // imagen arrastrada (funciona arrastrando desde WhatsApp Web, el explorador
+  // de archivos, otra pestaña, etc.).
+  const archivo = Array.from(dt.files||[]).find(f => f.type && f.type.startsWith('image/'));
+  if(archivo){ manejarImagenChat(id, archivo); return; }
+
+  // Fallback: si sólo llegó una URL de imagen (sin bytes), se intenta descargar.
+  // Puede fallar por CORS según el origen desde el que se arrastró.
+  const url = extraerUrlImagenDeDrag(dt);
+  if(url){
+    try{
+      mostrarToast('Descargando imagen…','ok');
+      const resp = await fetch(url);
+      const blob = await resp.blob();
+      if(!blob.type || !blob.type.startsWith('image/')) throw new Error('no es una imagen');
+      manejarImagenChat(id, new File([blob], 'imagen.jpg', {type: blob.type}));
+    }catch(err){
+      mostrarToast('No se pudo tomar esa imagen directo del navegador. Probá copiarla (Ctrl+C) y pegarla acá (Ctrl+V).','err');
+    }
+    return;
+  }
+
+  mostrarToast('No se detectó ninguna imagen para subir.','err');
 }
 async function manejarImagenChat(id, file){
   if(!file.type || !file.type.startsWith('image/')){ mostrarToast('El archivo tiene que ser una imagen','err'); return; }
@@ -719,6 +800,52 @@ async function refrescarChat(id){
     const cont = document.getElementById('chatmsg-'+id);
     if(cont && p){ cont.innerHTML = chatMensajesHtml(p); cargarImagenesPendientes(cont); scrollChatAbajo(id); }
   }catch(err){ /* silencioso, no interrumpe al usuario */ }
+}
+// Re-renderiza los mensajes de un chat con los datos que YA tenemos en memoria
+// (sin volver a pedirle nada al servidor). Se usa para abrir/cerrar el modo
+// edición al toque, que es un cambio puramente visual.
+function rerenderMensajesLocal(id){
+  const p = preparados.find(x=>x.id===id) || historial.find(x=>x.id===id);
+  const cont = document.getElementById('chatmsg-'+id);
+  if(cont && p){ cont.innerHTML = chatMensajesHtml(p); cargarImagenesPendientes(cont); }
+}
+function iniciarEdicionComentario(prepId, comentarioId){
+  editandoComentario[comentarioId] = true;
+  rerenderMensajesLocal(prepId);
+  const input = document.getElementById('chatedit-'+comentarioId);
+  if(input){ input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+}
+function cancelarEdicionComentario(prepId, comentarioId){
+  delete editandoComentario[comentarioId];
+  rerenderMensajesLocal(prepId);
+}
+async function guardarEdicionComentario(prepId, comentarioId){
+  const input = document.getElementById('chatedit-'+comentarioId);
+  if(!input) return;
+  const nuevoTexto = input.value.trim();
+  if(!nuevoTexto){ mostrarToast('El mensaje no puede quedar vacío. Si querés borrarlo, usá 🗑️.','err'); return; }
+  input.disabled = true;
+  try{
+    await sbPatch('preparado_comentarios', comentarioId, {texto: nuevoTexto, editado: true});
+    delete editandoComentario[comentarioId];
+    await refrescarChat(prepId);
+  }catch(err){ mostrarToast('Error al editar: '+err.message,'err'); input.disabled = false; }
+}
+// Borra un mensaje propio (texto o imagen). Si tiene imagen, primero se borra
+// el archivo del bucket (mientras el comentario todavía existe, ver nota en
+// sbEliminarImagen) y recién después la fila de preparado_comentarios.
+async function borrarComentarioChat(prepId, comentarioId){
+  if(!confirm('¿Borrar este mensaje? No se puede deshacer.')) return;
+  try{
+    const p = preparados.find(x=>x.id===prepId) || historial.find(x=>x.id===prepId);
+    const c = p && (p.comentarios||[]).find(x=>x.id===comentarioId);
+    if(c && c.imagen_url){
+      try{ await sbEliminarImagen('chat-imagenes', c.imagen_url); }catch(errImg){ /* si falla igual se intenta borrar el mensaje */ }
+    }
+    await sbDelete(`preparado_comentarios?id=eq.${comentarioId}`);
+    delete editandoComentario[comentarioId];
+    await refrescarChat(prepId);
+  }catch(err){ mostrarToast('Error al borrar: '+err.message,'err'); }
 }
 
 function crearTarjeta(p){
