@@ -492,7 +492,6 @@ async function initApp(){
     ]);
   }catch(err){ mostrarToast('Error cargando datos: '+err.message,'err'); }
   cargarTodo();
-  cargarFormulasStock();
   suscribirRealtime();
 }
 document.addEventListener('click', e => { if(!e.target.closest('.ss-wrap')) cerrarTodasSS(); });
@@ -505,11 +504,20 @@ let ultimoHashSuc = null;
 async function cargarTodo(){
   if(primeraCargaSuc) document.getElementById('kanbanStatus').textContent = 'Cargando…';
   try{
-    const [preps, clientesFrescos] = await Promise.all([
+    const [preps, clientesFrescos, formulasFrescas, formulasCompsFrescos] = await Promise.all([
       sbGet(`preparados?origen_sucursal=eq.${encodeURIComponent(SUCURSAL_NOMBRE)}&estado=neq.Entregado&eliminado_en=is.null&order=created_at.desc`),
-      sbGet('clientes?order=nombre.asc&select=id,nombre,telefono')
+      sbGet('clientes?order=nombre.asc&select=id,nombre,telefono'),
+      sbGet('formulas_stock?order=nombre.asc'),
+      sbGet('formula_stock_componentes?select=*,drogas(nombre)&order=id.asc')
     ]);
     clientes = clientesFrescos;
+    formulasStock = formulasFrescas;
+    formulasStockComponentes = {};
+    formulasCompsFrescos.forEach(c=>{
+      if(!formulasStockComponentes[c.formula_stock_id]) formulasStockComponentes[c.formula_stock_id]=[];
+      formulasStockComponentes[c.formula_stock_id].push({droga_id:c.droga_id, droga_nombre:c.drogas?.nombre||'', cantidad:c.cantidad, unidad:c.unidad});
+    });
+    renderStockPickerGrid();
     const compMap = {}, comMap = {};
     if(preps.length>0){
       const ids = preps.map(p=>p.id).join(',');
@@ -550,6 +558,7 @@ async function cargarTodo(){
 }
 
 function nombreCliente(id){ const c = clientes.find(x=>x.id===id); return c ? c.nombre : '(cliente)'; }
+function telefonoCliente(id){ const c = clientes.find(x=>x.id===id); return c ? (c.telefono||'') : ''; }
 
 const ESTADOS_PETICION = ['Pedido nuevo','Rechazado'];
 const ESTADOS_ACEPTADO = ['Precio propuesto','Cancelado por sucursal'];
@@ -867,7 +876,7 @@ function crearTarjeta(p){
     </div>
     <div class="card-contact">
       <span class="card-cliente-text">${escHtml(p.cliente_id ? (p.cliente_nombre||nombreCliente(p.cliente_id)) : (p.formula_stock_id ? ('📦 '+nombreFormulaStock(p.formula_stock_id)) : '—'))}</span>
-      <span class="card-tel-text">${escHtml(p.cliente_telefono||'')}</span>
+      <span class="card-tel-text">${escHtml(p.cliente_telefono || (p.cliente_id ? telefonoCliente(p.cliente_id) : ''))}</span>
       <span class="card-tel-text">${fmtFecha(p.fecha_recepcion)}</span>
     </div>
     <hr class="card-divider"/>
@@ -1374,6 +1383,8 @@ function suscribirRealtime(){
     .on('postgres_changes', {event:'*', schema:'public', table:'preparados'}, () => solicitarRecarga())
     .on('postgres_changes', {event:'*', schema:'public', table:'componentes'}, () => solicitarRecarga())
     .on('postgres_changes', {event:'*', schema:'public', table:'clientes'}, () => solicitarRecarga())
+    .on('postgres_changes', {event:'*', schema:'public', table:'formulas_stock'}, () => solicitarRecarga())
+    .on('postgres_changes', {event:'*', schema:'public', table:'formula_stock_componentes'}, () => solicitarRecarga())
     .on('postgres_changes', {event:'*', schema:'public', table:'preparado_comentarios'}, payload => {
       const pid = payload.new?.preparado_id || payload.old?.preparado_id;
       if(pid) refrescarChat(pid);
