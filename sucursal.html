@@ -41,8 +41,11 @@
   .card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;}
   .card-cupon{font-size:20px;font-weight:800;color:#5BA8D4;}
   .card-contact{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+  .card-contact-row{display:flex;align-items:center;gap:8px;}
+  .card-contact-row svg{flex-shrink:0;}
   .card-cliente-text{font-size:14px;font-weight:700;color:var(--cliente);}
   .card-tel-text{font-size:12px;color:var(--muted);}
+  .card-fecha-text{font-size:12px;color:var(--muted);}
   .card-divider{border:none;border-top:1px solid var(--border);margin:8px 0;}
   .card-drogas{display:flex;flex-direction:column;margin-bottom:6px;}
   .card-droga-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px dotted #CCC;font-size:13px;}
@@ -869,15 +872,19 @@ function crearTarjeta(p){
   else if(p.estado==='Listo para retirar') claseExtra=' card-retirar';
   div.className = 'card'+claseExtra;
   const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:''].filter(Boolean);
+  const clrCli='#3D7A8A', clrMut='#6B7685';
+  const svgP=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${clrCli}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+  const svgT=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${clrMut}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6.29 6.29l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
+  const svgC=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${clrMut}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
 
   let cuerpo = `
     <div class="card-top">
       <div class="card-cupon">${p.nro_cupon_nuevo!=null?'#'+p.nro_cupon_nuevo:''}${!!p.formula_stock_id?'<span class="badge-stock">📦 Stock</span>':''}</div>
     </div>
     <div class="card-contact">
-      <span class="card-cliente-text">${escHtml(p.cliente_id ? (p.cliente_nombre||nombreCliente(p.cliente_id)) : (p.formula_stock_id ? ('📦 '+nombreFormulaStock(p.formula_stock_id)) : '—'))}</span>
-      <span class="card-tel-text">${escHtml(p.cliente_telefono || (p.cliente_id ? telefonoCliente(p.cliente_id) : ''))}</span>
-      <span class="card-tel-text">${fmtFecha(p.fecha_recepcion)}</span>
+      <div class="card-contact-row">${svgP}<span class="card-cliente-text">${escHtml(p.cliente_id ? (p.cliente_nombre||nombreCliente(p.cliente_id)) : (p.formula_stock_id ? ('📦 '+nombreFormulaStock(p.formula_stock_id)) : '—'))}</span></div>
+      <div class="card-contact-row">${svgT}<span class="card-tel-text">${escHtml(p.cliente_telefono || (p.cliente_id ? telefonoCliente(p.cliente_id) : ''))}</span></div>
+      <div class="card-contact-row">${svgC}<span class="card-fecha-text">${fmtFecha(p.fecha_recepcion)}</span></div>
     </div>
     <hr class="card-divider"/>
     <div class="card-meta" style="margin-bottom:6px;">${escHtml(partes.join(' · '))}</div>
