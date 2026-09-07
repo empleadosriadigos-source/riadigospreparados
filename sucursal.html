@@ -615,6 +615,9 @@ function renderKanban(){
 }
 
 function drogasHtml(p){
+  if(!!p.formula_stock_id){
+    return `<div class="card-droga-row" style="color:var(--muted)">Fórmula fija · ${p.cantidad_envases||'—'} envase${p.cantidad_envases===1?'':'s'}</div>`;
+  }
   return p.componentes.length
     ? p.componentes.map(c=>`<div class="card-droga-row"><span>${escHtml(c.droga_nombre||'')}</span><span style="color:var(--muted);">${c.cantidad||''} ${c.unidad||''}</span></div>`).join('')
     : '<div class="card-droga-row" style="color:var(--muted)">Sin componentes</div>';
@@ -887,6 +890,7 @@ function crearTarjeta(p){
     cuerpo += `<span class="badge badge-cancel">Cancelado</span>`;
   } else if(p.estado==='Listo para retirar'){
     cuerpo += `<span class="badge badge-retirar">Para retirar</span>`;
+    if(p.precio_venta!=null) cuerpo += `<div class="card-precio">$${p.precio_venta}</div>`;
   } else {
     cuerpo += `<span class="badge badge-prep">En preparación</span>`;
     if(p.precio_venta!=null) cuerpo += `<div class="card-precio">$${p.precio_venta}</div>`;
