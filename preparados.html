@@ -602,6 +602,13 @@
     const telVal=telInput.value.trim();
     if(cliId && !telVal){telInput.classList.add('field-invalid');mostrarToast('Completá el teléfono del cliente','err');return;}
     telInput.classList.remove('field-invalid');
+    try{
+      const actual = await sbGet('preparados?id=eq.'+prepActual.id+'&select=estado');
+      if(actual.length && actual[0].estado !== prepActual.estado){
+        mostrarToast(`El estado cambió a "${actual[0].estado}" mientras editabas (probablemente desde sucursal). Cerrá y volvé a abrir para ver los datos actuales.`,'err');
+        return;
+      }
+    }catch(errCheck){ /* si falla el chequeo, se sigue igual: no vale la pena bloquear la edición por esto */ }
     const btn=document.getElementById('btnGuardarEditar');btn.disabled=true;btn.textContent='Guardando…';
     try{
       if(cliId){

@@ -1815,6 +1815,18 @@
     const telVal=telInput.value.trim();
     if(cliId && !telVal){telInput.classList.add('field-invalid');mostrarToast('Completá el teléfono del cliente','err');return;}
     telInput.classList.remove('field-invalid');
+    // Chequeo de concurrencia: si sucursal cambió el estado mientras este
+    // modal seguía abierto (ej. confirmó o canceló el pedido), el
+    // formulario todavía tiene el valor viejo en el combo de Estado.
+    // Guardar así lo pisaría en silencio. Se compara contra el estado
+    // actual en la base antes de mandar el PATCH.
+    try{
+      const actual = await sbGet('preparados?id=eq.'+prepActual.id+'&select=estado');
+      if(actual.length && actual[0].estado !== prepActual.estado){
+        mostrarToast(`El estado cambió a "${actual[0].estado}" mientras editabas (probablemente desde sucursal). Cerrá y volvé a abrir para ver los datos actuales.`,'err');
+        return;
+      }
+    }catch(errCheck){ /* si falla el chequeo, se sigue igual: no vale la pena bloquear la edición por esto */ }
     const esStock = !!prepActual.formula_stock_id;
     if(esStock){
       const envases=parseInt(document.getElementById('eEnvases').value);
