@@ -842,7 +842,7 @@
     if(origenId===destinoId){ prev.textContent='El cliente de origen y destino no pueden ser el mismo.'; btn.disabled=true; return; }
     try{
       const preps = await sbGet(`preparados?cliente_id=eq.${origenId}&select=id`);
-      prev.textContent = `Se van a mover ${preps.length} preparado(s) de "${fusOrigen.nombre}" hacia "${fusDestino.nombre}".`;
+      prev.textContent = `Se van a mover ${preps.length} preparado(s), y las obras sociales/medicamentos/productos guardados, de "${fusOrigen.nombre}" hacia "${fusDestino.nombre}".`;
       btn.disabled = false;
     }catch(err){ prev.textContent='Error al contar preparados: '+err.message; btn.disabled=true; }
   }
@@ -854,6 +854,18 @@
     try{
       const preps = await sbGet(`preparados?cliente_id=eq.${origenId}&select=id`);
       for(const p of preps){ await sbPatch('preparados', p.id, {cliente_id:destinoId}); }
+
+      // Mover también obras sociales, medicamentos y productos del origen al
+      // destino: estas tablas tienen ON DELETE CASCADE hacia clientes, así
+      // que si no se mueven acá, se pierden en silencio al borrar el cliente
+      // origen más abajo (el catch de "puede tener otra información
+      // asociada" nunca llegaba a dispararse porque el borrado nunca
+      // fallaba, solo arrastraba todo con él).
+      for(const tabla of ['cliente_obras_sociales','cliente_medicamentos','cliente_productos']){
+        const filas = await sbGet(`${tabla}?cliente_id=eq.${origenId}&select=id`);
+        for(const f of filas){ await sbPatch(tabla, f.id, {cliente_id:destinoId}); }
+      }
+
       let msg = `✓ ${preps.length} preparado(s) movidos a "${fusDestino.nombre}"`;
       if(document.getElementById('fusEliminarOrigen').checked){
         try{
