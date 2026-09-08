@@ -2217,7 +2217,10 @@
         if(inp) inp.value=nombre;if(hid) hid.value=nuevo[0].id;cbDrogaIdx=null;
       }
       mostrarToast('✓ Droga creada','ok');cerrarModal('modalDroga');document.getElementById('dNombre').value='';
-    }catch(err){mostrarToast('Error: '+err.message,'err');}
+    }catch(err){
+      if(/duplicate key|unique constraint/i.test(err.message)) mostrarToast('Ya existe una droga con ese nombre','err');
+      else mostrarToast('Error: '+err.message,'err');
+    }
     btn.disabled=false;btn.textContent='Crear droga';
   }
 

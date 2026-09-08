@@ -1082,6 +1082,10 @@ async function guardarPedido(){
   }
   const cliId = document.getElementById('pClienteId').value;
   if(!modoStock && !cliId){ mostrarToast('Seleccioná un cliente','err'); return; }
+  if(modoStock && document.querySelectorAll('#compRowsNuevo .comp-row').length===0){
+    mostrarToast('Esta fórmula no tiene componentes cargados. Avisale a San Martín antes de enviar el pedido.','err');
+    return;
+  }
   const telInput = document.getElementById('pTelefono');
   const telVal = telInput.value.trim();
   if(cliId && !telVal){ telInput.classList.add('field-invalid'); mostrarToast('Completá el teléfono del cliente','err'); return; }
@@ -1309,7 +1313,10 @@ async function guardarDroga(){
       if(inp) inp.value=nombre; if(hid) hid.value=nuevo[0].id; cbDrogaIdx=null;
     }
     mostrarToast('✓ Droga creada','ok');cerrarModal('modalDroga');document.getElementById('dNombre').value='';
-  }catch(err){mostrarToast('Error: '+err.message,'err');}
+  }catch(err){
+    if(/duplicate key|unique constraint/i.test(err.message)) mostrarToast('Ya existe una droga con ese nombre','err');
+    else mostrarToast('Error: '+err.message,'err');
+  }
   btn.disabled=false;btn.textContent='Crear droga';
 }
 
