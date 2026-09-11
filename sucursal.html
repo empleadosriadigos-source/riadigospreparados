@@ -285,7 +285,7 @@
     <div class="modal-body">
       <div class="field-row">
         <div class="field-group">
-          <label>Cliente</label>
+          <label>Cliente <span style="color:var(--danger)">*</span></label>
           <div style="display:flex;gap:6px;">
             <div class="ss-wrap" style="flex:1;">
               <input type="text" id="pClienteInput" placeholder="Buscar cliente…" oninput="filtrarSSCliente('p')" onfocus="abrirSSCliente('p')" autocomplete="off"/>
@@ -296,12 +296,12 @@
           </div>
         </div>
         <div class="field-group">
-          <label>Teléfono</label>
+          <label>Teléfono <span style="color:var(--danger)">*</span></label>
           <input type="text" id="pTelefono" placeholder="Teléfono del cliente" oninput="this.classList.remove('field-invalid')"/>
         </div>
       </div>
       <div class="field-row">
-        <div class="field-group"><label>Fecha de recepción</label><input type="date" id="pFecha"/></div>
+        <div class="field-group"><label>Fecha de recepción <span style="color:var(--danger)">*</span></label><input type="date" id="pFecha"/></div>
       </div>
       <div class="field-group"><label>Observación del preparado</label><textarea id="pObs" rows="2" placeholder="Detalles técnicos de la preparación..."></textarea></div>
 
@@ -1180,11 +1180,11 @@ function limpiarFormPedido(){
 
 async function guardarPedido(){
   const modoStock = vistaPrepModal==='seleccionada' && !!formulaStockSeleccionada;
-  // Ningún campo es obligatorio: la sucursal puede mandar el pedido con lo
-  // que tenga a mano (incluso solo la foto de la receta) y marcar "datos
-  // pendientes" para que San Martín lo complete. La única corrección
-  // automática es la cantidad de envases en modo stock (no puede ser 0,
-  // se autocompleta a 1 en vez de bloquear el envío).
+  // Cliente, teléfono y fecha son los datos básicos que sucursal siempre
+  // tiene a mano al recibir a alguien, así que siguen siendo obligatorios.
+  // Lo que puede faltar es la parte farmacéutica (droga, forma, cantidad):
+  // eso se puede mandar vacío + la foto de la receta, y queda para que
+  // San Martín lo complete (ver checkbox "Datos pendientes de completar").
   if(modoStock){
     const envasesChk = parseInt(document.getElementById('pEnvases').value);
     if(!envasesChk||envasesChk<1) document.getElementById('pEnvases').value = '1';
@@ -1196,23 +1196,24 @@ async function guardarPedido(){
     }
   }
   const cliId = document.getElementById('pClienteId').value;
+  if(!cliId){ mostrarToast('Seleccioná un cliente','err'); return; }
   const telInput = document.getElementById('pTelefono');
   const telVal = telInput.value.trim();
+  if(!telVal){ telInput.classList.add('field-invalid'); mostrarToast('Completá el teléfono del cliente','err'); return; }
   telInput.classList.remove('field-invalid');
+  if(!document.getElementById('pFecha').value){ mostrarToast('Seleccioná la fecha de recepción','err'); return; }
 
   const btn = document.getElementById('btnGuardarPrep');
   btn.disabled=true; btn.textContent='Enviando…';
   try{
     const cupon = await sbRpc('next_cupon_nuevo');
 
-    // Solo actualiza el teléfono del cliente si efectivamente escribieron
-    // uno nuevo; un campo vacío no debe borrar un teléfono ya guardado.
-    if(cliId && telVal){
-      const cliActual = clientes.find(c=>c.id===cliId);
-      if(cliActual && (cliActual.telefono||'')!==telVal){
-        await sbPatch('clientes', cliId, {telefono: telVal});
-        cliActual.telefono = telVal;
-      }
+    // El teléfono ya es obligatorio acá arriba; solo lo pisa en el cliente
+    // si efectivamente cambió respecto al que ya tenía guardado.
+    const cliActual = clientes.find(c=>c.id===cliId);
+    if(cliActual && (cliActual.telefono||'')!==telVal){
+      await sbPatch('clientes', cliId, {telefono: telVal});
+      cliActual.telefono = telVal;
     }
 
     const nuevoPrep = await sbPost('preparados', limpiar({

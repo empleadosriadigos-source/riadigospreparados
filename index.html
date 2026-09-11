@@ -782,24 +782,7 @@
     <div class="modal-body">
       <div class="completar-layout">
         <div class="completar-form">
-          <div class="field-row">
-            <div class="field-group">
-              <label>Cliente</label>
-              <div style="display:flex;gap:6px;">
-                <div class="ss-wrap" style="flex:1;">
-                  <input type="text" id="cClienteInput" placeholder="Buscar cliente…" oninput="filtrarSSCliente('c')" onfocus="abrirSSCliente('c')" autocomplete="off"/>
-                  <div class="ss-dropdown" id="ssCliente_c"></div>
-                  <input type="hidden" id="cClienteId"/>
-                </div>
-                <button type="button" class="btn btn-ghost btn-sm" style="white-space:nowrap;" onclick="abrirNuevoClienteDesdePrep('c')">＋ Nuevo</button>
-              </div>
-            </div>
-            <div class="field-group">
-              <label>Teléfono</label>
-              <input type="text" id="cTelefono" placeholder="Teléfono del cliente"/>
-            </div>
-          </div>
-          <div class="field-group"><label>Fecha de recepción</label><input type="date" id="cFecha"/></div>
+          <div class="sucursal-tag-card" id="completarContexto" style="margin-bottom:14px;"></div>
           <div class="field-group"><label>Observaciones</label><textarea id="cObs" rows="2"></textarea></div>
 
           <div id="cSeccionNormal">
@@ -2027,10 +2010,11 @@
     prepCompletarActual = p;
     const esStock = !!p.formula_stock_id;
     document.getElementById('completarTitulo').textContent = `Completar datos ${p.nro_cupon_nuevo!=null?'#'+p.nro_cupon_nuevo:'T'+p.nro_cupon}`;
-    document.getElementById('cClienteInput').value = p.cliente_nombre??'';
-    document.getElementById('cClienteId').value = p.cliente_id??'';
-    document.getElementById('cTelefono').value = p.cliente_telefono??'';
-    document.getElementById('cFecha').value = p.fecha_recepcion??'';
+    // Cliente, teléfono y fecha ya los pide sucursal siempre (son obligatorios
+    // al cargar el pedido), así que acá van solo de referencia, sin poder
+    // editarlos: este modal es exclusivamente para los datos del preparado.
+    document.getElementById('completarContexto').textContent =
+      `👤 ${p.cliente_nombre||'—'}${p.cliente_telefono?' · 📞 '+p.cliente_telefono:''} · 📅 ${fmtFecha(p.fecha_recepcion)}`;
     document.getElementById('cObs').value = p.observaciones??'';
     // Arranca destildado a propósito: hay que confirmarlo a mano cada vez,
     // así no se destilda "datos pendientes" sin haber completado nada.
@@ -2071,8 +2055,6 @@
 
   async function guardarCompletarDatos(){
     if(!prepCompletarActual) return;
-    const cliId=document.getElementById('cClienteId').value;
-    const telVal=document.getElementById('cTelefono').value.trim();
     const esStock = !!prepCompletarActual.formula_stock_id;
     if(esStock){
       const envasesVal = document.getElementById('cEnvases').value;
@@ -2080,16 +2062,9 @@
     }
     const btn=document.getElementById('btnGuardarCompletar');btn.disabled=true;btn.textContent='Guardando…';
     try{
-      // Igual que en la edición normal: solo pisa el teléfono si efectivamente
-      // se escribió uno nuevo, un campo vacío no borra el que ya estaba.
-      if(cliId && telVal){
-        const cliActual=clientes.find(c=>c.id===cliId);
-        if(cliActual && (cliActual.telefono||'')!==telVal){
-          await sbPatch('clientes',cliId,{telefono:telVal});
-          cliActual.telefono=telVal;
-          preparados.filter(p=>p.cliente_id===cliId).forEach(p=>{p.cliente_telefono=telVal;});
-        }
-      }
+      // Este modal nunca toca cliente_id, teléfono ni fecha_recepcion: esos
+      // datos ya vienen completos desde sucursal, acá solo se completa lo
+      // propio del preparado (droga, forma, cantidad, receta, observaciones).
       const datosPendientes = !document.getElementById('cDatosCompletos').checked;
       if(esStock){
         const envasesVal = document.getElementById('cEnvases').value;
@@ -2097,8 +2072,6 @@
         const f=formulasStock.find(x=>x.id===prepCompletarActual.formula_stock_id);
         const cantTotal = (f && envases) ? +(f.cantidad_base*envases).toFixed(4) : prepCompletarActual.cantidad_total;
         await sbPatch('preparados',prepCompletarActual.id,limpiar({
-          cliente_id:cliId||null,
-          fecha_recepcion:document.getElementById('cFecha').value||null,
           cantidad_envases:envases,
           cantidad_total:cantTotal,
           observaciones:document.getElementById('cObs').value||null,
@@ -2120,8 +2093,6 @@
       }
       await sbPatch('preparados',prepCompletarActual.id,limpiar({
         nro_receta:parseInt(document.getElementById('cReceta').value)||null,
-        cliente_id:cliId||null,
-        fecha_recepcion:document.getElementById('cFecha').value||null,
         forma_farmaceutica:document.getElementById('cForma').value||null,
         cantidad_total:parseFloat(document.getElementById('cCantTotal').value)||null,
         unidad:document.getElementById('cUnidad').value||null,
