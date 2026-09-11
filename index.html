@@ -383,12 +383,14 @@
       <button class="modal-close" onclick="cerrarDrawer()">✕</button>
     </div>
     <div class="drawer-body">
-      <div class="drawer-section-title" id="drawerCanceladasTitle" style="display:none;">Canceladas por sucursal</div>
+      <div class="drawer-section-title" id="drawerCanceladasTitle" style="display:none;">Canceladas sin descartar</div>
       <div id="drawerCanceladas"></div>
-      <div class="drawer-section-title">Nuevas solicitudes</div>
+      <div class="drawer-section-title">Sin revisar</div>
       <div id="drawerNuevas"></div>
-      <div class="drawer-section-title">Esperando confirmación</div>
+      <div class="drawer-section-title">Esperando confirmación de sucursal</div>
       <div id="drawerEsperando"></div>
+      <div class="drawer-section-title" id="drawerRechazadosTitle" style="display:none;">Rechazados</div>
+      <div id="drawerRechazados"></div>
     </div>
   </div>
 </div>
@@ -1277,10 +1279,12 @@
     const nuevas = preparados.filter(p => p.estado === 'Pedido nuevo');
     const esperando = preparados.filter(p => p.estado === 'Precio propuesto');
     const canceladas = preparados.filter(p => p.estado === 'Cancelado por sucursal');
+    const rechazados = preparados.filter(p => p.estado === 'Rechazado');
     const bellBtn = document.getElementById('bellBtnSolicitudes');
     // La campana resalta con pedidos nuevos genuinos y con cancelaciones sin descartar
     // (ambas son interacciones de la sucursal que requieren nuestra atención).
     // "Precio propuesto" ya lo respondimos: queda apagada hasta la próxima interacción de la sucursal.
+    // "Rechazado" ya lo resolvimos nosotros mismos: tampoco prende la campana, es solo registro.
     if (bellBtn) bellBtn.classList.toggle('has-alert', nuevas.length > 0 || canceladas.length > 0);
 
     const titleCanceladas = document.getElementById('drawerCanceladasTitle');
@@ -1296,6 +1300,15 @@
     const contEsperando = document.getElementById('drawerEsperando');
     contEsperando.innerHTML = esperando.length ? '' : '<p class="drawer-empty">Nada esperando confirmación.</p>';
     esperando.forEach(p => contEsperando.appendChild(crearDrawerCardEsperando(p)));
+
+    // Rechazados: sección aparte al final, mismo patrón de "descartar" que canceladas
+    // (aquí el rechazo lo decidió San Martín, no la sucursal, por eso va separado).
+    const titleRechazados = document.getElementById('drawerRechazadosTitle');
+    const contRechazados = document.getElementById('drawerRechazados');
+    titleRechazados.style.display = rechazados.length ? '' : 'none';
+    contRechazados.innerHTML = '';
+    rechazados.forEach(p => contRechazados.appendChild(crearDrawerCardRechazada(p)));
+
     scrollTodosLosChats();
   }
 
@@ -1305,6 +1318,18 @@
     div.innerHTML = `
       <div class="txt">
         <strong>Pedido cancelado</strong>
+        <span>${escHtml(p.cliente_nombre||'—')} · ${escHtml(p.origen_sucursal||'Sucursal')}</span>
+      </div>
+      <button class="drawer-cancel-dismiss" title="Descartar" onclick="descartarCancelado('${p.id}')">✕</button>`;
+    return div;
+  }
+
+  function crearDrawerCardRechazada(p){
+    const div = document.createElement('div');
+    div.className = 'drawer-cancel-card';
+    div.innerHTML = `
+      <div class="txt">
+        <strong>Pedido rechazado</strong>
         <span>${escHtml(p.cliente_nombre||'—')} · ${escHtml(p.origen_sucursal||'Sucursal')}</span>
       </div>
       <button class="drawer-cancel-dismiss" title="Descartar" onclick="descartarCancelado('${p.id}')">✕</button>`;
