@@ -281,7 +281,7 @@
     document.getElementById('vtoGlobal').value='';
     sel.forEach(p=>{
       const div=document.createElement('div');div.className='config-list-item';div.dataset.id=p.id;div.dataset.uso=usoGlobalActual;
-      div.innerHTML=`<div><div class="config-cupon">#${p.nro_cupon??'—'} · ${escHtml(p.cliente_nombre||'')}</div><div class="config-cliente">${p.forma_farmaceutica??''} ${p.cantidad_total!=null?p.cantidad_total+' '+(p.unidad??''):''}${p.nro_receta?' · Receta: '+p.nro_receta:''}</div></div><input type="text" class="cfg-vto config-item-vto" placeholder="MM/AA" maxlength="5" oninput="fmtVto(this)" onkeydown="vtoKeyDown(event,this)"/>`;
+      div.innerHTML=`<div><div class="config-cupon">${fmtCupon(p)} · ${escHtml(p.cliente_nombre||'')}</div><div class="config-cliente">${p.forma_farmaceutica??''} ${p.cantidad_total!=null?p.cantidad_total+' '+(p.unidad??''):''}${p.nro_receta?' · Receta: '+p.nro_receta:''}</div></div><input type="text" class="cfg-vto config-item-vto" placeholder="MM/AA" maxlength="5" oninput="fmtVto(this)" onkeydown="vtoKeyDown(event,this)"/>`;
       cont.appendChild(div);
     });
     document.getElementById('paso1').style.display='none';document.getElementById('paso2').style.display='block';setStep(2);
