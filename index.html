@@ -192,10 +192,9 @@
     .btn-danger{background:var(--danger);color:#fff;}
     .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
     .btn-sm{padding:5px 10px;font-size:12px;}
-    .badge-sucursal{display:inline-block;background:#F0E6FA;color:#6B3FA0;border:1px solid #D9C2ED;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:2px 8px;border-radius:20px;white-space:nowrap;}
-    .card .badge-sucursal{margin-left:6px;}
-    .badge-stock{display:inline-block;background:#FCEBD5;color:#9A5B0C;border:1px solid #F0CB98;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:2px 8px;border-radius:20px;white-space:nowrap;}
-    .card .badge-stock{margin-left:6px;}
+    .badge-sucursal{display:inline-block;background:#F0E6FA;color:#6B3FA0;border:1px solid #D9C2ED;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:2px 8px;border-radius:20px;white-space:nowrap;margin-left:6px;}
+    .badge-stock{display:inline-block;background:#FCEBD5;color:#9A5B0C;border:1px solid #F0CB98;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:2px 8px;border-radius:20px;white-space:nowrap;margin-left:6px;}
+    .badge-rechazo{display:inline-block;background:#FDECEA;color:var(--danger);border:1px solid #F3C0B8;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:2px 8px;border-radius:20px;white-space:nowrap;margin-left:6px;}
     .btn-completar-datos{display:block;width:100%;text-align:left;background:#FFF6DE;color:#8A6100;border:1px solid #F3D98B;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px;font-family:inherit;}
     .btn-completar-datos:hover{background:#FEECC0;}
     .fs-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--border,#e5e5e5);}
@@ -405,6 +404,8 @@
       <div id="drawerNuevas"></div>
       <div class="drawer-section-title">Esperando confirmación de sucursal</div>
       <div id="drawerEsperando"></div>
+      <div class="drawer-section-title" id="drawerRechazadosTitle" style="display:none;">Rechazados (últimos 3 días)</div>
+      <div id="drawerRechazados"></div>
     </div>
   </div>
 </div>
@@ -1371,10 +1372,18 @@
     const nuevas = preparados.filter(p => p.estado === 'Pedido nuevo');
     const esperando = preparados.filter(p => p.estado === 'Precio propuesto');
     const canceladas = preparados.filter(p => p.estado === 'Cancelado por sucursal');
+    // Rechazados: solo se muestran acá los últimos 3 días (después siguen
+    // existiendo y quedan accesibles desde "Historial", pero dejan de
+    // ocupar lugar en el cajón). Es una ventana chica para que, si la
+    // sucursal sigue escribiendo por el chat de un pedido que ya
+    // rechazaste, todavía lo tengas a mano para reaccionar.
+    const HACE_3_DIAS = Date.now() - 3*86400000;
+    const rechazados = preparados.filter(p => p.estado === 'Rechazado' && p.fecha_cambio_estado && new Date(p.fecha_cambio_estado).getTime() >= HACE_3_DIAS);
     const bellBtn = document.getElementById('bellBtnSolicitudes');
     // La campana resalta con pedidos nuevos genuinos y con cancelaciones sin descartar
     // (ambas son interacciones de la sucursal que requieren nuestra atención).
     // "Precio propuesto" ya lo respondimos: queda apagada hasta la próxima interacción de la sucursal.
+    // "Rechazado" ya lo resolvimos nosotros mismos: tampoco prende la campana, es solo por si hace falta reaccionar.
     if (bellBtn) bellBtn.classList.toggle('has-alert', nuevas.length > 0 || canceladas.length > 0);
 
     const titleCanceladas = document.getElementById('drawerCanceladasTitle');
@@ -1390,6 +1399,12 @@
     const contEsperando = document.getElementById('drawerEsperando');
     contEsperando.innerHTML = esperando.length ? '' : '<p class="drawer-empty">Nada esperando confirmación.</p>';
     esperando.forEach(p => contEsperando.appendChild(crearDrawerCardEsperando(p)));
+
+    const titleRechazados = document.getElementById('drawerRechazadosTitle');
+    const contRechazados = document.getElementById('drawerRechazados');
+    titleRechazados.style.display = rechazados.length ? '' : 'none';
+    contRechazados.innerHTML = '';
+    rechazados.forEach(p => contRechazados.appendChild(crearDrawerCardRechazada(p)));
 
     scrollTodosLosChats();
   }
@@ -1670,6 +1685,45 @@
     try{
       await sbPatch('preparados', id, { estado:'Precio propuesto', precio_venta: precio });
       mostrarToast('Solicitud aceptada, esperando confirmación de la sucursal', 'ok');
+      cargarTodo();
+    }catch(err){ mostrarToast('Error: '+err.message, 'err'); }
+  }
+
+  // Tarjeta idéntica a la de "Sin revisar", para el caso puntual de que
+  // surja algo (ej. la sucursal sigue escribiendo por el chat) y haga falta
+  // volver atrás un rechazo reciente. Solo dura 3 días en este cajón; pasado
+  // ese tiempo sigue existiendo el pedido, pero ya no se puede reactivar
+  // desde acá (queda de todos modos accesible, de solo lectura, en "Historial").
+  function crearDrawerCardRechazada(p){
+    const div = document.createElement('div');
+    div.className = 'drawer-card';
+    const partes = [p.forma_farmaceutica, cantidadPorEnvase(p)!=null?`${cantidadPorEnvase(p)}${p.unidad?' '+p.unidad:''}`:'', !!p.formula_stock_id&&p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
+    div.innerHTML = `
+      <div class="card-cupon">${fmtCupon(p)}<span class="badge-sucursal">${escHtml(p.origen_sucursal||'')}</span>${!!p.formula_stock_id?`<span class="badge-stock">📦 Stock</span>`:''}<span class="badge-rechazo">Rechazado</span></div>
+      ${p.datos_pendientes?`<button type="button" class="btn-completar-datos" onclick="abrirCompletarDatos(event,'${p.id}')">⚠ Completar datos pendientes${p.receta_imagen_url?' (con receta adjunta)':''}</button>`:''}
+      ${datosContactoHtml(p)}
+      <hr class="card-divider"/>
+      ${p.nro_receta?`<div class="card-receta-header"><span class="card-receta-label">Receta</span><span class="card-receta-num"># ${escHtml(p.nro_receta)}</span></div>`:''}
+      <div class="card-drogas">${drogasResumenHtml(p)}</div>
+      <div class="card-meta" style="margin-top:6px;">${escHtml(partes.join(' · '))}</div>
+      ${p.observaciones?`<div class="card-mensaje">${escHtml(p.observaciones)}</div>`:''}
+      <div class="field-group" style="margin-top:10px;margin-bottom:0;">
+        <label>Precio (opcional)</label>
+        <input type="number" min="0" step="any" id="precio-rechazada-${p.id}" placeholder="Podés dejarlo vacío por ahora">
+      </div>
+      <div class="drawer-card-actions">
+        <button class="btn btn-primary btn-sm" onclick="aceptarDesdeRechazado('${p.id}')">Cambiar a Aceptado</button>
+      </div>
+      ${renderMiniChat(p)}`;
+    cargarImagenesPendientes(div);
+    return div;
+  }
+  async function aceptarDesdeRechazado(id){
+    const input = document.getElementById('precio-rechazada-'+id);
+    const precio = input && input.value ? Number(input.value) : null;
+    try{
+      await sbPatch('preparados', id, { estado:'Precio propuesto', precio_venta: precio });
+      mostrarToast('Pedido aceptado, esperando confirmación de la sucursal', 'ok');
       cargarTodo();
     }catch(err){ mostrarToast('Error: '+err.message, 'err'); }
   }
