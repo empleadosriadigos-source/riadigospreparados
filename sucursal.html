@@ -166,6 +166,14 @@
   .minichat.dragover{outline:2px dashed var(--primary,#2d7dd2);outline-offset:-2px;background:rgba(45,125,210,0.06);}
   .minichat-drop-hint{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:12px;color:var(--primary,#2d7dd2);background:rgba(255,255,255,0.85);pointer-events:none;text-align:center;padding:8px;border-radius:8px;}
   .minichat.dragover .minichat-drop-hint{display:flex;}
+  .receta-drop{border:1.5px dashed var(--border);border-radius:8px;background:var(--bg);padding:14px;text-align:center;cursor:pointer;outline:none;transition:border-color .15s,background .15s;}
+  .receta-drop:focus{border-color:var(--accent2);}
+  .receta-drop.dragover{border-color:var(--accent2);background:rgba(104,169,204,0.08);}
+  .receta-drop-hint{font-size:12px;color:var(--muted);line-height:1.5;}
+  .receta-drop-hint .btn-link{background:none;border:none;color:var(--accent2);font-weight:600;cursor:pointer;padding:0;font-size:12px;text-decoration:underline;}
+  .receta-preview{display:flex;align-items:center;gap:10px;justify-content:center;}
+  .receta-preview img{max-width:120px;max-height:120px;border-radius:8px;object-fit:cover;border:1px solid var(--border);}
+  .receta-preview-quitar{background:none;border:1px solid var(--border);color:var(--danger);cursor:pointer;font-size:13px;border-radius:6px;padding:4px 9px;}
   .img-ampliada-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:300;align-items:center;justify-content:center;padding:16px;}
   .img-ampliada-overlay.open{display:flex;}
   .img-ampliada-overlay img{max-width:100%;max-height:88vh;border-radius:8px;}
@@ -277,7 +285,7 @@
     <div class="modal-body">
       <div class="field-row">
         <div class="field-group">
-          <label>Cliente <span style="color:var(--danger)" id="pClienteReq">*</span></label>
+          <label>Cliente</label>
           <div style="display:flex;gap:6px;">
             <div class="ss-wrap" style="flex:1;">
               <input type="text" id="pClienteInput" placeholder="Buscar cliente…" oninput="filtrarSSCliente('p')" onfocus="abrirSSCliente('p')" autocomplete="off"/>
@@ -288,14 +296,32 @@
           </div>
         </div>
         <div class="field-group">
-          <label>Teléfono <span style="color:var(--danger)" id="pTelefonoReq">*</span></label>
+          <label>Teléfono</label>
           <input type="text" id="pTelefono" placeholder="Teléfono del cliente" oninput="this.classList.remove('field-invalid')"/>
         </div>
       </div>
       <div class="field-row">
-        <div class="field-group"><label>Fecha de recepción <span style="color:var(--danger)">*</span></label><input type="date" id="pFecha"/></div>
+        <div class="field-group"><label>Fecha de recepción</label><input type="date" id="pFecha"/></div>
       </div>
       <div class="field-group"><label>Observación del preparado</label><textarea id="pObs" rows="2" placeholder="Detalles técnicos de la preparación..."></textarea></div>
+
+      <div class="field-group">
+        <label>Foto de la receta (opcional)</label>
+        <div class="receta-drop" id="recetaDrop" tabindex="0" onpaste="pegarImagenReceta(event)" ondragover="dragOverReceta(event)" ondragleave="dragLeaveReceta(event)" ondrop="dropImagenReceta(event)">
+          <div class="receta-drop-hint" id="recetaDropHint">📎 Pegá (Ctrl+V), arrastrá una imagen acá, o <button type="button" class="btn-link" onclick="document.getElementById('recetaFile').click()">elegí un archivo</button></div>
+          <div class="receta-preview" id="recetaPreview" style="display:none;">
+            <img id="recetaPreviewImg" alt="Receta"/>
+            <button type="button" class="receta-preview-quitar" onclick="event.stopPropagation();quitarRecetaPedido()">✕ Quitar</button>
+          </div>
+          <input type="file" id="recetaFile" accept="image/*" style="display:none" onchange="if(this.files[0]) manejarImagenReceta(this.files[0]); this.value='';"/>
+        </div>
+      </div>
+      <div class="field-group">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:normal;font-weight:600;font-size:13px;color:var(--text);">
+          <input type="checkbox" id="pDatosPendientes" style="width:auto;"/>
+          Datos pendientes de completar (mandá la receta y San Martín completa el resto)
+        </label>
+      </div>
 
       <div class="modal-sep"></div>
 
@@ -326,7 +352,7 @@
         <div class="sec-title">Fórmula elegida</div>
         <button type="button" class="stock-chip-seleccionada" id="btnFormulaSeleccionadaNombre" onclick="volverAPickerStock()"></button>
         <div class="field-group" style="margin-top:12px;max-width:220px;">
-          <label>Cantidad de envases <span style="color:var(--danger)">*</span></label>
+          <label>Cantidad de envases</label>
           <input type="number" id="pEnvases" min="1" step="1" value="1" oninput="regenerarPreviewStock()"/>
         </div>
       </div>
@@ -803,6 +829,77 @@ async function manejarImagenChat(id, file){
     await refrescarChat(id);
   }catch(err){ mostrarToast('Error al subir la imagen: '+err.message,'err'); }
 }
+// ── Foto de receta en el modal "Cargar preparado" ───────────────────────
+// A diferencia del minichat, acá todavía no existe el preparado (se crea
+// recién al guardar), y la policy de storage exige que la carpeta del
+// archivo coincida con un preparado ya existente. Por eso la imagen se
+// guarda en memoria (comprimida) y se sube recién en guardarPedido(),
+// después de que el preparado quedó creado.
+let recetaPendienteBlob = null;
+function pegarImagenReceta(event){
+  const items = (event.clipboardData||{}).items || [];
+  for(const item of items){
+    if(item.type && item.type.startsWith('image/')){
+      event.preventDefault();
+      const file = item.getAsFile();
+      if(file) manejarImagenReceta(file);
+      return;
+    }
+  }
+}
+function dragOverReceta(event){
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'copy';
+  event.currentTarget.classList.add('dragover');
+}
+function dragLeaveReceta(event){
+  if(event.currentTarget.contains(event.relatedTarget)) return;
+  event.currentTarget.classList.remove('dragover');
+}
+async function dropImagenReceta(event){
+  event.preventDefault();
+  event.currentTarget.classList.remove('dragover');
+  const dt = event.dataTransfer;
+  if(!dt) return;
+  const archivo = Array.from(dt.files||[]).find(f => f.type && f.type.startsWith('image/'));
+  if(archivo){ manejarImagenReceta(archivo); return; }
+  const url = extraerUrlImagenDeDrag(dt);
+  if(url){
+    try{
+      mostrarToast('Descargando imagen…','ok');
+      const resp = await fetchConTimeout(url);
+      const blob = await resp.blob();
+      if(!blob.type || !blob.type.startsWith('image/')) throw new Error('no es una imagen');
+      manejarImagenReceta(new File([blob], 'receta.jpg', {type: blob.type}));
+    }catch(err){
+      mostrarToast('No se pudo tomar esa imagen directo del navegador. Probá copiarla (Ctrl+C) y pegarla acá (Ctrl+V).','err');
+    }
+    return;
+  }
+  mostrarToast('No se detectó ninguna imagen para subir.','err');
+}
+async function manejarImagenReceta(file){
+  if(!file.type || !file.type.startsWith('image/')){ mostrarToast('El archivo tiene que ser una imagen','err'); return; }
+  try{
+    recetaPendienteBlob = await comprimirImagen(file);
+    mostrarPreviewReceta(recetaPendienteBlob);
+  }catch(err){ mostrarToast('Error al procesar la imagen: '+err.message,'err'); }
+}
+function mostrarPreviewReceta(blob){
+  const img = document.getElementById('recetaPreviewImg');
+  if(img.src) URL.revokeObjectURL(img.src);
+  img.src = URL.createObjectURL(blob);
+  document.getElementById('recetaPreview').style.display = 'flex';
+  document.getElementById('recetaDropHint').style.display = 'none';
+}
+function quitarRecetaPedido(){
+  recetaPendienteBlob = null;
+  const img = document.getElementById('recetaPreviewImg');
+  if(img.src) URL.revokeObjectURL(img.src);
+  img.src = '';
+  document.getElementById('recetaPreview').style.display = 'none';
+  document.getElementById('recetaDropHint').style.display = '';
+}
 function scrollChatAbajo(id){
   const el = document.getElementById('chatmsg-'+id);
   if(el) el.scrollTop = el.scrollHeight;
@@ -1047,8 +1144,6 @@ function mostrarVistaPrep(v){
   document.getElementById('seccionPrepNormal').style.display        = v==='normal' ? '' : 'none';
   document.getElementById('seccionStockSeleccionada').style.display = v==='seleccionada' ? '' : 'none';
   document.getElementById('btnTogglePreparadosStockLabel').textContent = v==='normal' ? 'Preparados de stock' : 'Preparado normal';
-  document.getElementById('pClienteReq').style.display = v==='normal' ? '' : 'none';
-  document.getElementById('pTelefonoReq').style.display = v==='normal' ? '' : 'none';
 }
 function togglePreparadosStock(){
   if(vistaPrepModal==='normal'){
@@ -1078,25 +1173,31 @@ function limpiarFormPedido(){
   document.getElementById('unidadGlobalNuevo').value='';
   formulaStockSeleccionada=null;
   document.getElementById('pEnvases').value='1';
+  quitarRecetaPedido();
+  document.getElementById('pDatosPendientes').checked = false;
   mostrarVistaPrep('normal');
 }
 
 async function guardarPedido(){
   const modoStock = vistaPrepModal==='seleccionada' && !!formulaStockSeleccionada;
-  if(!document.getElementById('pForma').value){ mostrarToast('Seleccioná una forma farmacéutica','err'); return; }
+  // Ningún campo es obligatorio: la sucursal puede mandar el pedido con lo
+  // que tenga a mano (incluso solo la foto de la receta) y marcar "datos
+  // pendientes" para que San Martín lo complete. La única corrección
+  // automática es la cantidad de envases en modo stock (no puede ser 0,
+  // se autocompleta a 1 en vez de bloquear el envío).
   if(modoStock){
     const envasesChk = parseInt(document.getElementById('pEnvases').value);
-    if(!envasesChk||envasesChk<1){ mostrarToast('Ingresá una cantidad de envases válida','err'); return; }
+    if(!envasesChk||envasesChk<1) document.getElementById('pEnvases').value = '1';
+    if(document.querySelectorAll('#compRowsNuevo .comp-row').length===0){
+      // Esto no es un campo que le falte completar a la sucursal: es la
+      // fórmula de stock la que quedó mal cargada del lado de San Martín.
+      mostrarToast('Esta fórmula no tiene componentes cargados. Avisale a San Martín antes de enviar el pedido.','err');
+      return;
+    }
   }
   const cliId = document.getElementById('pClienteId').value;
-  if(!modoStock && !cliId){ mostrarToast('Seleccioná un cliente','err'); return; }
-  if(modoStock && document.querySelectorAll('#compRowsNuevo .comp-row').length===0){
-    mostrarToast('Esta fórmula no tiene componentes cargados. Avisale a San Martín antes de enviar el pedido.','err');
-    return;
-  }
   const telInput = document.getElementById('pTelefono');
   const telVal = telInput.value.trim();
-  if(cliId && !telVal){ telInput.classList.add('field-invalid'); mostrarToast('Completá el teléfono del cliente','err'); return; }
   telInput.classList.remove('field-invalid');
 
   const btn = document.getElementById('btnGuardarPrep');
@@ -1104,7 +1205,9 @@ async function guardarPedido(){
   try{
     const cupon = await sbRpc('next_cupon_nuevo');
 
-    if(cliId){
+    // Solo actualiza el teléfono del cliente si efectivamente escribieron
+    // uno nuevo; un campo vacío no debe borrar un teléfono ya guardado.
+    if(cliId && telVal){
       const cliActual = clientes.find(c=>c.id===cliId);
       if(cliActual && (cliActual.telefono||'')!==telVal){
         await sbPatch('clientes', cliId, {telefono: telVal});
@@ -1124,6 +1227,7 @@ async function guardarPedido(){
       cantidad_total: parseFloat(document.getElementById('pCantTotal').value) || null,
       unidad: document.getElementById('pUnidad').value || null,
       observaciones: document.getElementById('pObs').value || null,
+      datos_pendientes: document.getElementById('pDatosPendientes').checked,
     }));
     const prepId = nuevoPrep[0].id;
     const rows = document.querySelectorAll('#compRowsNuevo .comp-row');
@@ -1142,6 +1246,22 @@ async function guardarPedido(){
       try{ await sbDelete('preparados?id=eq.'+prepId); }catch(errRollback){ /* best-effort */ }
       throw errComp;
     }
+
+    // La foto de receta recién se puede subir ahora que el preparado existe
+    // (la policy de storage exige que la carpeta del archivo coincida con
+    // un preparado ya creado de esta sucursal). Si falla, no se revierte
+    // el pedido: ya quedó enviado, y la foto se puede mandar después por
+    // el chat del preparado.
+    if(recetaPendienteBlob){
+      try{
+        const path = `${prepId}/receta_${Date.now()}.jpg`;
+        await sbSubirImagen('chat-imagenes', path, recetaPendienteBlob);
+        await sbPatch('preparados', prepId, {receta_imagen_url: path});
+      }catch(errFoto){
+        mostrarToast('El pedido se envió, pero no se pudo subir la foto de la receta: '+errFoto.message+'. Podés mandarla por el chat del pedido.','err');
+      }
+    }
+
     mostrarToast('✓ Pedido enviado a San Martín','ok');
     cerrarModal('modalPedido');
     await cargarTodo();

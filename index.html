@@ -134,6 +134,12 @@
     .modal-overlay.open{display:flex;}
     .modal{background:var(--surface);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,0.2);width:100%;max-width:700px;max-height:92vh;overflow-y:auto;}
     .modal-sm{max-width:420px;}
+    .modal-lg{max-width:980px;}
+    .completar-layout{display:flex;gap:24px;align-items:flex-start;}
+    .completar-form{flex:1 1 380px;min-width:280px;}
+    .completar-receta{flex:1 1 340px;min-width:260px;position:sticky;top:0;}
+    .completar-receta img{width:100%;border-radius:8px;border:1px solid var(--border);cursor:zoom-in;}
+    @media(max-width:800px){.completar-layout{flex-direction:column;}.completar-receta{position:static;}}
     .modal-header{padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:2;}
     .modal-header h2{font-size:16px;font-weight:700;}
     .modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted);}
@@ -191,6 +197,8 @@
     .card .badge-sucursal{margin-left:6px;}
     .badge-stock{display:inline-block;background:#FCEBD5;color:#9A5B0C;border:1px solid #F0CB98;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:2px 8px;border-radius:20px;white-space:nowrap;}
     .card .badge-stock{margin-left:6px;}
+    .btn-completar-datos{display:block;width:100%;text-align:left;background:#FFF6DE;color:#8A6100;border:1px solid #F3D98B;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px;font-family:inherit;}
+    .btn-completar-datos:hover{background:#FEECC0;}
     .fs-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--border,#e5e5e5);}
     .fs-row:last-child{border-bottom:none;}
     .fs-row-info strong{font-size:13px;}
@@ -765,6 +773,76 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modalCompletar">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h2 id="completarTitulo">Completar datos</h2>
+      <button class="modal-close" onclick="cerrarModal('modalCompletar')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="completar-layout">
+        <div class="completar-form">
+          <div class="field-row">
+            <div class="field-group">
+              <label>Cliente</label>
+              <div style="display:flex;gap:6px;">
+                <div class="ss-wrap" style="flex:1;">
+                  <input type="text" id="cClienteInput" placeholder="Buscar cliente…" oninput="filtrarSSCliente('c')" onfocus="abrirSSCliente('c')" autocomplete="off"/>
+                  <div class="ss-dropdown" id="ssCliente_c"></div>
+                  <input type="hidden" id="cClienteId"/>
+                </div>
+                <button type="button" class="btn btn-ghost btn-sm" style="white-space:nowrap;" onclick="abrirNuevoClienteDesdePrep('c')">＋ Nuevo</button>
+              </div>
+            </div>
+            <div class="field-group">
+              <label>Teléfono</label>
+              <input type="text" id="cTelefono" placeholder="Teléfono del cliente"/>
+            </div>
+          </div>
+          <div class="field-group"><label>Fecha de recepción</label><input type="date" id="cFecha"/></div>
+          <div class="field-group"><label>Observaciones</label><textarea id="cObs" rows="2"></textarea></div>
+
+          <div id="cSeccionNormal">
+            <div class="field-group"><label>Nro Receta</label><input type="number" id="cReceta"/></div>
+            <div class="sec-title">Componentes</div>
+            <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div class="comp-unidad-global-row">Unidad<select id="unidadGlobalCompletar" onchange="aplicarUnidadGlobal('compRowsCompletar',this)"></select></div><div></div></div><div id="compRowsCompletar"></div></div>
+            <button class="btn btn-ghost btn-sm" onclick="agregarCompRow('compRowsCompletar')">+ Agregar componente</button>
+            <div class="field-row-3" style="margin-top:14px;">
+              <div class="field-group"><label>Forma farmacéutica</label><select id="cForma" onchange="onFormaChange('c')"><option value="">— Sin especificar —</option></select></div>
+              <div class="field-group"><label>Cantidad total</label><input type="number" id="cCantTotal" step="any" min="0"/></div>
+              <div class="field-group"><label>Unidad</label><select id="cUnidad"><option value="">— Sin especificar —</option></select></div>
+            </div>
+          </div>
+          <div id="cSeccionStock" style="display:none;">
+            <div class="sec-title">Fórmula de stock</div>
+            <div class="stock-chip-seleccionada" id="cFormulaStockNombre" style="cursor:default;pointer-events:none;"></div>
+            <div class="field-group" style="margin-top:12px;max-width:220px;">
+              <label>Cantidad de envases</label>
+              <input type="number" id="cEnvases" min="1" step="1"/>
+            </div>
+          </div>
+
+          <div class="modal-sep"></div>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;font-size:13px;color:var(--text);">
+            <input type="checkbox" id="cDatosCompletos" style="width:auto;"/>
+            Ya completé todos los datos (quita el aviso de "datos pendientes")
+          </label>
+        </div>
+        <div class="completar-receta">
+          <div class="sec-title">Receta enviada por sucursal</div>
+          <div id="completarRecetaWrap">
+            <div class="drawer-empty">Este pedido no tiene foto de receta adjunta.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalCompletar')">Cancelar</button>
+      <button class="btn btn-primary" id="btnGuardarCompletar" onclick="guardarCompletarDatos()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div class="img-ampliada-overlay" id="imgAmpliadaOverlay" onclick="if(event.target===this) cerrarImagenAmpliada()">
   <div class="img-ampliada-acciones">
     <button onclick="imprimirImagenAmpliada()">🖨 Imprimir</button>
@@ -835,14 +913,17 @@
     document.getElementById('pFecha').value     = hoy;
     poblarSelect('pForma',  FORMAS,   true);
     poblarSelect('eForma',  FORMAS,   true);
+    poblarSelect('cForma',  FORMAS,   true);
     poblarSelect('fsForma', FORMAS,   true);
     poblarSelect('pnfForma',FORMAS,   true);
     poblarSelect('pUnidad', UNIDADES, true);
     poblarSelect('eUnidad', UNIDADES, true);
+    poblarSelect('cUnidad', UNIDADES, true);
     poblarSelect('fsUnidad',UNIDADES, true);
     poblarSelect('pnfUnidad',UNIDADES, true);
     poblarUnidadGlobal('unidadGlobalNuevo');
     poblarUnidadGlobal('unidadGlobalEditar');
+    poblarUnidadGlobal('unidadGlobalCompletar');
     poblarUnidadGlobal('unidadGlobalFormula');
     poblarUnidadGlobal('unidadGlobalPNF');
     poblarSelect('pEstado', ESTADOS.filter(e=>e!=='Entregado'), false);
@@ -1245,6 +1326,7 @@
         </div>
       </div>
       ${p.origen_sucursal?`<div class="sucursal-tag-card">👁 En sucursal se ve: "${escHtml(ESTADO_TAG_SUCURSAL[p.estado]||p.estado)}"</div>`:''}
+      ${p.datos_pendientes?`<button type="button" class="btn-completar-datos" onclick="abrirCompletarDatos(event,'${p.id}')">⚠ Completar datos pendientes${p.receta_imagen_url?' (con receta adjunta)':''}</button>`:''}
       <div class="card-contact">
         <div class="card-contact-row">${svgP}<span class="card-cliente-text">${resaltar(p.cliente_nombre || (!!p.formula_stock_id?('📦 '+(p.formula_stock_nombre||'Fórmula eliminada')):'—'), termino)}</span></div>
         <div class="card-contact-row">${svgT}<span class="card-tel-text">${resaltar(p.cliente_telefono||'',termino)}</span></div>
@@ -1555,6 +1637,7 @@
         <span class="badge-sucursal">${escHtml(p.origen_sucursal||'')}</span>
       </div>
       <span class="sucursal-tag-card">👁 Sucursal ve: "Esperando respuesta"</span>
+      ${p.datos_pendientes?`<button type="button" class="btn-completar-datos" style="margin-top:6px;" onclick="abrirCompletarDatos(event,'${p.id}')">⚠ Completar datos pendientes${p.receta_imagen_url?' (con receta adjunta)':''}</button>`:''}
       <div style="font-size:12px;color:var(--muted);margin-bottom:6px;margin-top:6px;">${escHtml(partes.join(' · '))}</div>
       <div class="card-drogas">${drogasResumenHtml(p)}</div>
       ${p.observaciones?`<div style="font-size:12px;color:var(--muted);background:var(--bg);border-radius:6px;padding:6px 8px;margin-top:8px;"><strong>Observación:</strong> ${escHtml(p.observaciones)}</div>`:''}
@@ -1930,6 +2013,138 @@
       mostrarToast('✓ Guardado','ok');cerrarModal('modalEditar');await cargarTodo();
     }catch(err){mostrarToast('Error: '+err.message,'err');}
     btn.disabled=false;btn.textContent='Guardar cambios';
+  }
+
+  // ── Modal "Completar datos" (preparados con datos_pendientes=true) ─────
+  // A diferencia de "Editar preparado", este modal solo toca los datos
+  // propios del preparado (cliente, forma, componentes, etc.), nunca el
+  // estado ni el precio — esos siguen siendo del flujo normal de edición.
+  let prepCompletarActual = null;
+  async function abrirCompletarDatos(e,id){
+    e.stopPropagation();
+    const p = preparados.find(x=>x.id===id);
+    if(!p) return;
+    prepCompletarActual = p;
+    const esStock = !!p.formula_stock_id;
+    document.getElementById('completarTitulo').textContent = `Completar datos ${p.nro_cupon_nuevo!=null?'#'+p.nro_cupon_nuevo:'T'+p.nro_cupon}`;
+    document.getElementById('cClienteInput').value = p.cliente_nombre??'';
+    document.getElementById('cClienteId').value = p.cliente_id??'';
+    document.getElementById('cTelefono').value = p.cliente_telefono??'';
+    document.getElementById('cFecha').value = p.fecha_recepcion??'';
+    document.getElementById('cObs').value = p.observaciones??'';
+    // Arranca destildado a propósito: hay que confirmarlo a mano cada vez,
+    // así no se destilda "datos pendientes" sin haber completado nada.
+    document.getElementById('cDatosCompletos').checked = false;
+    document.getElementById('cSeccionNormal').style.display = esStock ? 'none' : '';
+    document.getElementById('cSeccionStock').style.display = esStock ? '' : 'none';
+
+    const wrap = document.getElementById('completarRecetaWrap');
+    if(p.receta_imagen_url){
+      wrap.innerHTML = '<img id="completarRecetaImg" alt="Receta" style="opacity:.4;" onclick="verImagenAmpliada(this.src)"/>';
+      sbFirmarImagen('chat-imagenes', p.receta_imagen_url).then(url=>{
+        const img = document.getElementById('completarRecetaImg');
+        if(img){ img.src = url; img.style.opacity=''; }
+      }).catch(()=>{ wrap.innerHTML = '<div class="drawer-empty">No se pudo cargar la foto de la receta.</div>'; });
+    } else {
+      wrap.innerHTML = '<div class="drawer-empty">Este pedido no tiene foto de receta adjunta.</div>';
+    }
+
+    if(esStock){
+      document.getElementById('cFormulaStockNombre').textContent = p.formula_stock_nombre || '(fórmula eliminada)';
+      document.getElementById('cEnvases').value = p.cantidad_envases ?? '';
+      abrirModal('modalCompletar');
+      return;
+    }
+    document.getElementById('cReceta').value = p.nro_receta??'';
+    document.getElementById('cForma').value = p.forma_farmaceutica??'';
+    document.getElementById('cCantTotal').value = p.cantidad_total??'';
+    document.getElementById('cUnidad').value = p.unidad??'';
+    document.getElementById('unidadGlobalCompletar').value='';
+    const cont=document.getElementById('compRowsCompletar');cont.innerHTML='<div style="color:var(--muted);padding:8px;font-size:13px;">Cargando componentes…</div>';
+    abrirModal('modalCompletar');
+    await cargarComponentes(p);
+    cont.innerHTML='';
+    p.componentes.forEach(c=>{
+      agregarCompRow('compRowsCompletar',c.id,c.droga_nombre||'',c.droga_id,c.cantidad??'',c.unidad??'');
+    });
+  }
+
+  async function guardarCompletarDatos(){
+    if(!prepCompletarActual) return;
+    const cliId=document.getElementById('cClienteId').value;
+    const telVal=document.getElementById('cTelefono').value.trim();
+    const esStock = !!prepCompletarActual.formula_stock_id;
+    if(esStock){
+      const envasesVal = document.getElementById('cEnvases').value;
+      if(envasesVal && (parseInt(envasesVal)<1)){ mostrarToast('Ingresá una cantidad de envases válida','err'); return; }
+    }
+    const btn=document.getElementById('btnGuardarCompletar');btn.disabled=true;btn.textContent='Guardando…';
+    try{
+      // Igual que en la edición normal: solo pisa el teléfono si efectivamente
+      // se escribió uno nuevo, un campo vacío no borra el que ya estaba.
+      if(cliId && telVal){
+        const cliActual=clientes.find(c=>c.id===cliId);
+        if(cliActual && (cliActual.telefono||'')!==telVal){
+          await sbPatch('clientes',cliId,{telefono:telVal});
+          cliActual.telefono=telVal;
+          preparados.filter(p=>p.cliente_id===cliId).forEach(p=>{p.cliente_telefono=telVal;});
+        }
+      }
+      const datosPendientes = !document.getElementById('cDatosCompletos').checked;
+      if(esStock){
+        const envasesVal = document.getElementById('cEnvases').value;
+        const envases = envasesVal ? parseInt(envasesVal) : null;
+        const f=formulasStock.find(x=>x.id===prepCompletarActual.formula_stock_id);
+        const cantTotal = (f && envases) ? +(f.cantidad_base*envases).toFixed(4) : prepCompletarActual.cantidad_total;
+        await sbPatch('preparados',prepCompletarActual.id,limpiar({
+          cliente_id:cliId||null,
+          fecha_recepcion:document.getElementById('cFecha').value||null,
+          cantidad_envases:envases,
+          cantidad_total:cantTotal,
+          observaciones:document.getElementById('cObs').value||null,
+          datos_pendientes:datosPendientes,
+        }));
+        if(envases && envases !== prepCompletarActual.cantidad_envases && f){
+          const idsViejos = prepCompletarActual.componentes.map(c=>c.id);
+          const receta = formulasStockComponentes[f.id]||[];
+          for(const c of receta){
+            if(!c.droga_id) continue;
+            const cant = escalarCantidadComponente(c.cantidad, c.unidad, envases);
+            await sbPost('componentes',limpiar({preparado_id:prepCompletarActual.id,droga_id:c.droga_id,cantidad:cant,unidad:c.unidad}));
+          }
+          if(idsViejos.length) await sbDelete('componentes?id=in.('+idsViejos.join(',')+')');
+        }
+        mostrarToast('✓ Guardado','ok');cerrarModal('modalCompletar');await cargarTodo();
+        btn.disabled=false;btn.textContent='Guardar';
+        return;
+      }
+      await sbPatch('preparados',prepCompletarActual.id,limpiar({
+        nro_receta:parseInt(document.getElementById('cReceta').value)||null,
+        cliente_id:cliId||null,
+        fecha_recepcion:document.getElementById('cFecha').value||null,
+        forma_farmaceutica:document.getElementById('cForma').value||null,
+        cantidad_total:parseFloat(document.getElementById('cCantTotal').value)||null,
+        unidad:document.getElementById('cUnidad').value||null,
+        observaciones:document.getElementById('cObs').value||null,
+        datos_pendientes:datosPendientes,
+      }));
+      const rows=document.querySelectorAll('#compRowsCompletar .comp-row');
+      const viejosIds=prepCompletarActual.componentes.map(c=>c.id);
+      const nuevosIds=[];
+      for(const row of rows){
+        const recId=row.dataset.recid||'';
+        const drugId=row.querySelector('.comp-drug-id').value;
+        const cant=parseFloat(row.querySelector('.comp-cant').value)||null;
+        const unid=row.querySelector('.comp-unid').value||null;
+        if(!drugId) continue;
+        const cf=limpiar({droga_id:drugId,cantidad:cant,unidad:unid});
+        if(recId){await sbPatch('componentes',recId,cf);nuevosIds.push(recId);}
+        else{const n=await sbPost('componentes',{...cf,preparado_id:prepCompletarActual.id});nuevosIds.push(n[0].id);}
+      }
+      for(const id of viejosIds.filter(id=>!nuevosIds.includes(id))){await sbDelete('componentes?id=eq.'+id);}
+      mostrarToast('✓ Guardado','ok');cerrarModal('modalCompletar');await cargarTodo();
+    }catch(err){mostrarToast('Error: '+err.message,'err');}
+    btn.disabled=false;btn.textContent='Guardar';
   }
 
   // ── Guardar preparado nuevo ────────────────────────────────────────────
