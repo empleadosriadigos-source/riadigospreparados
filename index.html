@@ -71,7 +71,6 @@
     .dot-asignar{background:#D97706;}.dot-lab{background:#2563EB;}.dot-retirar{background:var(--accent);}
     .col-count{font-size:12px;color:var(--muted);background:var(--surface);border-radius:20px;padding:2px 8px;font-weight:600;}
     .sucursal-tag-card{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:#6B3FA0;background:#F0E6FA;border:1px solid #D9C2ED;border-radius:20px;padding:2px 8px;margin:6px 0 0;white-space:nowrap;width:fit-content;}
-    .drawer-card .sucursal-tag-card{margin-top:6px;}
     .col-body{padding:10px;display:flex;flex-direction:column;gap:8px;flex:1;min-height:500px;}
     .col-body.drag-over{background:rgba(104,169,204,0.12);border-radius:6px;}
     .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:grab;box-shadow:var(--shadow);transition:box-shadow 0.15s,transform 0.1s;user-select:none;}
@@ -225,13 +224,19 @@
     .drawer-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin:14px 0 8px;}
     .drawer-section-title:first-child{margin-top:0;}
     .drawer-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;}
-    .drawer-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;}
+    .drawer-card .card-cupon{font-size:16px;margin-bottom:6px;}
+    .drawer-card .card-contact{gap:3px;margin-bottom:0;}
+    .drawer-card .card-contact-row{font-size:12px;}
+    .drawer-card .card-divider{margin:8px 0;}
+    .drawer-card .card-drogas{margin-bottom:0;}
+    .card-mensaje{font-size:12px;color:var(--muted);background:var(--surface);border-radius:6px;padding:7px 9px;margin-top:8px;border-left:3px solid var(--accent2,#68A9CC);}
     .drawer-card-actions{display:flex;gap:8px;margin-top:8px;}
     .drawer-card-actions .btn{flex:1;}
     .drawer-empty{font-size:12px;color:var(--muted);}
     .drawer-cancel-card{background:#FDECEC;border:1px solid #F3A9A9;border-radius:8px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
-    .drawer-cancel-card .txt strong{color:var(--danger);display:block;font-size:13px;margin-bottom:2px;}
-    .drawer-cancel-card .txt span{font-size:12px;color:var(--muted);}
+    .drawer-cancel-card .txt{display:flex;flex-direction:column;gap:3px;}
+    .drawer-cancel-card .card-cupon{font-weight:800;}
+    .drawer-cancel-card .card-contact-row{font-size:12px;color:var(--muted);gap:6px;}
     .drawer-cancel-dismiss{background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;line-height:1;padding:2px 4px;flex-shrink:0;}
     .drawer-cancel-dismiss:hover{opacity:0.7;}
     .chat-bubble{border-radius:12px;padding:7px 11px;font-size:12.5px;line-height:1.35;max-width:88%;}
@@ -867,6 +872,21 @@
   const COL_BODY  = {'Sin precio':'body-asignar','En laboratorio':'body-lab','Listo para retirar':'body-retirar'};
   const COL_COUNT = {'Sin precio':'count-asignar','En laboratorio':'count-lab','Listo para retirar':'count-retirar'};
 
+  // Íconos de contacto compartidos entre la tarjeta del kanban y las
+  // tarjetas del cajón de notificaciones, para que se vean idénticas.
+  const SVG_PERSONA=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3D7A8A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+  const SVG_TELEFONO=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6B7685" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6.29 6.29l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
+  const SVG_CALENDARIO=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6B7685" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+  // Bloque de contacto (cliente/teléfono/fecha) en el mismo orden que usa
+  // la tarjeta del kanban, para reusarlo tal cual en el cajón de notificaciones.
+  function datosContactoHtml(p, termino=''){
+    return `<div class="card-contact">
+        <div class="card-contact-row">${SVG_PERSONA}<span class="card-cliente-text">${resaltar(p.cliente_nombre || (!!p.formula_stock_id?('📦 '+(p.formula_stock_nombre||'Fórmula eliminada')):'—'), termino)}</span></div>
+        <div class="card-contact-row">${SVG_TELEFONO}<span class="card-tel-text">${resaltar(p.cliente_telefono||'',termino)}</span></div>
+        <div class="card-contact-row">${SVG_CALENDARIO}<span class="card-fecha-text">${fmtFecha(p.fecha_recepcion)}</span></div>
+      </div>`;
+  }
+
   let preparados = [], drogas = [], clientes = [];
   let dragId = null, prepActual = null, cbDrogaIdx = null, clienteCB = null;
   let formulasStock = [], formulasStockComponentes = {}, formulaStockSeleccionada = null;
@@ -1291,10 +1311,6 @@
           : '<div class="card-droga-row" style="color:var(--muted)">Sin componentes</div>');
     const partes = [p.forma_farmaceutica, cantidadPorEnvase(p)!=null?`${cantidadPorEnvase(p)}${p.unidad?' '+p.unidad:''}`:'', esStock&&p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
     const precio = p.precio_venta?`$${Number(p.precio_venta).toLocaleString('es-AR',{minimumFractionDigits:2})}`:'';
-    const clrCli='#3D7A8A', clrMut='#6B7685';
-    const svgP=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${clrCli}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
-    const svgT=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${clrMut}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6.29 6.29l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
-    const svgC=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${clrMut}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
     const svgE=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
     const svgD=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
     const svgPrint=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>`;
@@ -1310,11 +1326,7 @@
       </div>
       ${p.origen_sucursal?`<div class="sucursal-tag-card">👁 En sucursal se ve: "${escHtml(ESTADO_TAG_SUCURSAL[p.estado]||p.estado)}"</div>`:''}
       ${p.datos_pendientes?`<button type="button" class="btn-completar-datos" onclick="abrirCompletarDatos(event,'${p.id}')">⚠ Completar datos pendientes${p.receta_imagen_url?' (con receta adjunta)':''}</button>`:''}
-      <div class="card-contact">
-        <div class="card-contact-row">${svgP}<span class="card-cliente-text">${resaltar(p.cliente_nombre || (!!p.formula_stock_id?('📦 '+(p.formula_stock_nombre||'Fórmula eliminada')):'—'), termino)}</span></div>
-        <div class="card-contact-row">${svgT}<span class="card-tel-text">${resaltar(p.cliente_telefono||'',termino)}</span></div>
-        <div class="card-contact-row">${svgC}<span class="card-fecha-text">${fmtFecha(p.fecha_recepcion)}</span></div>
-      </div>
+      ${datosContactoHtml(p, termino)}
       <hr class="card-divider"/>
       ${p.nro_receta?`<div class="card-receta-header"><span class="card-receta-label">Receta</span><span class="card-receta-num"># ${resaltar(p.nro_receta,termino)}</span></div>`:''}
       <div class="card-drogas">${drogasHtml}</div>
@@ -1382,8 +1394,9 @@
     div.className = 'drawer-cancel-card';
     div.innerHTML = `
       <div class="txt">
-        <strong>Pedido cancelado</strong>
-        <span>${escHtml(p.cliente_nombre||'—')} · ${escHtml(p.origen_sucursal||'Sucursal')}</span>
+        <div class="card-cupon" style="font-size:14px;">${fmtCupon(p)}<span class="badge-sucursal">${escHtml(p.origen_sucursal||'Sucursal')}</span></div>
+        <div class="card-contact-row">${SVG_PERSONA}<span>${escHtml(p.cliente_nombre||'—')}</span></div>
+        ${p.cliente_telefono?`<div class="card-contact-row">${SVG_TELEFONO}<span>${escHtml(p.cliente_telefono)}</span></div>`:''}
       </div>
       <button class="drawer-cancel-dismiss" title="Descartar" onclick="descartarCancelado('${p.id}')">✕</button>`;
     return div;
@@ -1394,8 +1407,9 @@
     div.className = 'drawer-cancel-card';
     div.innerHTML = `
       <div class="txt">
-        <strong>Pedido rechazado</strong>
-        <span>${escHtml(p.cliente_nombre||'—')} · ${escHtml(p.origen_sucursal||'Sucursal')}</span>
+        <div class="card-cupon" style="font-size:14px;">${fmtCupon(p)}<span class="badge-sucursal">${escHtml(p.origen_sucursal||'Sucursal')}</span></div>
+        <div class="card-contact-row">${SVG_PERSONA}<span>${escHtml(p.cliente_nombre||'—')}</span></div>
+        ${p.cliente_telefono?`<div class="card-contact-row">${SVG_TELEFONO}<span>${escHtml(p.cliente_telefono)}</span></div>`:''}
       </div>
       <button class="drawer-cancel-dismiss" title="Descartar" onclick="descartarCancelado('${p.id}')">✕</button>`;
     return div;
@@ -1615,15 +1629,14 @@
     div.className = 'drawer-card';
     const partes = [p.forma_farmaceutica, cantidadPorEnvase(p)!=null?`${cantidadPorEnvase(p)}${p.unidad?' '+p.unidad:''}`:'', !!p.formula_stock_id&&p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
     div.innerHTML = `
-      <div class="drawer-card-top">
-        <strong>${escHtml(p.cliente_nombre||'—')}</strong>
-        <span class="badge-sucursal">${escHtml(p.origen_sucursal||'')}</span>
-      </div>
-      <span class="sucursal-tag-card">👁 Sucursal ve: "Esperando respuesta"</span>
-      ${p.datos_pendientes?`<button type="button" class="btn-completar-datos" style="margin-top:6px;" onclick="abrirCompletarDatos(event,'${p.id}')">⚠ Completar datos pendientes${p.receta_imagen_url?' (con receta adjunta)':''}</button>`:''}
-      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;margin-top:6px;">${escHtml(partes.join(' · '))}</div>
+      <div class="card-cupon">${fmtCupon(p)}<span class="badge-sucursal">${escHtml(p.origen_sucursal||'')}</span>${!!p.formula_stock_id?`<span class="badge-stock">📦 Stock</span>`:''}</div>
+      ${p.datos_pendientes?`<button type="button" class="btn-completar-datos" onclick="abrirCompletarDatos(event,'${p.id}')">⚠ Completar datos pendientes${p.receta_imagen_url?' (con receta adjunta)':''}</button>`:''}
+      ${datosContactoHtml(p)}
+      <hr class="card-divider"/>
+      ${p.nro_receta?`<div class="card-receta-header"><span class="card-receta-label">Receta</span><span class="card-receta-num"># ${escHtml(p.nro_receta)}</span></div>`:''}
       <div class="card-drogas">${drogasResumenHtml(p)}</div>
-      ${p.observaciones?`<div style="font-size:12px;color:var(--muted);background:var(--bg);border-radius:6px;padding:6px 8px;margin-top:8px;"><strong>Observación:</strong> ${escHtml(p.observaciones)}</div>`:''}
+      <div class="card-meta" style="margin-top:6px;">${escHtml(partes.join(' · '))}</div>
+      ${p.observaciones?`<div class="card-mensaje">${escHtml(p.observaciones)}</div>`:''}
       <div class="field-group" style="margin-top:10px;margin-bottom:0;">
         <label>Precio (opcional)</label>
         <input type="number" min="0" step="any" id="precio-nueva-${p.id}" placeholder="Podés dejarlo vacío por ahora">
@@ -1642,14 +1655,14 @@
     div.className = 'drawer-card';
     const partes = [p.forma_farmaceutica, cantidadPorEnvase(p)!=null?`${cantidadPorEnvase(p)}${p.unidad?' '+p.unidad:''}`:'', !!p.formula_stock_id&&p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
     div.innerHTML = `
-      <div class="drawer-card-top">
-        <strong>${escHtml(p.cliente_nombre||'—')}</strong>
-        <span class="badge-sucursal">${escHtml(p.origen_sucursal||'')}</span>
-      </div>
-      <span class="sucursal-tag-card">👁 Sucursal ve: "Precio propuesto"</span>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;margin-top:6px;">${escHtml(partes.join(' · '))}</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Esperando que confirmen en ${escHtml(p.origen_sucursal||'la sucursal')}</div>
-      <div class="field-group" style="margin-bottom:6px;">
+      <div class="card-cupon">${fmtCupon(p)}<span class="badge-sucursal">${escHtml(p.origen_sucursal||'')}</span>${!!p.formula_stock_id?`<span class="badge-stock">📦 Stock</span>`:''}</div>
+      ${datosContactoHtml(p)}
+      <hr class="card-divider"/>
+      ${p.nro_receta?`<div class="card-receta-header"><span class="card-receta-label">Receta</span><span class="card-receta-num"># ${escHtml(p.nro_receta)}</span></div>`:''}
+      <div class="card-drogas">${drogasResumenHtml(p)}</div>
+      <div class="card-meta" style="margin-top:6px;">${escHtml(partes.join(' · '))}</div>
+      <div class="card-meta" style="margin-top:4px;">Esperando que confirmen en ${escHtml(p.origen_sucursal||'la sucursal')}</div>
+      <div class="field-group" style="margin-top:10px;margin-bottom:6px;">
         <label>Precio</label>
         <input type="number" min="0" step="any" id="precio-esperando-${p.id}" value="${p.precio_venta ?? ''}">
       </div>
