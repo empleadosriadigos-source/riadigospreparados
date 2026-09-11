@@ -393,7 +393,10 @@
   <div class="drawer">
     <div class="drawer-header">
       <h2>Solicitudes de sucursal</h2>
-      <button class="modal-close" onclick="cerrarDrawer()">✕</button>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="btn btn-ghost btn-sm" onclick="abrirHistorialRechazados()">Historial</button>
+        <button class="modal-close" onclick="cerrarDrawer()">✕</button>
+      </div>
     </div>
     <div class="drawer-body">
       <div class="drawer-section-title" id="drawerCanceladasTitle" style="display:none;">Canceladas sin descartar</div>
@@ -411,7 +414,11 @@
 <div class="modal-overlay" id="modalRechazar">
   <div class="popup">
     <h3>¿Rechazar esta solicitud?</h3>
-    <p style="font-size:13px;color:var(--muted);margin-top:6px;">La sucursal va a ver que la rechazaste. Si querés explicarle por qué, escribile por el chat del preparado.</p>
+    <p style="font-size:13px;color:var(--muted);margin-top:6px;">La sucursal va a ver que la rechazaste.</p>
+    <div class="field-group" style="margin-top:10px;">
+      <label>Motivo (opcional, queda guardado en el historial)</label>
+      <textarea id="motivoRechazo" rows="2" placeholder="Ej: falta stock de la droga, receta ilegible, etc."></textarea>
+    </div>
     <div class="popup-acciones">
       <button class="btn btn-ghost" onclick="cerrarModal('modalRechazar')">Volver</button>
       <button class="btn btn-danger" onclick="confirmarRechazo()">Sí, rechazar</button>
@@ -430,6 +437,20 @@
       <div id="papeleraLista" style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto;"></div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal('modalPapelera')">Cerrar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalHistorialRechazados">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Historial de rechazados</h2>
+      <button class="modal-close" onclick="cerrarModal('modalHistorialRechazados')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Todos los pedidos que rechazaste, con el motivo si lo escribiste. Incluye los que ya descartaste del cajón de notificaciones.</p>
+      <div id="historialRechazadosLista" style="display:flex;flex-direction:column;gap:10px;max-height:65vh;overflow-y:auto;"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal('modalHistorialRechazados')">Cerrar</button></div>
   </div>
 </div>
 
@@ -1410,6 +1431,7 @@
         <div class="card-cupon" style="font-size:14px;">${fmtCupon(p)}<span class="badge-sucursal">${escHtml(p.origen_sucursal||'Sucursal')}</span></div>
         <div class="card-contact-row">${SVG_PERSONA}<span>${escHtml(p.cliente_nombre||'—')}</span></div>
         ${p.cliente_telefono?`<div class="card-contact-row">${SVG_TELEFONO}<span>${escHtml(p.cliente_telefono)}</span></div>`:''}
+        ${p.motivo_rechazo?`<div class="card-mensaje" style="margin-top:4px;">${escHtml(p.motivo_rechazo)}</div>`:''}
       </div>
       <button class="drawer-cancel-dismiss" title="Descartar" onclick="descartarCancelado('${p.id}')">✕</button>`;
     return div;
@@ -1683,12 +1705,17 @@
   }
 
   let rechazarTargetId = null;
-  function rechazarSolicitud(id){ rechazarTargetId = id; abrirModal('modalRechazar'); }
+  function rechazarSolicitud(id){
+    rechazarTargetId = id;
+    document.getElementById('motivoRechazo').value = '';
+    abrirModal('modalRechazar');
+  }
   async function confirmarRechazo(){
     const btn=document.querySelector('#modalRechazar .btn-danger');
     if(btn) btn.disabled=true;
     try{
-      await sbPatch('preparados', rechazarTargetId, { estado:'Rechazado' });
+      const motivo = document.getElementById('motivoRechazo').value.trim();
+      await sbPatch('preparados', rechazarTargetId, { estado:'Rechazado', motivo_rechazo: motivo||null });
       mostrarToast('Solicitud rechazada', 'ok');
       cerrarModal('modalRechazar');
       cargarTodo();
@@ -1856,6 +1883,45 @@
       await abrirPapelera();
       cargarTodo();
     }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+  }
+
+  // ── Historial de rechazados (todos, aunque ya se hayan descartado del
+  // cajón de notificaciones) ──────────────────────────────────────────────
+  async function abrirHistorialRechazados(){
+    document.getElementById('historialRechazadosLista').innerHTML = '<p style="color:var(--muted);font-size:13px;">Cargando…</p>';
+    abrirModal('modalHistorialRechazados');
+    try{
+      const items = await sbGet('preparados_completos?estado=eq.Rechazado&order=fecha_cambio_estado.desc');
+      if(items.length){
+        const comps = await sbGet('componentes_con_droga?preparado_id=in.('+items.map(p=>p.id).join(',')+')');
+        const porPrep = {};
+        comps.forEach(c=>{ (porPrep[c.preparado_id] = porPrep[c.preparado_id]||[]).push(c); });
+        items.forEach(p=>{ p.componentes = porPrep[p.id]||[]; });
+      }
+      renderHistorialRechazados(items);
+    }catch(err){
+      document.getElementById('historialRechazadosLista').innerHTML = '<p style="color:var(--danger);font-size:13px;">Error: '+err.message+'</p>';
+    }
+  }
+  function renderHistorialRechazados(items){
+    const cont = document.getElementById('historialRechazadosLista');
+    if(!items.length){ cont.innerHTML = '<p style="color:var(--muted);font-size:13px;">Todavía no rechazaste ningún pedido.</p>'; return; }
+    cont.innerHTML = '';
+    items.forEach(p=>{
+      const partes = [p.forma_farmaceutica, cantidadPorEnvase(p)!=null?`${cantidadPorEnvase(p)}${p.unidad?' '+p.unidad:''}`:'', !!p.formula_stock_id&&p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
+      const div = document.createElement('div');
+      div.style.cssText = 'background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;';
+      div.innerHTML = `
+        <div class="card-cupon" style="font-size:15px;">${fmtCupon(p)}<span class="badge-sucursal">${escHtml(p.origen_sucursal||'')}</span>${p.eliminado_en?'<span style="font-size:10px;color:var(--muted);margin-left:6px;">(descartado del cajón)</span>':''}</div>
+        ${datosContactoHtml(p)}
+        <hr class="card-divider"/>
+        ${p.nro_receta?`<div class="card-receta-header"><span class="card-receta-label">Receta</span><span class="card-receta-num"># ${escHtml(p.nro_receta)}</span></div>`:''}
+        <div class="card-drogas">${drogasResumenHtml(p)}</div>
+        <div class="card-meta" style="margin-top:6px;">${escHtml(partes.join(' · '))}</div>
+        ${p.motivo_rechazo?`<div class="card-mensaje" style="margin-top:8px;"><strong>Motivo:</strong> ${escHtml(p.motivo_rechazo)}</div>`:'<div class="card-meta" style="margin-top:8px;font-style:italic;">Sin motivo registrado</div>'}
+        <div class="card-meta" style="margin-top:6px;">Rechazado el ${fmtFecha((p.fecha_cambio_estado||'').slice(0,10))}</div>`;
+      cont.appendChild(div);
+    });
   }
 
   // ── Editar ─────────────────────────────────────────────────────────────
