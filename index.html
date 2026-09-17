@@ -3061,13 +3061,13 @@
             ]
           : [
               ...lineaL('COMPONENTES:'),
-              ...(envasesTxt ? lineaL('ENVASES: '+envases) : []),
               ...(compsLargoData.length ? compsLargoData : lineaL('___________')),
             ]
         ),
         ...sepL(),
         ...lineaL('Forma farmacéutica: '+(forma||'___________')),
         ...lineaL('Cantidad: '+(cant||'___________')),
+        ...(!esStock && envasesTxt ? lineaL('ENVASES: '+envases) : []),
         ...sepL(),
         ...FONT_2H,
         ...lineaL(precio || '$___________'),
