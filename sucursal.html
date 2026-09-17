@@ -503,7 +503,10 @@ function cantidadPorEnvase(p){
 // la cantidad de UNA unidad dividiendo por p.cantidad_envases.
 function componentePorEnvase(c, p){
   if(c.cantidad==null) return c.cantidad;
-  if(p.cantidad_envases) return +(c.cantidad/p.cantidad_envases).toFixed(4);
+  // Las unidades de concentración (%, ‰, mg/ml, etc.) NO se dividen por envases: ya son
+  // relativas a cantidad_total (que sí se escala aparte). Mismo criterio que
+  // escalarCantidadComponente usa al guardar.
+  if(p.cantidad_envases && !UNID_CONCENTRACION.includes(c.unidad)) return +(c.cantidad/p.cantidad_envases).toFixed(4);
   return c.cantidad;
 }
 // Componentes de la fórmula ORIGINAL (sin escalar por envases) para mostrar al usuario.

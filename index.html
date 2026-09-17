@@ -941,7 +941,11 @@
   // la suma de todos los envases (mismo criterio que ya se usa para fórmulas de stock).
   function componentePorEnvase(c, p){
     if(c.cantidad==null) return c.cantidad;
-    if(p.cantidad_envases) return +(c.cantidad/p.cantidad_envases).toFixed(4);
+    // Las unidades de concentración (%, ‰, mg/ml, etc.) NO se dividen por envases: ya son
+    // relativas a cantidad_total (que sí se escala aparte). Mismo criterio que
+    // escalarCantidadComponente usa al guardar — tienen que coincidir, si no, un componente
+    // en % se ve mal en pantalla y encima queda mal guardado si se edita y guarda así.
+    if(p.cantidad_envases && !UNID_CONCENTRACION.includes(c.unidad)) return +(c.cantidad/p.cantidad_envases).toFixed(4);
     return c.cantidad;
   }
   // Cantidad de envases actualmente cargada en el modal de carga ('p') o edición ('e'),
