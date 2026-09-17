@@ -207,7 +207,10 @@
         <div class="field-group"><label>Fecha de recepción</label><input type="date" id="eFecha"/></div>
         <div class="field-group"><label>Estado</label><select id="eEstado" style="width:100%"></select></div>
       </div>
-      <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="ePrecio" min="0" step="any"/></div>
+      <div class="field-row">
+        <div class="field-group"><label>Precio por unidad (ARS)</label><input type="number" id="ePrecioUnidad" min="0" step="any" oninput="syncPrecioDesdeUnidad('e')"/></div>
+        <div class="field-group"><label>Precio total (ARS)</label><input type="number" id="ePrecioTotal" min="0" step="any" oninput="syncPrecioDesdeTotal('e')"/></div>
+      </div>
       <div class="field-group"><label>Observaciones</label><textarea id="eObs" rows="2"></textarea></div>
 
       <div class="modal-sep"></div>
@@ -586,7 +589,8 @@
     document.getElementById('eForma').value=p.forma_farmaceutica??'';
     document.getElementById('eCantTotal').value=cantidadPorEnvase(p)??'';
     document.getElementById('eUnidad').value=p.unidad??'';
-    document.getElementById('ePrecio').value=p.precio_venta??'';
+    document.getElementById('ePrecioTotal').value=p.precio_venta??'';
+    document.getElementById('ePrecioUnidad').value=p.precio_venta!=null?+(p.precio_venta/(p.cantidad_envases||1)).toFixed(2):'';
     document.getElementById('eObs').value=p.observaciones??'';
     document.getElementById('eUnidadHint').textContent='';
     document.getElementById('unidadGlobalEditar').value='';
@@ -632,7 +636,7 @@
       // Campos opcionales que el usuario puede vaciar a propósito (ej. borrar todas las
       // observaciones): se mandan aparte de limpiar(), que descarta las claves null y
       // dejaba pegado el valor viejo en la base cuando se vaciaban a mano.
-      Object.assign(patchNormal, {nro_receta:parseInt(document.getElementById('eReceta').value)||null,forma_farmaceutica:document.getElementById('eForma').value||null,cantidad_total:cantidadTotalFinalEdit,cantidad_envases:unidadesEdit>1?unidadesEdit:null,unidad:document.getElementById('eUnidad').value||null,precio_venta:parseFloat(document.getElementById('ePrecio').value)||null,observaciones:document.getElementById('eObs').value});
+      Object.assign(patchNormal, {nro_receta:parseInt(document.getElementById('eReceta').value)||null,forma_farmaceutica:document.getElementById('eForma').value||null,cantidad_total:cantidadTotalFinalEdit,cantidad_envases:unidadesEdit>1?unidadesEdit:null,unidad:document.getElementById('eUnidad').value||null,precio_venta:parseFloat(document.getElementById('ePrecioTotal').value)||null,observaciones:document.getElementById('eObs').value});
       await sbPatch('preparados',prepActual.id,patchNormal);
       const rows=document.querySelectorAll('#compRowsEditar .comp-row');
       const viejosIds=prepActual.componentes.map(c=>c.id);const nuevosIds=[];
@@ -935,6 +939,18 @@
     if(c.cantidad==null) return c.cantidad;
     if(p.cantidad_envases) return +(c.cantidad/p.cantidad_envases).toFixed(4);
     return c.cantidad;
+  }
+  // Vincula Precio por unidad y Precio total del modal de edición según la Cantidad de
+  // envases actual. precio_venta en la base siempre guarda el TOTAL (nunca el de unidad).
+  function syncPrecioDesdeUnidad(prefix){
+    const envases = parseInt(document.getElementById(prefix+'Unidades').value)||1;
+    const v = parseFloat(document.getElementById(prefix+'PrecioUnidad').value);
+    if(!isNaN(v)) document.getElementById(prefix+'PrecioTotal').value = +(v*envases).toFixed(2);
+  }
+  function syncPrecioDesdeTotal(prefix){
+    const envases = parseInt(document.getElementById(prefix+'Unidades').value)||1;
+    const v = parseFloat(document.getElementById(prefix+'PrecioTotal').value);
+    if(!isNaN(v)) document.getElementById(prefix+'PrecioUnidad').value = envases>0 ? +(v/envases).toFixed(2) : v;
   }
   // Escala la cantidad de UN componente por la cantidad de unidades/envases. Las unidades
   // de concentración (%, ‰, mg/ml, etc.) no se multiplican: ya son relativas a cantidad_total,

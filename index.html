@@ -534,7 +534,10 @@
         <div class="field-group"><label>Fecha de recepción <span style="color:var(--danger)">*</span></label><input type="date" id="pFecha"/></div>
         <div class="field-group"><label>Estado inicial</label><select id="pEstado"></select></div>
       </div>
-      <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="pPrecio" min="0" step="any"/></div>
+      <div class="field-row">
+        <div class="field-group"><label>Precio por unidad (ARS)</label><input type="number" id="pPrecioUnidad" min="0" step="any" oninput="syncPrecioDesdeUnidad('p')"/></div>
+        <div class="field-group"><label>Precio total (ARS)</label><input type="number" id="pPrecioTotal" min="0" step="any" oninput="syncPrecioDesdeTotal('p')"/></div>
+      </div>
       <div class="field-group"><label>Observaciones</label><textarea id="pObs" rows="2"></textarea></div>
 
       <div class="modal-sep"></div>
@@ -767,7 +770,10 @@
         <div class="field-group"><label>Fecha de recepción</label><input type="date" id="eFecha"/></div>
         <div class="field-group"><label>Estado</label><select id="eEstado"></select></div>
       </div>
-      <div class="field-group"><label>Precio de venta (ARS)</label><input type="number" id="ePrecio" min="0" step="any"/></div>
+      <div class="field-row">
+        <div class="field-group"><label>Precio por unidad (ARS)</label><input type="number" id="ePrecioUnidad" min="0" step="any" oninput="syncPrecioDesdeUnidad('e')"/></div>
+        <div class="field-group"><label>Precio total (ARS)</label><input type="number" id="ePrecioTotal" min="0" step="any" oninput="syncPrecioDesdeTotal('e')"/></div>
+      </div>
       <div class="field-group"><label>Observaciones</label><textarea id="eObs" rows="2"></textarea></div>
 
       <div class="modal-sep"></div>
@@ -937,6 +943,27 @@
     if(c.cantidad==null) return c.cantidad;
     if(p.cantidad_envases) return +(c.cantidad/p.cantidad_envases).toFixed(4);
     return c.cantidad;
+  }
+  // Cantidad de envases actualmente cargada en el modal de carga ('p') o edición ('e'),
+  // sea que el preparado esté en modo stock o normal, para vincular Precio por unidad
+  // y Precio total. precio_venta en la base siempre guarda el TOTAL (nunca el de unidad).
+  function envasesActualesPara(prefix){
+    if(prefix==='p'){
+      const modoStock = vistaPrepModal==='seleccionada' && !!formulaStockSeleccionada;
+      return parseInt(document.getElementById(modoStock?'pEnvases':'pUnidades').value)||1;
+    }
+    const esStock = !!(prepActual && prepActual.formula_stock_id);
+    return parseInt(document.getElementById(esStock?'eEnvases':'eUnidades').value)||1;
+  }
+  function syncPrecioDesdeUnidad(prefix){
+    const envases = envasesActualesPara(prefix);
+    const v = parseFloat(document.getElementById(prefix+'PrecioUnidad').value);
+    if(!isNaN(v)) document.getElementById(prefix+'PrecioTotal').value = +(v*envases).toFixed(2);
+  }
+  function syncPrecioDesdeTotal(prefix){
+    const envases = envasesActualesPara(prefix);
+    const v = parseFloat(document.getElementById(prefix+'PrecioTotal').value);
+    if(!isNaN(v)) document.getElementById(prefix+'PrecioUnidad').value = envases>0 ? +(v/envases).toFixed(2) : v;
   }
   // Componentes de la fórmula ORIGINAL (sin escalar por envases) para mostrar al usuario.
   // Los componentes guardados en el preparado (p.componentes) están escalados y son solo
@@ -1985,7 +2012,11 @@
     document.getElementById('eCupon').readOnly = esCuponNuevo;
     document.getElementById('eFecha').value=p.fecha_recepcion??'';
     document.getElementById('eEstado').value=p.estado??'';
-    document.getElementById('ePrecio').value=p.precio_venta??'';
+    {
+      const envasesEdit = p.cantidad_envases || 1;
+      document.getElementById('ePrecioTotal').value = p.precio_venta??'';
+      document.getElementById('ePrecioUnidad').value = p.precio_venta!=null ? +(p.precio_venta/envasesEdit).toFixed(2) : '';
+    }
     document.getElementById('eObs').value=p.observaciones??'';
     document.getElementById('eClienteInput').value=p.cliente_nombre??'';
     document.getElementById('eClienteId').value=p.cliente_id??'';
@@ -2077,7 +2108,7 @@
         Object.assign(patchStock, {
           cantidad_envases:envases,
           cantidad_total:cantTotal,
-          precio_venta:parseFloat(document.getElementById('ePrecio').value)||null,
+          precio_venta:parseFloat(document.getElementById('ePrecioTotal').value)||null,
           observaciones:document.getElementById('eObs').value||null,
         });
         await sbPatch('preparados',prepActual.id,patchStock);
@@ -2126,7 +2157,7 @@
         cantidad_total:cantidadTotalFinalEdit,
         cantidad_envases:unidadesEdit>1?unidadesEdit:null,
         unidad:document.getElementById('eUnidad').value||null,
-        precio_venta:parseFloat(document.getElementById('ePrecio').value)||null,
+        precio_venta:parseFloat(document.getElementById('ePrecioTotal').value)||null,
         observaciones:document.getElementById('eObs').value||null,
       });
       await sbPatch('preparados',prepActual.id,patchNormal);
@@ -2364,7 +2395,7 @@
         forma_farmaceutica:document.getElementById('pForma').value||null,
         cantidad_total:cantidadTotalFinal,
         unidad:document.getElementById('pUnidad').value||null,
-        precio_venta:parseFloat(document.getElementById('pPrecio').value)||null,
+        precio_venta:parseFloat(document.getElementById('pPrecioTotal').value)||null,
         observaciones:document.getElementById('pObs').value||null,
       }));
       const prepId=nuevoPrep[0].id;
@@ -2404,7 +2435,7 @@
   }
 
   function limpiarFormPreparado(){
-    ['pCupon','pReceta','pCantTotal','pPrecio','pObs'].forEach(id=>document.getElementById(id).value='');
+    ['pCupon','pReceta','pCantTotal','pPrecioUnidad','pPrecioTotal','pObs'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('pUnidades').value='1';
     document.getElementById('pClienteInput').value='';document.getElementById('pClienteId').value='';
     document.getElementById('pTelefono').value='';document.getElementById('pTelefono').classList.remove('field-invalid');
