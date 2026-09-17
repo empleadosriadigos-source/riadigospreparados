@@ -549,11 +549,6 @@
       <!-- Sección normal: se reemplaza por las de stock según el modo -->
       <div id="seccionPrepNormal">
         <div class="field-group"><label>Nro Receta</label><input type="number" id="pReceta"/></div>
-        <div class="field-group" style="max-width:220px;">
-          <label>Unidades</label>
-          <input type="number" id="pUnidades" min="1" step="1" value="1"/>
-          <div class="unidad-hint">Si preparás más de un envase, cargá abajo los datos de UN envase y poné acá cuántos hacés en total.</div>
-        </div>
         <div class="sec-title">Componentes</div>
         <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div class="comp-unidad-global-row">Unidad<select id="unidadGlobalNuevo" onchange="aplicarUnidadGlobal('compRowsNuevo',this)"></select></div><div></div></div><div id="compRowsNuevo"></div></div>
         <button class="btn btn-ghost btn-sm" id="btnAgregarCompNuevo" onclick="agregarCompRow('compRowsNuevo')">+ Agregar componente</button>
@@ -565,6 +560,10 @@
             <div class="unidad-hint" id="pUnidadHint"></div>
           </div>
           <div class="field-group"><label>Unidad</label><select id="pUnidad"><option value="">— Sin especificar —</option></select></div>
+        </div>
+        <div class="field-group" style="max-width:220px;">
+          <label>Cantidad de envases</label>
+          <input type="number" id="pUnidades" min="1" step="1" value="1"/>
         </div>
       </div>
 
@@ -774,11 +773,6 @@
       <div class="modal-sep"></div>
       <div id="eSeccionNormal">
         <div class="field-group"><label>Nro Receta</label><input type="number" id="eReceta"/></div>
-        <div class="field-group" style="max-width:220px;">
-          <label>Unidades</label>
-          <input type="number" id="eUnidades" min="1" step="1" value="1"/>
-          <div class="unidad-hint">Los datos de abajo son por unidad; si son varios envases, poné acá cuántos.</div>
-        </div>
         <div class="sec-title">Componentes</div>
         <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div class="comp-unidad-global-row">Unidad<select id="unidadGlobalEditar" onchange="aplicarUnidadGlobal('compRowsEditar',this)"></select></div><div></div></div><div id="compRowsEditar"></div></div>
         <button class="btn btn-ghost btn-sm" onclick="agregarCompRow('compRowsEditar')">+ Agregar componente</button>
@@ -786,6 +780,10 @@
           <div class="field-group"><label>Forma farmacéutica</label><select id="eForma" onchange="onFormaChange('e')"><option value="">— Sin especificar —</option></select></div>
           <div class="field-group"><label>Cantidad total</label><input type="number" id="eCantTotal" step="any" min="0"/><div class="unidad-hint" id="eUnidadHint"></div></div>
           <div class="field-group"><label>Unidad</label><select id="eUnidad"><option value="">— Sin especificar —</option></select></div>
+        </div>
+        <div class="field-group" style="max-width:220px;">
+          <label>Cantidad de envases</label>
+          <input type="number" id="eUnidades" min="1" step="1" value="1"/>
         </div>
       </div>
       <div id="eSeccionStock" style="display:none;">
@@ -818,11 +816,6 @@
 
           <div id="cSeccionNormal">
             <div class="field-group"><label>Nro Receta</label><input type="number" id="cReceta"/></div>
-            <div class="field-group" style="max-width:220px;">
-              <label>Unidades</label>
-              <input type="number" id="cUnidades" min="1" step="1" value="1"/>
-              <div class="unidad-hint">Los datos de abajo son por unidad; si son varios envases, poné acá cuántos.</div>
-            </div>
             <div class="sec-title">Componentes</div>
             <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div class="comp-unidad-global-row">Unidad<select id="unidadGlobalCompletar" onchange="aplicarUnidadGlobal('compRowsCompletar',this)"></select></div><div></div></div><div id="compRowsCompletar"></div></div>
             <button class="btn btn-ghost btn-sm" onclick="agregarCompRow('compRowsCompletar')">+ Agregar componente</button>
@@ -830,6 +823,10 @@
               <div class="field-group"><label>Forma farmacéutica</label><select id="cForma" onchange="onFormaChange('c')"><option value="">— Sin especificar —</option></select></div>
               <div class="field-group"><label>Cantidad total</label><input type="number" id="cCantTotal" step="any" min="0"/></div>
               <div class="field-group"><label>Unidad</label><select id="cUnidad"><option value="">— Sin especificar —</option></select></div>
+            </div>
+            <div class="field-group" style="max-width:220px;">
+              <label>Cantidad de envases</label>
+              <input type="number" id="cUnidades" min="1" step="1" value="1"/>
             </div>
           </div>
           <div id="cSeccionStock" style="display:none;">

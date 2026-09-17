@@ -80,7 +80,6 @@
   .modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--surface);}
   .field-group{margin-bottom:14px;}
   .field-group label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px;}
-  .unidad-hint{font-size:11px;color:var(--accent2,var(--muted));margin-top:3px;}
   .field-group input,.field-group select,.field-group textarea{width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;}
   .field-group textarea{resize:vertical;}
   .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
@@ -335,11 +334,6 @@
 
       <!-- Sección normal: se reemplaza por la de stock según el modo -->
       <div id="seccionPrepNormal">
-        <div class="field-group" style="max-width:220px;">
-          <label>Unidades</label>
-          <input type="number" id="pUnidades" min="1" step="1" value="1"/>
-          <div class="unidad-hint">Si preparás más de un envase, cargá abajo los datos de UN envase y poné acá cuántos hacés en total.</div>
-        </div>
         <div class="sec-title">Componentes</div>
         <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div class="comp-unidad-global-row">Unidad<select id="unidadGlobalNuevo" onchange="aplicarUnidadGlobal('compRowsNuevo',this)"></select></div><div></div></div><div id="compRowsNuevo"></div></div>
         <button class="btn btn-ghost btn-sm" onclick="agregarCompRow('compRowsNuevo')">+ Agregar componente</button>
@@ -350,6 +344,10 @@
             <input type="number" id="pCantTotal" step="any" min="0"/>
           </div>
           <div class="field-group"><label>Unidad</label><select id="pUnidad"><option value="">— Sin especificar —</option></select></div>
+        </div>
+        <div class="field-group" style="max-width:220px;">
+          <label>Cantidad de envases</label>
+          <input type="number" id="pUnidades" min="1" step="1" value="1"/>
         </div>
       </div>
 
