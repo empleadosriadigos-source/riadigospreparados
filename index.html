@@ -2808,6 +2808,8 @@
       const CHARSET   = [0x1B,0x74,0x02];      // charset PC850 - soporta Ñ y caracteres latinos
       const BOLD_ON   = [0x1B,0x45,0x01];      // negrita on
       const BOLD_OFF  = [0x1B,0x45,0x00];      // negrita off
+      const REV_ON    = [0x1D,0x42,0x01];      // video invertido (blanco sobre negro) - GS B n
+      const REV_OFF   = [0x1D,0x42,0x00];      // video invertido off
       const CENTER    = [0x1B,0x61,0x01];      // centrar
       const LEFT      = [0x1B,0x61,0x00];      // izquierda
       // Corte con feed incorporado en el mismo comando (GS V 66 n = 1D 56 42 n): la impresora
@@ -2852,6 +2854,17 @@
       // '‰' (tanto por mil) no existe en la tabla PC850 de la impresora y cae a '?'.
       // Solo para texto que va al ticket, se reemplaza por 'o/oo'. En pantalla se sigue mostrando el símbolo real.
       function unidadImp(u){ return u === '‰' ? 'o/oo' : (u || ''); }
+      // Tag de sucursal en video invertido (blanco sobre negro) + fuente más grande del ticket:
+      // así se destaca incluso más que el título, para poder identificar de un vistazo qué
+      // cupones hay que mandar a la otra sucursal. Solo aparece si el pedido vino de una sucursal
+      // (prep.origen_sucursal); los preparados cargados directo en San Martín no lo llevan.
+      function tagSucursal(origen){
+        return origen ? [
+          ...REV_ON, ...FONT_BIG,
+          ...lineaL(' '+origen.toUpperCase()+' '),
+          ...FONT_2H, ...REV_OFF,
+        ] : [];
+      }
 
       const fecha = prep.fecha_recepcion ? prep.fecha_recepcion.slice(8,10)+'/'+prep.fecha_recepcion.slice(5,7)+'/'+prep.fecha_recepcion.slice(0,4) : '';
       const cupon = prep.nro_cupon_nuevo != null ? String(prep.nro_cupon_nuevo) : 'T'+String(prep.nro_cupon ?? '');
@@ -2940,6 +2953,7 @@
         ...sep(),
         ...LEFT, ...FONT_2H,
         ...lineaL('#'+cupon),
+        ...tagSucursal(prep.origen_sucursal),
         ...lineaL(cliente||'___________'),
         ...FONT_NORM,
         ...(fecha ? lineaL(fecha) : []),
@@ -2977,7 +2991,11 @@
         return btoa(String.fromCharCode(...bytes));
       }
 
-      const todosLosDatos = esStock ? [...datosFarm] : [...datosCli, ...datosFarm];
+      // Cupón de cliente: se omite para pedidos que vinieron de una sucursal (además de
+      // para stock, que ya no lo llevaba) — ese ticket no tiene sentido si el preparado
+      // hay que mandarlo entero a la sucursal; con el de farmacia alcanza.
+      const soloFarmacia = esStock || !!prep.origen_sucursal;
+      const todosLosDatos = soloFarmacia ? [...datosFarm] : [...datosCli, ...datosFarm];
       await Promise.race([
         qz.print(config, [{type:'raw', format:'base64', data: toB64(todosLosDatos)}]),
         new Promise((_,reject)=>setTimeout(()=>reject(new Error('La impresora no respondió a tiempo. Revisá que esté encendida y con papel.')), 15000))
