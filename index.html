@@ -2065,16 +2065,22 @@
         const envases=parseInt(document.getElementById('eEnvases').value);
         const f=formulasStock.find(x=>x.id===prepActual.formula_stock_id);
         const cantTotal = f ? +(f.cantidad_base*envases).toFixed(4) : prepActual.cantidad_total;
-        await sbPatch('preparados',prepActual.id,limpiar({
+        const patchStock = limpiar({
           nro_cupon:prepActual.nro_cupon_nuevo==null?(parseInt(document.getElementById('eCupon').value)||null):prepActual.nro_cupon,
           cliente_id:cliId||null,
           fecha_recepcion:document.getElementById('eFecha').value||null,
           estado:document.getElementById('eEstado').value||null,
+        });
+        // Campos opcionales que el usuario puede vaciar a propósito (ej. borrar todas las
+        // observaciones): se mandan aparte de limpiar(), que descarta las claves null y
+        // dejaba pegado el valor viejo en la base cuando se vaciaban a mano.
+        Object.assign(patchStock, {
           cantidad_envases:envases,
           cantidad_total:cantTotal,
           precio_venta:parseFloat(document.getElementById('ePrecio').value)||null,
           observaciones:document.getElementById('eObs').value||null,
-        }));
+        });
+        await sbPatch('preparados',prepActual.id,patchStock);
         // Si cambió la cantidad de envases, hay que reescalar los componentes guardados
         // (los usa el reporte de consumo de drogas) para que sigan reflejando lo real.
         // Insertamos los nuevos primero y recién después borramos los viejos
@@ -2106,20 +2112,23 @@
         ? +(cantTotalIngresadaEdit*unidadesEdit).toFixed(4) : cantTotalIngresadaEdit;
       const patchNormal = limpiar({
         nro_cupon:prepActual.nro_cupon_nuevo==null?(parseInt(document.getElementById('eCupon').value)||null):prepActual.nro_cupon,
-        nro_receta:parseInt(document.getElementById('eReceta').value)||null,
         cliente_id:cliId||null,
         fecha_recepcion:document.getElementById('eFecha').value||null,
         estado:document.getElementById('eEstado').value||null,
+      });
+      // Campos opcionales que el usuario puede vaciar a propósito (ej. borrar todas las
+      // observaciones, o dejar sin cantidad de envases): se mandan aparte de limpiar(), que
+      // descarta las claves null y dejaba pegado el valor viejo en la base cuando se
+      // vaciaban a mano en vez de guardar el vacío.
+      Object.assign(patchNormal, {
+        nro_receta:parseInt(document.getElementById('eReceta').value)||null,
         forma_farmaceutica:document.getElementById('eForma').value||null,
         cantidad_total:cantidadTotalFinalEdit,
+        cantidad_envases:unidadesEdit>1?unidadesEdit:null,
         unidad:document.getElementById('eUnidad').value||null,
         precio_venta:parseFloat(document.getElementById('ePrecio').value)||null,
         observaciones:document.getElementById('eObs').value||null,
       });
-      // cantidad_envases se manda aparte de limpiar(): limpiar() descarta las claves null,
-      // pero acá null es un valor válido (volver a 1 sola unidad) que hay que mandar tal cual
-      // para que PostgREST limpie el valor viejo en la base, no que lo deje pegado.
-      patchNormal.cantidad_envases = unidadesEdit>1?unidadesEdit:null;
       await sbPatch('preparados',prepActual.id,patchNormal);
       const rows=document.querySelectorAll('#compRowsEditar .comp-row');
       const viejosIds=prepActual.componentes.map(c=>c.id);
@@ -2132,7 +2141,11 @@
         const cant = (unidadesEdit>1 && cantIngresadaEdit!=null)
           ? escalarCantidadComponente(cantIngresadaEdit, unid, unidadesEdit) : cantIngresadaEdit;
         if(!drugId) continue;
-        const cf=limpiar({droga_id:drugId,cantidad:cant,unidad:unid});
+        // Se arma sin pasar por limpiar(): droga_id ya está garantizado (el continue de
+        // arriba lo exige), y cantidad/unidad son campos que se pueden vaciar a propósito al
+        // editar un componente existente; limpiar() los descartaría y dejaría pegado el valor
+        // viejo en la base en vez de guardar el vaciado.
+        const cf={droga_id:drugId,cantidad:cant,unidad:unid};
         if(recId){await sbPatch('componentes',recId,cf);nuevosIds.push(recId);}
         else{const n=await sbPost('componentes',{...cf,preparado_id:prepActual.id});nuevosIds.push(n[0].id);}
       }
@@ -2216,12 +2229,16 @@
         const envases = envasesVal ? parseInt(envasesVal) : null;
         const f=formulasStock.find(x=>x.id===prepCompletarActual.formula_stock_id);
         const cantTotal = (f && envases) ? +(f.cantidad_base*envases).toFixed(4) : prepCompletarActual.cantidad_total;
-        await sbPatch('preparados',prepCompletarActual.id,limpiar({
+        // Se arma el patch entero sin pasar por limpiar(): acá todos los campos son válidos
+        // de mandar tal cual, incluso null (ej. borrar las observaciones a mano tiene que
+        // guardarse de verdad, no quedar pegado el valor viejo).
+        const patchCompletarStock = {
           cantidad_envases:envases,
           cantidad_total:cantTotal,
           observaciones:document.getElementById('cObs').value||null,
           datos_pendientes:datosPendientes,
-        }));
+        };
+        await sbPatch('preparados',prepCompletarActual.id,patchCompletarStock);
         if(envases && envases !== prepCompletarActual.cantidad_envases && f){
           const idsViejos = prepCompletarActual.componentes.map(c=>c.id);
           const receta = formulasStockComponentes[f.id]||[];
@@ -2240,17 +2257,19 @@
       const cantTotalIngresadaCompletar = parseFloat(document.getElementById('cCantTotal').value)||null;
       const cantidadTotalFinalCompletar = (unidadesCompletar>1 && cantTotalIngresadaCompletar!=null)
         ? +(cantTotalIngresadaCompletar*unidadesCompletar).toFixed(4) : cantTotalIngresadaCompletar;
-      const patchCompletar = limpiar({
+      // Se arma el patch entero sin pasar por limpiar(): todos estos campos son opcionales
+      // y el usuario los puede vaciar a propósito (ej. borrar las observaciones), así que
+      // tienen que mandarse tal cual, incluso en null, para que el vaciado se guarde de
+      // verdad y no quede pegado el valor viejo.
+      const patchCompletar = {
         nro_receta:parseInt(document.getElementById('cReceta').value)||null,
         forma_farmaceutica:document.getElementById('cForma').value||null,
         cantidad_total:cantidadTotalFinalCompletar,
+        cantidad_envases:unidadesCompletar>1?unidadesCompletar:null,
         unidad:document.getElementById('cUnidad').value||null,
         observaciones:document.getElementById('cObs').value||null,
         datos_pendientes:datosPendientes,
-      });
-      // Igual que en guardarEdicion: cantidad_envases se manda aparte de limpiar() para
-      // que un null explícito (volver a 1 unidad) sí llegue y limpie el valor viejo.
-      patchCompletar.cantidad_envases = unidadesCompletar>1?unidadesCompletar:null;
+      };
       await sbPatch('preparados',prepCompletarActual.id,patchCompletar);
       const rows=document.querySelectorAll('#compRowsCompletar .comp-row');
       const viejosIds=prepCompletarActual.componentes.map(c=>c.id);
@@ -2263,7 +2282,11 @@
         const cant = (unidadesCompletar>1 && cantIngresadaCompletar!=null)
           ? escalarCantidadComponente(cantIngresadaCompletar, unid, unidadesCompletar) : cantIngresadaCompletar;
         if(!drugId) continue;
-        const cf=limpiar({droga_id:drugId,cantidad:cant,unidad:unid});
+        // Se arma sin pasar por limpiar(): droga_id ya está garantizado (el continue de
+        // arriba lo exige), y cantidad/unidad son campos que se pueden vaciar a propósito al
+        // editar un componente existente; limpiar() los descartaría y dejaría pegado el valor
+        // viejo en la base en vez de guardar el vaciado.
+        const cf={droga_id:drugId,cantidad:cant,unidad:unid};
         if(recId){await sbPatch('componentes',recId,cf);nuevosIds.push(recId);}
         else{const n=await sbPost('componentes',{...cf,preparado_id:prepCompletarActual.id});nuevosIds.push(n[0].id);}
       }
