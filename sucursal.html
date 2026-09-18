@@ -345,20 +345,18 @@
           </div>
           <div class="field-group"><label>Unidad</label><select id="pUnidad"><option value="">— Sin especificar —</option></select></div>
         </div>
-        <div class="field-group" style="max-width:220px;">
-          <label>Cantidad de envases</label>
-          <input type="number" id="pUnidades" min="1" step="1" value="1"/>
-        </div>
       </div>
 
-      <!-- Fórmula ya elegida: nombre (tocar para volver a elegir) + cantidad de envases -->
+      <!-- Fórmula ya elegida: nombre (tocar para volver a elegir) -->
       <div id="seccionStockSeleccionada" style="display:none;">
         <div class="sec-title">Fórmula elegida</div>
         <button type="button" class="stock-chip-seleccionada" id="btnFormulaSeleccionadaNombre" onclick="volverAPickerStock()"></button>
-        <div class="field-group" style="margin-top:12px;max-width:220px;">
-          <label>Cantidad de envases</label>
-          <input type="number" id="pEnvases" min="1" step="1" value="1" oninput="regenerarPreviewStock()"/>
-        </div>
+      </div>
+
+      <!-- Cantidad de envases: campo único, compartido entre pedido normal y de stock -->
+      <div class="field-group" style="max-width:220px;">
+        <label>Cantidad de envases</label>
+        <input type="number" id="pEnvases" min="1" step="1" value="1" oninput="regenerarPreviewStock()"/>
       </div>
 
     </div>
@@ -1181,7 +1179,6 @@ function volverANormalPrep(){
 function abrirModalPedido(){ limpiarFormPedido(); abrirModal('modalPedido'); }
 function limpiarFormPedido(){
   ['pCantTotal','pObs'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('pUnidades').value='1';
   document.getElementById('pClienteInput').value=''; document.getElementById('pClienteId').value='';
   document.getElementById('pTelefono').value=''; document.getElementById('pTelefono').classList.remove('field-invalid');
   document.getElementById('pForma').value=''; document.getElementById('pUnidad').value='';
@@ -1222,9 +1219,10 @@ async function guardarPedido(){
 
   const btn = document.getElementById('btnGuardarPrep');
   btn.disabled=true; btn.textContent='Enviando…';
-  // Unidades de un pedido NORMAL (sin fórmula de stock): los datos de abajo son de UN
-  // envase, se multiplican automáticamente al guardar. 1 = comportamiento de siempre.
-  const unidadesNorm = modoStock ? 1 : (parseInt(document.getElementById('pUnidades').value)||1);
+  // Cantidad de envases: campo único, compartido entre pedido normal y de stock. Para
+  // stock los componentes ya vienen pre-escalados en el preview (regenerarPreviewStock);
+  // para normal se escalan recién acá al guardar (ver más abajo).
+  const unidadesNorm = parseInt(document.getElementById('pEnvases').value)||1;
   try{
     const cupon = await sbRpc('next_cupon_nuevo');
 
@@ -1243,7 +1241,7 @@ async function guardarPedido(){
       nro_cupon_nuevo: cupon,
       cliente_id: cliId||null,
       formula_stock_id: modoStock ? formulaStockSeleccionada.id : null,
-      cantidad_envases: modoStock ? parseInt(document.getElementById('pEnvases').value) : (unidadesNorm>1?unidadesNorm:null),
+      cantidad_envases: modoStock ? unidadesNorm : (unidadesNorm>1?unidadesNorm:null),
       fecha_recepcion: document.getElementById('pFecha').value || null,
       estado: 'Pedido nuevo',
       origen_sucursal: SUCURSAL_NOMBRE,
@@ -1418,7 +1416,7 @@ async function repetirDesdeHistorial(id){
   document.getElementById('pForma').value = p.forma_farmaceutica||'';
   onFormaChange('p');
   document.getElementById('pUnidad').value = p.unidad||'';
-  document.getElementById('pUnidades').value = p.cantidad_envases || 1;
+  document.getElementById('pEnvases').value = p.cantidad_envases || 1;
   document.getElementById('pCantTotal').value = cantidadPorEnvase(p) ?? '';
   document.getElementById('pObs').value = p.observaciones||'';
   document.getElementById('compRowsNuevo').innerHTML = '';

@@ -225,7 +225,7 @@
       </div>
       <div class="field-group" style="max-width:220px;">
         <label>Cantidad de envases</label>
-        <input type="number" id="eUnidades" min="1" step="1" value="1"/>
+        <input type="number" id="eEnvases" min="1" step="1" value="1"/>
       </div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal('modalEditar')">Cancelar</button><button class="btn btn-primary" id="btnGuardarEditar" onclick="guardarEdicion()">Guardar cambios</button></div>
@@ -583,7 +583,7 @@
       document.getElementById('eCuponSep').style.display = esCuponNuevo ? 'none' : '';
       document.getElementById('eCupon').readOnly = esCuponNuevo;
     document.getElementById('eReceta').value=p.nro_receta??'';
-    document.getElementById('eUnidades').value=p.cantidad_envases||1;
+    document.getElementById('eEnvases').value=p.cantidad_envases||1;
     document.getElementById('eFecha').value=p.fecha_recepcion??'';
     document.getElementById('eEstado').value=p.estado??'';
     document.getElementById('eForma').value=p.forma_farmaceutica??'';
@@ -627,7 +627,7 @@
           cliActual.telefono=telVal;
         }
       }
-      const unidadesEdit = parseInt(document.getElementById('eUnidades').value)||1;
+      const unidadesEdit = parseInt(document.getElementById('eEnvases').value)||1;
       const cantTotalIngresadaEdit = parseFloat(document.getElementById('eCantTotal').value)||null;
       const cantidadTotalFinalEdit = (unidadesEdit>1 && cantTotalIngresadaEdit!=null)
         ? +(cantTotalIngresadaEdit*unidadesEdit).toFixed(4) : cantTotalIngresadaEdit;
@@ -946,12 +946,12 @@
   // Vincula Precio por unidad y Precio total del modal de edición según la Cantidad de
   // envases actual. precio_venta en la base siempre guarda el TOTAL (nunca el de unidad).
   function syncPrecioDesdeUnidad(prefix){
-    const envases = parseInt(document.getElementById(prefix+'Unidades').value)||1;
+    const envases = parseInt(document.getElementById(prefix+'Envases').value)||1;
     const v = parseFloat(document.getElementById(prefix+'PrecioUnidad').value);
     if(!isNaN(v)) document.getElementById(prefix+'PrecioTotal').value = +(v*envases).toFixed(2);
   }
   function syncPrecioDesdeTotal(prefix){
-    const envases = parseInt(document.getElementById(prefix+'Unidades').value)||1;
+    const envases = parseInt(document.getElementById(prefix+'Envases').value)||1;
     const v = parseFloat(document.getElementById(prefix+'PrecioTotal').value);
     if(!isNaN(v)) document.getElementById(prefix+'PrecioUnidad').value = envases>0 ? +(v/envases).toFixed(2) : v;
   }

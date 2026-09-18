@@ -564,20 +564,18 @@
           </div>
           <div class="field-group"><label>Unidad</label><select id="pUnidad"><option value="">— Sin especificar —</option></select></div>
         </div>
-        <div class="field-group" style="max-width:220px;">
-          <label>Cantidad de envases</label>
-          <input type="number" id="pUnidades" min="1" step="1" value="1"/>
-        </div>
       </div>
 
-      <!-- Fórmula ya elegida: nombre (tocar para volver a elegir) + cantidad de envases -->
+      <!-- Fórmula ya elegida: nombre (tocar para volver a elegir) -->
       <div id="seccionStockSeleccionada" style="display:none;">
         <div class="sec-title">Fórmula elegida</div>
         <button type="button" class="stock-chip-seleccionada" id="btnFormulaSeleccionadaNombre" onclick="volverAPickerStock()"></button>
-        <div class="field-group" style="margin-top:12px;max-width:220px;">
-          <label>Cantidad de envases <span style="color:var(--danger)">*</span></label>
-          <input type="number" id="pEnvases" min="1" step="1" value="1" oninput="regenerarPreviewStock()"/>
-        </div>
+      </div>
+
+      <!-- Cantidad de envases: campo único, compartido entre preparado normal y de stock -->
+      <div class="field-group" style="max-width:220px;">
+        <label>Cantidad de envases</label>
+        <input type="number" id="pEnvases" min="1" step="1" value="1" oninput="regenerarPreviewStock()"/>
       </div>
 
     </div>
@@ -787,18 +785,15 @@
           <div class="field-group"><label>Cantidad total</label><input type="number" id="eCantTotal" step="any" min="0"/><div class="unidad-hint" id="eUnidadHint"></div></div>
           <div class="field-group"><label>Unidad</label><select id="eUnidad"><option value="">— Sin especificar —</option></select></div>
         </div>
-        <div class="field-group" style="max-width:220px;">
-          <label>Cantidad de envases</label>
-          <input type="number" id="eUnidades" min="1" step="1" value="1"/>
-        </div>
       </div>
       <div id="eSeccionStock" style="display:none;">
         <div class="sec-title">Fórmula de stock</div>
         <div class="stock-chip-seleccionada" id="eFormulaStockNombre" style="cursor:default;pointer-events:none;"></div>
-        <div class="field-group" style="margin-top:12px;max-width:220px;">
-          <label>Cantidad de envases <span style="color:var(--danger)">*</span></label>
-          <input type="number" id="eEnvases" min="1" step="1"/>
-        </div>
+      </div>
+      <!-- Cantidad de envases: campo único, compartido entre preparado normal y de stock -->
+      <div class="field-group" style="max-width:220px;">
+        <label>Cantidad de envases</label>
+        <input type="number" id="eEnvases" min="1" step="1" value="1"/>
       </div>
     </div>
     <div class="modal-footer">
@@ -830,18 +825,15 @@
               <div class="field-group"><label>Cantidad total</label><input type="number" id="cCantTotal" step="any" min="0"/></div>
               <div class="field-group"><label>Unidad</label><select id="cUnidad"><option value="">— Sin especificar —</option></select></div>
             </div>
-            <div class="field-group" style="max-width:220px;">
-              <label>Cantidad de envases</label>
-              <input type="number" id="cUnidades" min="1" step="1" value="1"/>
-            </div>
           </div>
           <div id="cSeccionStock" style="display:none;">
             <div class="sec-title">Fórmula de stock</div>
             <div class="stock-chip-seleccionada" id="cFormulaStockNombre" style="cursor:default;pointer-events:none;"></div>
-            <div class="field-group" style="margin-top:12px;max-width:220px;">
-              <label>Cantidad de envases</label>
-              <input type="number" id="cEnvases" min="1" step="1"/>
-            </div>
+          </div>
+          <!-- Cantidad de envases: campo único, compartido entre preparado normal y de stock -->
+          <div class="field-group" style="max-width:220px;">
+            <label>Cantidad de envases</label>
+            <input type="number" id="cEnvases" min="1" step="1" value="1"/>
           </div>
 
           <div class="modal-sep"></div>
@@ -948,16 +940,11 @@
     if(p.cantidad_envases && !UNID_CONCENTRACION.includes(c.unidad)) return +(c.cantidad/p.cantidad_envases).toFixed(4);
     return c.cantidad;
   }
-  // Cantidad de envases actualmente cargada en el modal de carga ('p') o edición ('e'),
-  // sea que el preparado esté en modo stock o normal, para vincular Precio por unidad
-  // y Precio total. precio_venta en la base siempre guarda el TOTAL (nunca el de unidad).
+  // Cantidad de envases actualmente cargada en el modal de carga ('p') o edición ('e')
+  // — campo único, compartido entre preparado normal y de stock — para vincular Precio
+  // por unidad y Precio total. precio_venta en la base siempre guarda el TOTAL.
   function envasesActualesPara(prefix){
-    if(prefix==='p'){
-      const modoStock = vistaPrepModal==='seleccionada' && !!formulaStockSeleccionada;
-      return parseInt(document.getElementById(modoStock?'pEnvases':'pUnidades').value)||1;
-    }
-    const esStock = !!(prepActual && prepActual.formula_stock_id);
-    return parseInt(document.getElementById(esStock?'eEnvases':'eUnidades').value)||1;
+    return parseInt(document.getElementById(prefix+'Envases').value)||1;
   }
   function syncPrecioDesdeUnidad(prefix){
     const envases = envasesActualesPara(prefix);
@@ -2035,7 +2022,7 @@
       return;
     }
     document.getElementById('eReceta').value=p.nro_receta??'';
-    document.getElementById('eUnidades').value=p.cantidad_envases||1;
+    document.getElementById('eEnvases').value=p.cantidad_envases||1;
     document.getElementById('eForma').value=p.forma_farmaceutica??'';
     document.getElementById('eCantTotal').value=cantidadPorEnvase(p)??'';
     document.getElementById('eUnidad').value=p.unidad??'';
@@ -2141,7 +2128,7 @@
       // al guardar, igual que se hace al crear. Se recalcula siempre desde lo que hay ahora
       // en el formulario (no hace falta comparar contra el valor viejo, a diferencia de stock,
       // porque acá no hay una fórmula guardada aparte de la que ya se está editando).
-      const unidadesEdit = parseInt(document.getElementById('eUnidades').value)||1;
+      const unidadesEdit = parseInt(document.getElementById('eEnvases').value)||1;
       const cantTotalIngresadaEdit = parseFloat(document.getElementById('eCantTotal').value)||null;
       const cantidadTotalFinalEdit = (unidadesEdit>1 && cantTotalIngresadaEdit!=null)
         ? +(cantTotalIngresadaEdit*unidadesEdit).toFixed(4) : cantTotalIngresadaEdit;
@@ -2232,7 +2219,7 @@
       return;
     }
     document.getElementById('cReceta').value = p.nro_receta??'';
-    document.getElementById('cUnidades').value = p.cantidad_envases||1;
+    document.getElementById('cEnvases').value = p.cantidad_envases||1;
     document.getElementById('cForma').value = p.forma_farmaceutica??'';
     document.getElementById('cCantTotal').value = cantidadPorEnvase(p)??'';
     document.getElementById('cUnidad').value = p.unidad??'';
@@ -2288,7 +2275,7 @@
         btn.disabled=false;btn.textContent='Guardar';
         return;
       }
-      const unidadesCompletar = parseInt(document.getElementById('cUnidades').value)||1;
+      const unidadesCompletar = parseInt(document.getElementById('cEnvases').value)||1;
       const cantTotalIngresadaCompletar = parseFloat(document.getElementById('cCantTotal').value)||null;
       const cantidadTotalFinalCompletar = (unidadesCompletar>1 && cantTotalIngresadaCompletar!=null)
         ? +(cantTotalIngresadaCompletar*unidadesCompletar).toFixed(4) : cantTotalIngresadaCompletar;
@@ -2369,11 +2356,10 @@
     const telVal=telInput.value.trim();
     if(cliId && !telVal){telInput.classList.add('field-invalid');mostrarToast('Completá el teléfono del cliente','err');return;}
     telInput.classList.remove('field-invalid');
-    // Unidades de un preparado NORMAL (sin fórmula de stock): permite cargar los datos de
-    // UN envase y multiplicar automáticamente al guardar, en vez de tener que calcular a
-    // mano el total y anotar la cantidad de envases en observaciones. 1 = comportamiento
-    // de siempre (nada se escala). Los de stock siguen usando su propio campo pEnvases.
-    const unidadesNorm = modoStock ? 1 : (parseInt(document.getElementById('pUnidades').value)||1);
+    // Cantidad de envases: campo único, compartido entre preparado normal y de stock. Para
+    // stock los componentes ya vienen pre-escalados en el preview (regenerarPreviewStock);
+    // para normal se escalan recién acá al guardar (ver más abajo).
+    const unidadesNorm = parseInt(document.getElementById('pEnvases').value)||1;
     btn.disabled=true;btn.textContent='Guardando…';
     try{
       if(cliId){
@@ -2393,7 +2379,7 @@
         nro_receta:modoStock?null:(parseInt(document.getElementById('pReceta').value)||null),
         cliente_id:cliId||null,
         formula_stock_id:modoStock?formulaStockSeleccionada.id:null,
-        cantidad_envases:modoStock?parseInt(document.getElementById('pEnvases').value):(unidadesNorm>1?unidadesNorm:null),
+        cantidad_envases:modoStock?unidadesNorm:(unidadesNorm>1?unidadesNorm:null),
         fecha_recepcion:document.getElementById('pFecha').value||null,
         estado:document.getElementById('pEstado').value||null,
         forma_farmaceutica:document.getElementById('pForma').value||null,
@@ -2440,7 +2426,6 @@
 
   function limpiarFormPreparado(){
     ['pCupon','pReceta','pCantTotal','pPrecioUnidad','pPrecioTotal','pObs'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('pUnidades').value='1';
     document.getElementById('pClienteInput').value='';document.getElementById('pClienteId').value='';
     document.getElementById('pTelefono').value='';document.getElementById('pTelefono').classList.remove('field-invalid');
     document.getElementById('pForma').value='';document.getElementById('pUnidad').value='';
