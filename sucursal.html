@@ -1208,6 +1208,19 @@ async function guardarPedido(){
       mostrarToast('Esta fórmula no tiene componentes cargados. Avisale a San Martín antes de enviar el pedido.','err');
       return;
     }
+  } else if(!document.getElementById('pDatosPendientes').checked){
+    // Los componentes de un pedido normal solo pueden faltar si se avisa
+    // explícitamente con "Datos pendientes de completar" (para que San
+    // Martín sepa que tiene que completarlos, por ej. mirando la receta
+    // adjunta). Si no se tilda ese checkbox, tiene que haber al menos una
+    // droga cargada Y seleccionada del listado (no alcanza con escribir el
+    // nombre sin clickear la sugerencia, ya que ahí drugId queda vacío).
+    const hayComponenteValido = Array.from(document.querySelectorAll('#compRowsNuevo .comp-row'))
+      .some(row => !!row.querySelector('.comp-drug-id').value);
+    if(!hayComponenteValido){
+      mostrarToast('Cargá al menos una droga (elegila del listado) o tildá "Datos pendientes de completar" si todavía no la sabés.','err');
+      return;
+    }
   }
   const cliId = document.getElementById('pClienteId').value;
   if(!cliId){ mostrarToast('Seleccioná un cliente','err'); return; }
