@@ -1221,6 +1221,12 @@ async function guardarPedido(){
       mostrarToast('Cargá al menos una droga (elegila del listado) o tildá "Datos pendientes de completar" si todavía no la sabés.','err');
       return;
     }
+  } else if(!recetaPendienteBlob){
+    // Si se tilda "Datos pendientes de completar" es justamente porque
+    // San Martín va a tener que completar la parte farmacéutica mirando
+    // la receta — sin foto no tiene de dónde completarla.
+    mostrarToast('Si tildás "Datos pendientes de completar" tenés que adjuntar la foto de la receta.','err');
+    return;
   }
   const cliId = document.getElementById('pClienteId').value;
   if(!cliId){ mostrarToast('Seleccioná un cliente','err'); return; }
