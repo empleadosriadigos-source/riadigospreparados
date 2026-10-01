@@ -2896,8 +2896,19 @@
   qz.websocket.setClosedCallbacks(()=>{ qzConectado=false; });
 
   async function imprimirCupones(prep){
+    console.log('[QZ] ========== INICIO ==========');
+    console.log('[QZ] prep.id:', prep.id, 'cupon:', prep.nro_cupon_nuevo);
+    console.log('[QZ] qz.websocket.isActive():', qz.websocket.isActive());
+    
     const ok = await conectarQZ();
-    if(!ok){ mostrarToast('QZ Tray no está activo. Abrilo desde la barra de tareas.','err'); return; }
+    console.log('[QZ] conectarQZ() result:', ok);
+    console.log('[QZ] qz.websocket.isActive() DESPUÉS:', qz.websocket.isActive());
+    
+    if(!ok){ 
+      console.log('[QZ] conectarQZ devolvió false, ABORTANDO');
+      mostrarToast('QZ Tray no está activo. Abrilo desde la barra de tareas.','err'); 
+      return; 
+    }
 
     try{
       const printer = "Printer-POS-80";
@@ -2908,6 +2919,7 @@
         margins: 0,
         size: {width: 80}
       });
+      console.log('[QZ] config creado para printer:', printer);
 
       // Helpers ESC/POS como arrays de bytes
       const INIT      = [0x1B,0x40];           // inicializar
@@ -3109,12 +3121,29 @@
       // hay que mandarlo entero a la sucursal; con el de farmacia alcanza.
       const soloFarmacia = esStock || !!prep.origen_sucursal;
       const todosLosDatos = soloFarmacia ? [...datosFarm] : [...datosCli, ...datosFarm];
-      await Promise.race([
-        qz.print(config, [{type:'raw', format:'base64', data: toB64(todosLosDatos)}]),
-        new Promise((_,reject)=>setTimeout(()=>reject(new Error('La impresora no respondió a tiempo. Revisá que esté encendida y con papel.')), 15000))
-      ]);
+      
+      console.log('[QZ] Array de bytes construido. soloFarmacia:', soloFarmacia, 'tamaño:', todosLosDatos.length);
+      const b64Data = toB64(todosLosDatos);
+      console.log('[QZ] toB64 completado. b64 length:', b64Data.length);
+      
+      console.log('[QZ] Llamando qz.print()...');
+      const printPromise = qz.print(config, [{type:'raw', format:'base64', data: b64Data}]);
+      console.log('[QZ] qz.print() devolvió tipo:', typeof printPromise, 'isPromise:', printPromise instanceof Promise);
+      
+      const timeoutPromise = new Promise((_,reject)=>setTimeout(()=>{
+        console.log('[QZ] ⚠️ TIMEOUT 15s disparado');
+        reject(new Error('La impresora no respondió a tiempo. Revisá que esté encendida y con papel.'));
+      }, 15000));
+      
+      console.log('[QZ] Esperando Promise.race()...');
+      await Promise.race([printPromise, timeoutPromise]);
+      
+      console.log('[QZ] ========== ÉXITO ==========');
       mostrarToast('✓ Cupones impresos','ok');
     }catch(e){
+      console.error('[QZ] ========== ERROR ==========');
+      console.error('[QZ] Mensaje:', e.message);
+      console.error('[QZ] Stack:', e.stack);
       mostrarToast('Error al imprimir: '+e.message,'err');
     }
   }
