@@ -3105,9 +3105,7 @@
         ...lineaL(precio || '$___________'),
         ...FONT_NORM,
         ...linea(LINE),  // línea simple sin CENTER/LEFT
-        ...lineaL('OBS: '+(obs||'')),
-        ...(obs ? [] : [...LF,...LF,...LF]), // espacio para escribir a mano si no hay observación digital
-        ...LF,...LF, // solo espacio visual: el feed real antes del corte ahora lo maneja CUT (GS V 66 n)
+        ...LF,...LF,
         ...CUT,
       ];
 
