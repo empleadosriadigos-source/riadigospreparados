@@ -3109,6 +3109,7 @@
         ...(obs ? [] : [...LF,...LF,...LF]), // espacio para escribir a mano si no hay observación digital
         ...LF,...LF, // solo espacio visual: el feed real antes del corte ahora lo maneja CUT (GS V 66 n)
         ...CUT,
+        ...LF,...LF,...LF, // padding mínimo después del corte para que la impresora procese el comando
       ];
 
       // Convertir bytes a Uint8Array y mandar como base64
