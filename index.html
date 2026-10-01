@@ -3083,7 +3083,7 @@
         ...(fecha ? lineaL(fecha) : []),
         ...lineaL(tel ? 'Tel: '+tel : 'Tel: ___________'),
         ...lineaL(receta ? 'Receta: #'+receta : 'Receta: ___________'),
-        ...sepL(),
+        ...linea(LINE),  // línea simple sin CENTER/LEFT
         ...(esStock
           ? [
               ...lineaL('FORMULA STOCK:'),
@@ -3096,11 +3096,11 @@
               ...(compsLargoData.length ? compsLargoData : lineaL('___________')),
             ]
         ),
-        ...sepL(),
+        ...linea(LINE),  // línea simple sin CENTER/LEFT
         ...lineaL('Forma farmacéutica: '+(forma||'___________')),
         ...lineaL('Cantidad: '+(cant||'___________')),
         ...(!esStock && envasesTxt ? lineaL('ENVASES: '+envases) : []),
-        ...sepL(),
+        ...linea(LINE),  // línea simple sin CENTER/LEFT
         ...FONT_2H,
         ...lineaL(precio || '$___________'),
         ...FONT_NORM,
