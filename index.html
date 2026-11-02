@@ -988,6 +988,7 @@
     poblarSelect('pEstado', ESTADOS.filter(e=>e!=='Entregado'), false);
     poblarSelect('eEstado', ESTADOS, false);
     document.getElementById('pEstado').value = 'Sin precio';
+    cargarDrogasUnaVez();
     cargarTodo();
     cargarFormulasStock();
     suscribirRealtime();
@@ -997,20 +998,51 @@
   // Se debounce (400ms) porque varios cambios seguidos (ej. aceptar + que la
   // sucursal confirme casi al toque) podian disparar cargarTodo() superpuesto
   // y pisarse las respuestas entre si — eso generaba los errores intermitentes.
+  // Clientes: se piden solo cuando se usa un buscador o el modal, sin límite de filas.
+  let clientesCargados = false, _clientesPromesa = null;
+  function asegurarClientes(){
+    if(clientesCargados) return Promise.resolve();
+    if(!_clientesPromesa){
+      _clientesPromesa = sbGet('clientes?order=nombre.asc&select=id,nombre,telefono,observaciones', true)
+        .then(c=>{ clientes=c; clientesCargados=true; })
+        .finally(()=>{ _clientesPromesa=null; });
+    }
+    return _clientesPromesa;
+  }
+  // Drogas: no cambian seguido, así que se cargan una vez por página (no en cada recarga).
+  let drogasCargadas = false;
+  async function cargarDrogasUnaVez(){
+    if(drogasCargadas) return;
+    try{ drogas = await sbGet('drogas?order=nombre.asc', true); drogasCargadas = true; }
+    catch(err){ mostrarToast('Error al cargar drogas: '+err.message,'err'); }
+  }
+
   let _recargaTimeout = null;
   function solicitarRecarga(){
     clearTimeout(_recargaTimeout);
     _recargaTimeout = setTimeout(cargarTodo, 400);
   }
+  // Sin polling: Realtime avisa los cambios. Si el canal cae, se reconecta;
+  // al volver a la pestaña se recarga una vez (evento, no temporizador).
+  let _canalAdmin = null, _reintentoRT = null, _visListenerAdmin = false;
   function suscribirRealtime(){
-    sbAuth.channel('preparados-admin')
+    if(_canalAdmin) sbAuth.removeChannel(_canalAdmin);
+    _canalAdmin = sbAuth.channel('preparados-admin')
       .on('postgres_changes', {event:'*', schema:'public', table:'preparados'}, () => solicitarRecarga())
       .on('postgres_changes', {event:'*', schema:'public', table:'preparado_comentarios'}, payload => {
         const pid = payload.new?.preparado_id || payload.old?.preparado_id;
         if(pid) refrescarChat(pid);
       })
-      .subscribe();
-    setInterval(solicitarRecarga, 15000);
+      .subscribe(estado => {
+        if(estado === 'SUBSCRIBED') solicitarRecarga(); // trae lo que pasó mientras estaba caído
+        if(estado === 'CHANNEL_ERROR' || estado === 'TIMED_OUT'){
+          clearTimeout(_reintentoRT); _reintentoRT = setTimeout(suscribirRealtime, 10000);
+        }
+      });
+    if(!_visListenerAdmin){
+      _visListenerAdmin = true;
+      document.addEventListener('visibilitychange', () => { if(!document.hidden) solicitarRecarga(); });
+    }
   }
   document.addEventListener('click', e => { if(!e.target.closest('.ss-wrap')) cerrarTodasSS(); });
 
@@ -1031,13 +1063,7 @@
       document.getElementById('kanbanCols').style.display = 'none';
     }
     try {
-      const [preps, drs, clis] = await Promise.all([
-        sbGet('preparados_completos?estado=neq.Entregado&eliminado_en=is.null&order=orden.desc'),
-        sbGet('drogas?order=nombre.asc', true),
-        sbGet('clientes?order=nombre.asc&select=id,nombre,telefono,observaciones'),
-      ]);
-      drogas   = drs;
-      clientes = clis;
+      const preps = await sbGet('preparados_completos?estado=neq.Entregado&eliminado_en=is.null&order=orden.desc');
       // Traer solo componentes y comentarios de los preparados activos
       const compMap = {}, comMap = {};
       if(preps.length > 0){
@@ -2076,6 +2102,7 @@
     const btn=document.getElementById('btnGuardarEditar');btn.disabled=true;btn.textContent='Guardando…';
     try{
       if(cliId){
+        await asegurarClientes();
         const cliActual=clientes.find(c=>c.id===cliId);
         if(cliActual && (cliActual.telefono||'')!==telVal){
           await sbPatch('clientes',cliId,{telefono:telVal});
@@ -2363,6 +2390,7 @@
     btn.disabled=true;btn.textContent='Guardando…';
     try{
       if(cliId){
+        await asegurarClientes();
         const cliActual=clientes.find(c=>c.id===cliId);
         if(cliActual && (cliActual.telefono||'')!==telVal){
           await sbPatch('clientes',cliId,{telefono:telVal});
@@ -2570,10 +2598,11 @@
     abrirModal('modalClientes');
     setTimeout(()=>document.getElementById('cliBuscarInput').focus(),100);
   }
-  function filtrarClientesModal(){
+  async function filtrarClientesModal(){
+    await asegurarClientes().catch(()=>mostrarToast('Error al cargar clientes','err'));
     const q=document.getElementById('cliBuscarInput').value.toLowerCase();
     const todos = q ? clientes.filter(c=>c.nombre.toLowerCase().includes(q)) : clientes;
-    const fil = todos.slice(0,50);
+    const fil = todos;
     const cont=document.getElementById('cliResultados');
     if(!fil.length){cont.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px;">Sin resultados</div>';return;}
     cont.innerHTML=fil.map(c=>`<div class="cli-item" onclick="abrirFormCliente('${c.id}')">
@@ -2765,8 +2794,8 @@
   }
 
   // ── Searchable selects ─────────────────────────────────────────────────
-  function filtrarSSCliente(pref){const input=document.getElementById(`${pref}ClienteInput`);const dd=document.getElementById(`ssCliente_${pref}`);renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),pref,input.value);posicionarDD(input,dd);dd.classList.add('open');}
-  function abrirSSCliente(pref){const input=document.getElementById(`${pref}ClienteInput`);const dd=document.getElementById(`ssCliente_${pref}`);renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),pref,input.value);posicionarDD(input,dd);dd.classList.add('open');}
+  async function filtrarSSCliente(pref){ await asegurarClientes().catch(()=>mostrarToast('Error al cargar clientes','err'));const input=document.getElementById(`${pref}ClienteInput`);const dd=document.getElementById(`ssCliente_${pref}`);renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),pref,input.value);posicionarDD(input,dd);dd.classList.add('open');}
+  async function abrirSSCliente(pref){ await asegurarClientes().catch(()=>mostrarToast('Error al cargar clientes','err'));const input=document.getElementById(`${pref}ClienteInput`);const dd=document.getElementById(`ssCliente_${pref}`);renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),pref,input.value);posicionarDD(input,dd);dd.classList.add('open');}
   function renderSSCliente(dd,fil,pref,texto){
     dd.innerHTML='';
     fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById(`${pref}ClienteInput`).value=c.nombre;document.getElementById(`${pref}ClienteId`).value=c.id;aplicarTelefonoCliente(pref,c.telefono);dd.classList.remove('open');};dd.appendChild(d);});
