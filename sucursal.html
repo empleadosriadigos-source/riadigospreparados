@@ -546,10 +546,7 @@ async function initApp(){
     document.getElementById('topbarBrand').textContent = 'Sucursal-'+SUCURSAL_NOMBRE;
   }catch(err){ mostrarToast('Error al identificar la sucursal: '+err.message,'err'); return; }
   try{
-    [clientes, drogas] = await Promise.all([
-      sbGet('clientes?order=nombre.asc&select=id,nombre,telefono'),
-      sbGet('drogas?order=nombre.asc', true)
-    ]);
+    drogas = await sbGet('drogas?order=nombre.asc', true);
   }catch(err){ mostrarToast('Error cargando datos: '+err.message,'err'); }
   cargarTodo();
   suscribirRealtime();
@@ -564,13 +561,12 @@ let ultimoHashSuc = null;
 async function cargarTodo(){
   if(primeraCargaSuc) document.getElementById('kanbanStatus').textContent = 'Cargando…';
   try{
-    const [preps, clientesFrescos, formulasFrescas, formulasCompsFrescos] = await Promise.all([
+    const [preps, formulasFrescas, formulasCompsFrescos] = await Promise.all([
       sbGet(`preparados?origen_sucursal=eq.${encodeURIComponent(SUCURSAL_NOMBRE)}&estado=neq.Entregado&eliminado_en=is.null&order=created_at.desc`),
-      sbGet('clientes?order=nombre.asc&select=id,nombre,telefono'),
       sbGet('formulas_stock?order=nombre.asc'),
       sbGet('formula_stock_componentes?select=*,drogas(nombre)&order=id.asc')
     ]);
-    clientes = clientesFrescos;
+    await cargarNombresClientes(preps).catch(()=>{});
     formulasStock = formulasFrescas;
     formulasStockComponentes = {};
     formulasCompsFrescos.forEach(c=>{
@@ -617,6 +613,25 @@ async function cargarTodo(){
   }
 }
 
+// Sucursal lee la tabla preparados (sin nombre de cliente), así que trae solo los
+// clientes que aparecen en pantalla, en vez de toda la tabla.
+async function cargarNombresClientes(preps){
+  const ids = [...new Set(preps.map(p=>p.cliente_id).filter(Boolean))];
+  if(!ids.length) return;
+  const cs = await sbGet(`clientes?id=in.(${ids.join(',')})&select=id,nombre,telefono`);
+  cs.forEach(c=>{ const i=clientes.findIndex(x=>x.id===c.id); if(i>=0) clientes[i]={...clientes[i],...c}; else clientes.push(c); });
+}
+  // Clientes: se piden solo cuando se usa un buscador o el modal, sin límite de filas.
+  let clientesCargados = false, _clientesPromesa = null;
+  function asegurarClientes(){
+    if(clientesCargados) return Promise.resolve();
+    if(!_clientesPromesa){
+      _clientesPromesa = sbGet('clientes?order=nombre.asc&select=id,nombre,telefono,observaciones', true)
+        .then(c=>{ clientes=c; clientesCargados=true; })
+        .finally(()=>{ _clientesPromesa=null; });
+    }
+    return _clientesPromesa;
+  }
 function nombreCliente(id){ const c = clientes.find(x=>x.id===id); return c ? c.nombre : '(cliente)'; }
 function telefonoCliente(id){ const c = clientes.find(x=>x.id===id); return c ? (c.telefono||'') : ''; }
 
@@ -1247,6 +1262,7 @@ async function guardarPedido(){
 
     // El teléfono ya es obligatorio acá arriba; solo lo pisa en el cliente
     // si efectivamente cambió respecto al que ya tenía guardado.
+    await asegurarClientes();
     const cliActual = clientes.find(c=>c.id===cliId);
     if(cliActual && (cliActual.telefono||'')!==telVal){
       await sbPatch('clientes', cliId, {telefono: telVal});
@@ -1495,8 +1511,8 @@ async function guardarDroga(){
 }
 
 // ── Búsqueda de cliente (idéntico a index.html) ──────────────────
-function filtrarSSCliente(pref){const input=document.getElementById(`${pref}ClienteInput`);const dd=document.getElementById(`ssCliente_${pref}`);renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),pref);posicionarDD(input,dd);dd.classList.add('open');}
-function abrirSSCliente(pref){const input=document.getElementById(`${pref}ClienteInput`);const dd=document.getElementById(`ssCliente_${pref}`);renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),pref);posicionarDD(input,dd);dd.classList.add('open');}
+async function filtrarSSCliente(pref){ await asegurarClientes().catch(()=>mostrarToast('Error al cargar clientes','err'));const input=document.getElementById(`${pref}ClienteInput`);const dd=document.getElementById(`ssCliente_${pref}`);renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),pref);posicionarDD(input,dd);dd.classList.add('open');}
+async function abrirSSCliente(pref){ await asegurarClientes().catch(()=>mostrarToast('Error al cargar clientes','err'));const input=document.getElementById(`${pref}ClienteInput`);const dd=document.getElementById(`ssCliente_${pref}`);renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),pref);posicionarDD(input,dd);dd.classList.add('open');}
 function renderSSCliente(dd,fil,pref){
   dd.innerHTML='';
   fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById(`${pref}ClienteInput`).value=c.nombre;document.getElementById(`${pref}ClienteId`).value=c.id;aplicarTelefonoCliente(pref,c.telefono);dd.classList.remove('open');};dd.appendChild(d);});
@@ -1525,9 +1541,10 @@ function abrirModalClientes(){
   document.getElementById('btnGuardarCliente').style.display='none';
   abrirModal('modalClientes');
 }
-function filtrarClientesModal(){
+async function filtrarClientesModal(){
+  await asegurarClientes().catch(()=>mostrarToast('Error al cargar clientes','err'));
   const q=document.getElementById('cliBuscarInput').value.toLowerCase();
-  const fil=(q?clientes.filter(c=>c.nombre.toLowerCase().includes(q)):clientes).slice(0,50);
+  const fil=(q?clientes.filter(c=>c.nombre.toLowerCase().includes(q)):clientes);
   const cont=document.getElementById('cliResultados');
   if(!fil.length){cont.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px;">Sin resultados</div>';return;}
   cont.innerHTML=fil.map(c=>`<div class="cli-item" onclick="abrirFormCliente('${c.id}')"><span>${escHtml(c.nombre)}</span><span style="color:var(--muted);font-size:12px;">${c.telefono||''}</span></div>`).join('');
@@ -1597,25 +1614,34 @@ function solicitarRecarga(){
   clearTimeout(_recargaTimeout);
   _recargaTimeout = setTimeout(cargarTodo, 400);
 }
+// Sin polling: Realtime avisa los cambios. Si el canal cae, se reconecta;
+// al volver a la pestaña se recarga una vez (evento, no temporizador).
+let _canalSuc = null, _reintentoRTSuc = null, _visListenerSuc = false;
 function suscribirRealtime(){
-  sbAuth.channel('preparados-sucursal')
+  if(_canalSuc) sbAuth.removeChannel(_canalSuc);
+  _canalSuc = sbAuth.channel('preparados-sucursal')
     .on('postgres_changes', {event:'*', schema:'public', table:'preparados'}, () => solicitarRecarga())
     .on('postgres_changes', {event:'*', schema:'public', table:'componentes'}, () => solicitarRecarga())
-    .on('postgres_changes', {event:'*', schema:'public', table:'clientes'}, () => solicitarRecarga())
     .on('postgres_changes', {event:'*', schema:'public', table:'formulas_stock'}, () => solicitarRecarga())
     .on('postgres_changes', {event:'*', schema:'public', table:'formula_stock_componentes'}, () => solicitarRecarga())
     .on('postgres_changes', {event:'*', schema:'public', table:'preparado_comentarios'}, payload => {
       const pid = payload.new?.preparado_id || payload.old?.preparado_id;
       if(pid) refrescarChat(pid);
     })
-    .subscribe();
-  // Respaldo: si por algún motivo el evento de tiempo real no llega (RLS,
-  // reconexión del socket, etc.), esto igual mantiene todo al día.
-  setInterval(solicitarRecarga, 15000);
+    .subscribe(estado => {
+      if(estado === 'SUBSCRIBED') solicitarRecarga();
+      if(estado === 'CHANNEL_ERROR' || estado === 'TIMED_OUT'){
+        clearTimeout(_reintentoRTSuc); _reintentoRTSuc = setTimeout(suscribirRealtime, 10000);
+      }
+    });
+  if(!_visListenerSuc){
+    _visListenerSuc = true;
+    document.addEventListener('visibilitychange', () => { if(!document.hidden) solicitarRecarga(); });
+  }
 }
 function abrirPopup(p){
   popupPrepId = p.id; popupTienePrecio = p.precio_venta!=null;
-  document.getElementById('popupCliente').textContent = nombreCliente(p.cliente_id);
+  document.getElementById('popupCliente').textContent = p.cliente_nombre || nombreCliente(p.cliente_id);
   document.getElementById('popupPrecio').textContent = p.precio_venta!=null ? '$'+p.precio_venta : 'Precio a confirmar después';
   document.getElementById('popupMensaje').textContent = p.mensaje_sucursal || '';
   document.getElementById('modalPopup').classList.add('open');

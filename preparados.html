@@ -386,14 +386,20 @@
 
   // Clientes y drogas se usan para los buscadores de los formularios (crear/editar/fusionar),
   // no para listar preparados, asi que se cargan una sola vez, aparte de la busqueda paginada.
+  // Clientes: se piden solo cuando se usa un buscador, sin límite de filas.
+  let clientesCargados = false, _clientesPromesa = null;
+  function asegurarClientes(){
+    if(clientesCargados) return Promise.resolve();
+    if(!_clientesPromesa){
+      _clientesPromesa = sbGet('clientes?order=nombre.asc&select=id,nombre,telefono', true)
+        .then(c=>{ clientes=c; clientesCargados=true; })
+        .finally(()=>{ _clientesPromesa=null; });
+    }
+    return _clientesPromesa;
+  }
   async function cargarListasApoyo(){
-    try{
-      const [drs,clis]=await Promise.all([
-        sbGet('drogas?order=nombre.asc&select=id,nombre', true),
-        sbGet('clientes?order=nombre.asc&select=id,nombre,telefono', true),
-      ]);
-      drogas=drs; clientes=clis;
-    }catch(err){ mostrarToast('Error al cargar drogas/clientes: '+err.message,'err'); }
+    try{ drogas = await sbGet('drogas?order=nombre.asc&select=id,nombre', true); }
+    catch(err){ mostrarToast('Error al cargar drogas: '+err.message,'err'); }
   }
 
   // cargarTodo() se mantiene como alias para no romper los lugares que refrescan tras guardar/borrar/fusionar
@@ -621,6 +627,7 @@
     const btn=document.getElementById('btnGuardarEditar');btn.disabled=true;btn.textContent='Guardando…';
     try{
       if(cliId){
+        await asegurarClientes();
         const cliActual=clientes.find(c=>c.id===cliId);
         if(cliActual && (cliActual.telefono||'')!==telVal){
           await sbPatch('clientes',cliId,{telefono:telVal});
@@ -677,8 +684,8 @@
   }
   function toggleTipoCuponRepetir(){const viejo=document.querySelector('input[name="rTipoCupon"]:checked').value==='viejo';document.getElementById('rCuponViejo').style.display=viejo?'':'none';if(!viejo)document.getElementById('rCuponViejo').value='';}
   function toggleMismoClienteRepetir(){const distinto=document.querySelector('input[name="rMismoCliente"]:checked').value==='no';document.getElementById('rClienteWrap').style.display=distinto?'':'none';document.getElementById('rTelefonoWrap').style.display=distinto?'':'none';}
-  function filtrarSSClienteR(){const input=document.getElementById('rClienteInput');const dd=document.getElementById('ssClienteR');renderSSClienteR(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),input.value);posicionarDD(input,dd);dd.classList.add('open');}
-  function abrirSSClienteR(){const input=document.getElementById('rClienteInput');const dd=document.getElementById('ssClienteR');renderSSClienteR(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),input.value);posicionarDD(input,dd);dd.classList.add('open');}
+  async function filtrarSSClienteR(){ await asegurarClientes().catch(()=>{});const input=document.getElementById('rClienteInput');const dd=document.getElementById('ssClienteR');renderSSClienteR(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),input.value);posicionarDD(input,dd);dd.classList.add('open');}
+  async function abrirSSClienteR(){ await asegurarClientes().catch(()=>{});const input=document.getElementById('rClienteInput');const dd=document.getElementById('ssClienteR');renderSSClienteR(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),input.value);posicionarDD(input,dd);dd.classList.add('open');}
   function renderSSClienteR(dd,fil,texto){dd.innerHTML='';fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById('rClienteInput').value=c.nombre;document.getElementById('rClienteId').value=c.id;const t=document.getElementById('rTelefono');t.value=c.telefono||'';t.classList.remove('field-invalid');dd.classList.remove('open');};dd.appendChild(d);});if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}}
 
   async function confirmarRepetir(){
@@ -716,6 +723,7 @@
     const btn=document.getElementById('btnRepetirConfirm');btn.disabled=true;btn.textContent='Creando…';
     try{
       if(!mismoCliente && telVal){
+        await asegurarClientes();
         const cliActual=clientes.find(c=>c.id===clienteId);
         if(cliActual && (cliActual.telefono||'')!==telVal){
           await sbPatch('clientes',clienteId,{telefono:telVal});
@@ -823,8 +831,8 @@
     cont.appendChild(div);
   }
 
-  function filtrarSSCliente(){const input=document.getElementById('eClienteInput');const dd=document.getElementById('ssCliente');renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),input.value);posicionarDD(input,dd);dd.classList.add('open');}
-  function abrirSSCliente(){const input=document.getElementById('eClienteInput');const dd=document.getElementById('ssCliente');renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),input.value);posicionarDD(input,dd);dd.classList.add('open');}
+  async function filtrarSSCliente(){ await asegurarClientes().catch(()=>{});const input=document.getElementById('eClienteInput');const dd=document.getElementById('ssCliente');renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),input.value);posicionarDD(input,dd);dd.classList.add('open');}
+  async function abrirSSCliente(){ await asegurarClientes().catch(()=>{});const input=document.getElementById('eClienteInput');const dd=document.getElementById('ssCliente');renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),input.value);posicionarDD(input,dd);dd.classList.add('open');}
   function renderSSCliente(dd,fil,texto){dd.innerHTML='';fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById('eClienteInput').value=c.nombre;document.getElementById('eClienteId').value=c.id;const t=document.getElementById('eTelefono');t.value=c.telefono||'';t.classList.remove('field-invalid');dd.classList.remove('open');};dd.appendChild(d);});if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}}
   function filtrarSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
   function abrirSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
@@ -843,7 +851,7 @@
     fusOrigen=null; fusDestino=null;
     abrirModal('modalFusionar');
   }
-  function filtrarSSFusion(cual){
+  async function filtrarSSFusion(cual){ await asegurarClientes().catch(()=>{});
     const input=document.getElementById(cual==='origen'?'fusOrigenInput':'fusDestinoInput');
     const dd=document.getElementById(cual==='origen'?'ssFusOrigen':'ssFusDestino');
     renderSSFusion(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),cual);
@@ -853,7 +861,7 @@
   function renderSSFusion(dd,lista,cual){
     dd.innerHTML='';
     if(!lista.length){ dd.innerHTML='<div class="ss-empty">Sin resultados</div>'; return; }
-    lista.slice(0,50).forEach(c=>{
+    lista.forEach(c=>{
       const div=document.createElement('div'); div.className='ss-option'; div.textContent=c.nombre;
       div.onmousedown=e=>{
         e.preventDefault();
