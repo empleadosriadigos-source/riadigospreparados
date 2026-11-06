@@ -2987,6 +2987,19 @@
       // (que sí tiene aire natural a los costados por estar centrado).
       const IND = '  ';
       function lineaL(s){ return linea(IND+s); }
+      // Parte un texto largo en renglones de hasta 'ancho' caracteres, cortando entre palabras
+      // (una palabra más larga que el ancho queda en su propio renglón, sin cortarla).
+      function lineasWrap(s, ancho){
+        const out = [];
+        let actual = '';
+        for (const palabra of s.split(/\s+/).filter(Boolean)){
+          const candidata = actual ? actual+' '+palabra : palabra;
+          if (candidata.length > ancho && actual){ out.push(actual); actual = palabra; }
+          else actual = candidata;
+        }
+        if (actual) out.push(actual);
+        return out;
+      }
       // Separador CENTRADO (no en LEFT) + un renglón en blanco después: como LINE es más corto
       // que el ancho total del papel, si fuera LEFT quedaría pegado al margen izquierdo con un
       // hueco a la derecha — centrado se ve parejo, igual que el título.
@@ -3087,6 +3100,14 @@
             ]
         ),
         ...sepL(),
+        ...(obs.trim()
+          ? [
+              ...lineaL('OBSERVACIONES:'),
+              ...lineasWrap(obs.trim(), 28).map(l => lineaL(l)).flat(),
+              ...sepL(),
+            ]
+          : []
+        ),
         ...FONT_2H,
         ...lineaL(precio || '$___________'),
         ...FONT_NORM,
@@ -3130,6 +3151,17 @@
         ...lineaL('Cantidad: '+(cant||'___________')),
         ...(!esStock && envasesTxt ? lineaL('ENVASES: '+envases) : []),
         ...linea(LINE),  // línea simple sin CENTER/LEFT
+        // Observaciones: se imprimen solo en el cupón de farmacia (son notas internas del
+        // laboratorio, incluidas las que manda sucursal). Se parten en renglones de 28 chars
+        // + sangría de 2 = ancho del ticket.
+        ...(obs.trim()
+          ? [
+              ...lineaL('OBSERVACIONES:'),
+              ...lineasWrap(obs.trim(), 28).map(l => lineaL(l)).flat(),
+              ...linea(LINE),  // línea simple sin CENTER/LEFT
+            ]
+          : []
+        ),
         ...FONT_2H,
         ...lineaL(precio || '$___________'),
         ...FONT_NORM,
