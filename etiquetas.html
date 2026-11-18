@@ -59,6 +59,10 @@
     .config-item-cant{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted,#888);font-weight:600;}
     .config-item-cant input{width:52px;text-align:center;padding:8px 6px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);outline:none;}
     .config-item-cant input:focus{border-color:var(--accent2);}
+    .config-item-cant input.cant-cambiada{border-color:#D4A017;background:rgba(212,160,23,.08);}
+    .config-item-cant .cant-real{font-weight:500;}
+    .btn-cant-reset{border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:6px;padding:6px 8px;font-size:13px;cursor:pointer;line-height:1;}
+    .btn-cant-reset:hover{border-color:var(--accent2);}
     .total-etiquetas{font-size:13px;font-weight:700;margin-right:auto;margin-left:12px;align-self:center;}
     #status{text-align:center;padding:40px;font-size:14px;color:var(--muted);}
     #status.error{color:var(--danger);font-weight:600;}
@@ -285,9 +289,18 @@
     const n=parseInt(card.querySelector('.cfg-cant')?.value,10);
     return Number.isFinite(n)&&n>=1&&n<=99?n:null;
   }
+  // Solo cambia cuántas copias salen en la hoja; el preparado no se toca.
+  function resetCantEtiquetas(btn){
+    const inp=btn.closest('.config-item-cant').querySelector('.cfg-cant');
+    inp.value=inp.dataset.real; actualizarTotalEtiquetas();
+  }
   function actualizarTotalEtiquetas(){
     let total=0;
-    document.querySelectorAll('#configCards .config-list-item').forEach(card=>{ total+=leerCantEtiquetas(card)||0; });
+    document.querySelectorAll('#configCards .config-list-item').forEach(card=>{
+      total+=leerCantEtiquetas(card)||0;
+      const inp=card.querySelector('.cfg-cant');
+      inp.classList.toggle('cant-cambiada', inp.value!==inp.dataset.real);
+    });
     document.getElementById('totalEtiquetas').textContent=`${total} etiqueta${total!==1?'s':''} en total`;
   }
 
@@ -301,7 +314,7 @@
     sel.forEach(p=>{
       const div=document.createElement('div');div.className='config-list-item';div.dataset.id=p.id;div.dataset.uso=usoGlobalActual;
       const env=envasesDe(p);
-      div.innerHTML=`<div><div class="config-cupon">${fmtCupon(p)} · ${escHtml(p.cliente_nombre||'')}</div><div class="config-cliente">${escHtml(p.forma_farmaceutica??'')} ${p.cantidad_total!=null?p.cantidad_total+' '+escHtml(p.unidad??''):''}${env>1?' · '+env+' envases':''}${p.nro_receta?' · Receta: '+p.nro_receta:''}</div></div><div class="config-item-der"><label class="config-item-cant" title="Cantidad de etiquetas a imprimir (por defecto, una por envase)">Etiquetas <input type="number" class="cfg-cant" min="1" max="99" step="1" value="${env}" oninput="actualizarTotalEtiquetas()"/></label><input type="text" class="cfg-vto config-item-vto" placeholder="MM/AA" maxlength="5" oninput="fmtVto(this)" onkeydown="vtoKeyDown(event,this)"/></div>`;
+      div.innerHTML=`<div><div class="config-cupon">${fmtCupon(p)} · ${escHtml(p.cliente_nombre||'')}</div><div class="config-cliente">${escHtml(p.forma_farmaceutica??'')} ${p.cantidad_total!=null?p.cantidad_total+' '+escHtml(p.unidad??''):''}${env>1?' · '+env+' envases':''}${p.nro_receta?' · Receta: '+p.nro_receta:''}</div></div><div class="config-item-der"><label class="config-item-cant" title="Cuántas etiquetas imprimir de este preparado. Arranca en los envases reales y no modifica el preparado.">Unidades a imprimir <input type="number" class="cfg-cant" min="1" max="99" step="1" value="${env}" data-real="${env}" oninput="actualizarTotalEtiquetas()"/><span class="cant-real">de ${env} env.</span><button type="button" class="btn-cant-reset" title="Volver a los envases del preparado" onclick="resetCantEtiquetas(this)">↺</button></label><input type="text" class="cfg-vto config-item-vto" placeholder="MM/AA" maxlength="5" oninput="fmtVto(this)" onkeydown="vtoKeyDown(event,this)"/></div>`;
       cont.appendChild(div);
     });
     actualizarTotalEtiquetas();
