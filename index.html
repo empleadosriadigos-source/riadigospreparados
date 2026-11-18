@@ -916,30 +916,9 @@
   let preparados = [], drogas = [], clientes = [];
   let dragId = null, prepActual = null, cbDrogaIdx = null, clienteCB = null;
   let formulasStock = [], formulasStockComponentes = {}, formulaStockSeleccionada = null;
-  // Para un preparado de stock: cantidad por ENVASE (la fórmula original), nunca el total
-  // sumado de todos los envases. p.cantidad_total guarda el total escalado (solo lo usa
-  // internamente el reporte de consumo de drogas); acá se reconstruye dividiendo por la
-  // cantidad de envases de ESE preparado puntual, así siempre es correcto aunque la fórmula
-  // se haya editado después.
-  function cantidadPorEnvase(p){
-    if(p.cantidad_total==null) return null;
-    if(p.cantidad_envases) return +(p.cantidad_total/p.cantidad_envases).toFixed(4);
-    return p.cantidad_total;
-  }
-  // Igual que cantidadPorEnvase, pero para un componente puntual de un preparado NORMAL
-  // (sin fórmula de stock) cargado con más de 1 unidad: p.componentes guarda la cantidad
-  // ESCALADA (para que el reporte de consumo de drogas sume bien), así que acá se reconstruye
-  // la cantidad de UNA unidad dividiendo por p.cantidad_envases, para no mostrarle al usuario
-  // la suma de todos los envases (mismo criterio que ya se usa para fórmulas de stock).
-  function componentePorEnvase(c, p){
-    if(c.cantidad==null) return c.cantidad;
-    // Las unidades de concentración (%, ‰, mg/ml, etc.) NO se dividen por envases: ya son
-    // relativas a cantidad_total (que sí se escala aparte). Mismo criterio que
-    // escalarCantidadComponente usa al guardar — tienen que coincidir, si no, un componente
-    // en % se ve mal en pantalla y encima queda mal guardado si se edita y guarda así.
-    if(p.cantidad_envases && !UNID_CONCENTRACION.includes(c.unidad)) return +(c.cantidad/p.cantidad_envases).toFixed(4);
-    return c.cantidad;
-  }
+  // cantidad_total y componentes.cantidad se guardan SIEMPRE por envase (lo que carga el
+  // usuario: 100 ml es 100 ml). La cantidad de envases nunca cambia la fórmula; solo se
+  // multiplica en el reporte de consumo de drogas (función SQL reporte_consumo_drogas).
   // Cantidad de envases actualmente cargada en el modal de carga ('p') o edición ('e')
   // — campo único, compartido entre preparado normal y de stock — para vincular Precio
   // por unidad y Precio total. precio_venta en la base siempre guarda el TOTAL.
@@ -956,9 +935,7 @@
     const v = parseFloat(document.getElementById(prefix+'PrecioTotal').value);
     if(!isNaN(v)) document.getElementById(prefix+'PrecioUnidad').value = envases>0 ? +(v/envases).toFixed(2) : v;
   }
-  // Componentes de la fórmula ORIGINAL (sin escalar por envases) para mostrar al usuario.
-  // Los componentes guardados en el preparado (p.componentes) están escalados y son solo
-  // para el reporte de consumo de drogas: nunca se muestran acá.
+  // Componentes de la fórmula de stock original (por envase).
   function componentesFormulaHtml(formulaStockId, termino=''){
     const comps = formulasStockComponentes[formulaStockId] || [];
     return comps.length
@@ -1389,9 +1366,9 @@
     const drogasHtml = esStock
       ? componentesFormulaHtml(p.formula_stock_id, termino)
       : (p.componentes.length
-          ? p.componentes.map(c=>`<div class="card-droga-row"><span class="card-droga-nom">${resaltar(c.droga_nombre||'',termino)}</span><span class="card-droga-cant">${componentePorEnvase(c,p)??''} ${c.unidad||''}</span></div>`).join('')
+          ? p.componentes.map(c=>`<div class="card-droga-row"><span class="card-droga-nom">${resaltar(c.droga_nombre||'',termino)}</span><span class="card-droga-cant">${c.cantidad??''} ${c.unidad||''}</span></div>`).join('')
           : '<div class="card-droga-row" style="color:var(--muted)">Sin componentes</div>');
-    const partes = [p.forma_farmaceutica, cantidadPorEnvase(p)!=null?`${cantidadPorEnvase(p)}${p.unidad?' '+p.unidad:''}`:'', p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
+    const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:'', p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
     const precio = p.precio_venta?`$${Number(p.precio_venta).toLocaleString('es-AR',{minimumFractionDigits:2})}`:'';
     const svgE=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
     const svgD=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
@@ -1498,7 +1475,7 @@
   function drogasResumenHtml(p){
     if(!!p.formula_stock_id) return componentesFormulaHtml(p.formula_stock_id);
     return p.componentes.length
-      ? p.componentes.map(c=>`<div class="card-droga-row"><span class="card-droga-nom">${escHtml(c.droga_nombre||'')}</span><span class="card-droga-cant">${componentePorEnvase(c,p)??''} ${c.unidad||''}</span></div>`).join('')
+      ? p.componentes.map(c=>`<div class="card-droga-row"><span class="card-droga-nom">${escHtml(c.droga_nombre||'')}</span><span class="card-droga-cant">${c.cantidad??''} ${c.unidad||''}</span></div>`).join('')
       : '<div style="color:var(--muted);font-size:12px;">Sin componentes</div>';
   }
 
@@ -1700,7 +1677,7 @@
   function crearDrawerCardNueva(p){
     const div = document.createElement('div');
     div.className = 'drawer-card';
-    const partes = [p.forma_farmaceutica, cantidadPorEnvase(p)!=null?`${cantidadPorEnvase(p)}${p.unidad?' '+p.unidad:''}`:'', p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
+    const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:'', p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
     div.innerHTML = `
       <div class="card-cupon">${fmtCupon(p)}<span class="badge-sucursal">${escHtml(p.origen_sucursal||'')}</span>${!!p.formula_stock_id?`<span class="badge-stock">📦 Stock</span>`:''}</div>
       ${p.datos_pendientes?`<button type="button" class="btn-completar-datos" onclick="abrirCompletarDatos(event,'${p.id}')">⚠ Completar datos pendientes${p.receta_imagen_url?' (con receta adjunta)':''}</button>`:''}
@@ -1726,7 +1703,7 @@
   function crearDrawerCardEsperando(p){
     const div = document.createElement('div');
     div.className = 'drawer-card';
-    const partes = [p.forma_farmaceutica, cantidadPorEnvase(p)!=null?`${cantidadPorEnvase(p)}${p.unidad?' '+p.unidad:''}`:'', p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
+    const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:'', p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
     div.innerHTML = `
       <div class="card-cupon">${fmtCupon(p)}<span class="badge-sucursal">${escHtml(p.origen_sucursal||'')}</span>${!!p.formula_stock_id?`<span class="badge-stock">📦 Stock</span>`:''}</div>
       ${datosContactoHtml(p)}
@@ -1763,7 +1740,7 @@
   function crearDrawerCardRechazada(p){
     const div = document.createElement('div');
     div.className = 'drawer-card';
-    const partes = [p.forma_farmaceutica, cantidadPorEnvase(p)!=null?`${cantidadPorEnvase(p)}${p.unidad?' '+p.unidad:''}`:'', p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
+    const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:'', p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
     div.innerHTML = `
       <div class="card-cupon">${fmtCupon(p)}<span class="badge-sucursal">${escHtml(p.origen_sucursal||'')}</span>${!!p.formula_stock_id?`<span class="badge-stock">📦 Stock</span>`:''}<span class="badge-rechazo">Rechazado</span></div>
       ${p.datos_pendientes?`<button type="button" class="btn-completar-datos" onclick="abrirCompletarDatos(event,'${p.id}')">⚠ Completar datos pendientes${p.receta_imagen_url?' (con receta adjunta)':''}</button>`:''}
@@ -1998,7 +1975,7 @@
     if(!items.length){ cont.innerHTML = '<p style="color:var(--muted);font-size:13px;">Todavía no rechazaste ningún pedido.</p>'; return; }
     cont.innerHTML = '';
     items.forEach(p=>{
-      const partes = [p.forma_farmaceutica, cantidadPorEnvase(p)!=null?`${cantidadPorEnvase(p)}${p.unidad?' '+p.unidad:''}`:'', p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
+      const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:'', p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
       const div = document.createElement('div');
       div.style.cssText = 'background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;';
       div.innerHTML = `
@@ -2050,7 +2027,7 @@
     document.getElementById('eReceta').value=p.nro_receta??'';
     document.getElementById('eEnvases').value=p.cantidad_envases||1;
     document.getElementById('eForma').value=p.forma_farmaceutica??'';
-    document.getElementById('eCantTotal').value=cantidadPorEnvase(p)??'';
+    document.getElementById('eCantTotal').value=p.cantidad_total??'';
     document.getElementById('eUnidad').value=p.unidad??'';
     document.getElementById('eUnidadHint').textContent='';
     document.getElementById('unidadGlobalEditar').value='';
@@ -2059,7 +2036,7 @@
     await cargarComponentes(p);
     cont.innerHTML='';
     p.componentes.forEach(c=>{
-      agregarCompRow('compRowsEditar',c.id,c.droga_nombre||'',c.droga_id,componentePorEnvase(c,p)??'',c.unidad??'');
+      agregarCompRow('compRowsEditar',c.id,c.droga_nombre||'',c.droga_id,c.cantidad??'',c.unidad??'');
     });
   }
 
@@ -2113,7 +2090,7 @@
       if(esStock){
         const envases=parseInt(document.getElementById('eEnvases').value);
         const f=formulasStock.find(x=>x.id===prepActual.formula_stock_id);
-        const cantTotal = f ? +(f.cantidad_base*envases).toFixed(4) : prepActual.cantidad_total;
+        const cantTotal = f ? f.cantidad_base : prepActual.cantidad_total; // por envase
         const patchStock = limpiar({
           nro_cupon:prepActual.nro_cupon_nuevo==null?(parseInt(document.getElementById('eCupon').value)||null):prepActual.nro_cupon,
           cliente_id:cliId||null,
@@ -2130,9 +2107,8 @@
           observaciones:document.getElementById('eObs').value||null,
         });
         await sbPatch('preparados',prepActual.id,patchStock);
-        // Si cambió la cantidad de envases, hay que reescalar los componentes guardados
-        // (los usa el reporte de consumo de drogas) para que sigan reflejando lo real.
-        // Insertamos los nuevos primero y recién después borramos los viejos
+        // Si cambió la cantidad de envases, los componentes se regeneran desde la receta
+        // original (por envase, sin multiplicar). Insertamos los nuevos primero y recién después borramos los viejos
         // (por id explícito, no por preparado_id): si algo falla a mitad de
         // camino, el preparado se queda con los componentes anteriores en
         // vez de quedar con menos droga de la que corresponde.
@@ -2141,8 +2117,7 @@
           const receta = formulasStockComponentes[f.id]||[];
           for(const c of receta){
             if(!c.droga_id) continue;
-            const cant = escalarCantidadComponente(c.cantidad, c.unidad, envases);
-            await sbPost('componentes',limpiar({preparado_id:prepActual.id,droga_id:c.droga_id,cantidad:cant,unidad:c.unidad}));
+            await sbPost('componentes',limpiar({preparado_id:prepActual.id,droga_id:c.droga_id,cantidad:c.cantidad,unidad:c.unidad}));
           }
           if(idsViejos.length) await sbDelete('componentes?id=in.('+idsViejos.join(',')+')');
         }
@@ -2150,15 +2125,9 @@
         btn.disabled=false;btn.textContent='Guardar cambios';
         return;
       }
-      // Unidades de un preparado NORMAL: los campos del formulario (cantidad total y cada
-      // componente) representan UN envase; acá se escalan por la cantidad de unidades recién
-      // al guardar, igual que se hace al crear. Se recalcula siempre desde lo que hay ahora
-      // en el formulario (no hace falta comparar contra el valor viejo, a diferencia de stock,
-      // porque acá no hay una fórmula guardada aparte de la que ya se está editando).
+      // Cantidad total y componentes se guardan tal cual se cargan (por envase).
       const unidadesEdit = parseInt(document.getElementById('eEnvases').value)||1;
-      const cantTotalIngresadaEdit = parseFloat(document.getElementById('eCantTotal').value)||null;
-      const cantidadTotalFinalEdit = (unidadesEdit>1 && cantTotalIngresadaEdit!=null)
-        ? +(cantTotalIngresadaEdit*unidadesEdit).toFixed(4) : cantTotalIngresadaEdit;
+      const cantidadTotalFinalEdit = parseFloat(document.getElementById('eCantTotal').value)||null;
       const patchNormal = limpiar({
         nro_cupon:prepActual.nro_cupon_nuevo==null?(parseInt(document.getElementById('eCupon').value)||null):prepActual.nro_cupon,
         cliente_id:cliId||null,
@@ -2186,9 +2155,7 @@
         const recId=row.dataset.recid||'';
         const drugId=row.querySelector('.comp-drug-id').value;
         const unid=row.querySelector('.comp-unid').value||null;
-        const cantIngresadaEdit=parseFloat(row.querySelector('.comp-cant').value)||null;
-        const cant = (unidadesEdit>1 && cantIngresadaEdit!=null)
-          ? escalarCantidadComponente(cantIngresadaEdit, unid, unidadesEdit) : cantIngresadaEdit;
+        const cant=parseFloat(row.querySelector('.comp-cant').value)||null;
         if(!drugId) continue;
         // Se arma sin pasar por limpiar(): droga_id ya está garantizado (el continue de
         // arriba lo exige), y cantidad/unidad son campos que se pueden vaciar a propósito al
@@ -2248,7 +2215,7 @@
     document.getElementById('cReceta').value = p.nro_receta??'';
     document.getElementById('cEnvases').value = p.cantidad_envases||1;
     document.getElementById('cForma').value = p.forma_farmaceutica??'';
-    document.getElementById('cCantTotal').value = cantidadPorEnvase(p)??'';
+    document.getElementById('cCantTotal').value = p.cantidad_total??'';
     document.getElementById('cUnidad').value = p.unidad??'';
     document.getElementById('unidadGlobalCompletar').value='';
     const cont=document.getElementById('compRowsCompletar');cont.innerHTML='<div style="color:var(--muted);padding:8px;font-size:13px;">Cargando componentes…</div>';
@@ -2256,7 +2223,7 @@
     await cargarComponentes(p);
     cont.innerHTML='';
     p.componentes.forEach(c=>{
-      agregarCompRow('compRowsCompletar',c.id,c.droga_nombre||'',c.droga_id,componentePorEnvase(c,p)??'',c.unidad??'');
+      agregarCompRow('compRowsCompletar',c.id,c.droga_nombre||'',c.droga_id,c.cantidad??'',c.unidad??'');
     });
   }
 
@@ -2277,7 +2244,7 @@
         const envasesVal = document.getElementById('cEnvases').value;
         const envases = envasesVal ? parseInt(envasesVal) : null;
         const f=formulasStock.find(x=>x.id===prepCompletarActual.formula_stock_id);
-        const cantTotal = (f && envases) ? +(f.cantidad_base*envases).toFixed(4) : prepCompletarActual.cantidad_total;
+        const cantTotal = f ? f.cantidad_base : prepCompletarActual.cantidad_total; // por envase
         // Se arma el patch entero sin pasar por limpiar(): acá todos los campos son válidos
         // de mandar tal cual, incluso null (ej. borrar las observaciones a mano tiene que
         // guardarse de verdad, no quedar pegado el valor viejo).
@@ -2293,8 +2260,7 @@
           const receta = formulasStockComponentes[f.id]||[];
           for(const c of receta){
             if(!c.droga_id) continue;
-            const cant = escalarCantidadComponente(c.cantidad, c.unidad, envases);
-            await sbPost('componentes',limpiar({preparado_id:prepCompletarActual.id,droga_id:c.droga_id,cantidad:cant,unidad:c.unidad}));
+            await sbPost('componentes',limpiar({preparado_id:prepCompletarActual.id,droga_id:c.droga_id,cantidad:c.cantidad,unidad:c.unidad}));
           }
           if(idsViejos.length) await sbDelete('componentes?id=in.('+idsViejos.join(',')+')');
         }
@@ -2303,9 +2269,7 @@
         return;
       }
       const unidadesCompletar = parseInt(document.getElementById('cEnvases').value)||1;
-      const cantTotalIngresadaCompletar = parseFloat(document.getElementById('cCantTotal').value)||null;
-      const cantidadTotalFinalCompletar = (unidadesCompletar>1 && cantTotalIngresadaCompletar!=null)
-        ? +(cantTotalIngresadaCompletar*unidadesCompletar).toFixed(4) : cantTotalIngresadaCompletar;
+      const cantidadTotalFinalCompletar = parseFloat(document.getElementById('cCantTotal').value)||null;
       // Se arma el patch entero sin pasar por limpiar(): todos estos campos son opcionales
       // y el usuario los puede vaciar a propósito (ej. borrar las observaciones), así que
       // tienen que mandarse tal cual, incluso en null, para que el vaciado se guarde de
@@ -2327,9 +2291,7 @@
         const recId=row.dataset.recid||'';
         const drugId=row.querySelector('.comp-drug-id').value;
         const unid=row.querySelector('.comp-unid').value||null;
-        const cantIngresadaCompletar=parseFloat(row.querySelector('.comp-cant').value)||null;
-        const cant = (unidadesCompletar>1 && cantIngresadaCompletar!=null)
-          ? escalarCantidadComponente(cantIngresadaCompletar, unid, unidadesCompletar) : cantIngresadaCompletar;
+        const cant=parseFloat(row.querySelector('.comp-cant').value)||null;
         if(!drugId) continue;
         // Se arma sin pasar por limpiar(): droga_id ya está garantizado (el continue de
         // arriba lo exige), y cantidad/unidad son campos que se pueden vaciar a propósito al
@@ -2383,9 +2345,8 @@
     const telVal=telInput.value.trim();
     if(cliId && !telVal){telInput.classList.add('field-invalid');mostrarToast('Completá el teléfono del cliente','err');return;}
     telInput.classList.remove('field-invalid');
-    // Cantidad de envases: campo único, compartido entre preparado normal y de stock. Para
-    // stock los componentes ya vienen pre-escalados en el preview (regenerarPreviewStock);
-    // para normal se escalan recién acá al guardar (ver más abajo).
+    // Cantidad de envases: campo único, compartido entre preparado normal y de stock. No
+    // modifica la fórmula: cantidad total y componentes se guardan por envase.
     const unidadesNorm = parseInt(document.getElementById('pEnvases').value)||1;
     btn.disabled=true;btn.textContent='Guardando…';
     try{
@@ -2398,9 +2359,7 @@
           preparados.filter(p=>p.cliente_id===cliId).forEach(p=>{p.cliente_telefono=telVal;});
         }
       }
-      const cantTotalIngresada = parseFloat(document.getElementById('pCantTotal').value)||null;
-      const cantidadTotalFinal = (!modoStock && unidadesNorm>1 && cantTotalIngresada!=null)
-        ? +(cantTotalIngresada*unidadesNorm).toFixed(4) : cantTotalIngresada;
+      const cantidadTotalFinal = parseFloat(document.getElementById('pCantTotal').value)||null;
       const nuevoPrep=await sbPost('preparados',limpiar({
         nro_cupon_nuevo:tipoNuevo?cupon:null,
         nro_cupon:tipoNuevo?null:cupon,
@@ -2422,11 +2381,7 @@
         for(const row of rows){
           const drugId=row.querySelector('.comp-drug-id').value;
           const unid=row.querySelector('.comp-unid').value||null;
-          const cantIngresada=parseFloat(row.querySelector('.comp-cant').value)||null;
-          // Los componentes de stock ya vienen pre-escalados en el preview (regenerarPreviewStock);
-          // los normales se cargan por unidad y se escalan acá recién al guardar.
-          const cant = (!modoStock && unidadesNorm>1 && cantIngresada!=null)
-            ? escalarCantidadComponente(cantIngresada, unid, unidadesNorm) : cantIngresada;
+          const cant=parseFloat(row.querySelector('.comp-cant').value)||null;
           if(!drugId) continue;
           await sbPost('componentes',limpiar({preparado_id:prepId,droga_id:drugId,cantidad:cant,unidad:unid}));
         }
@@ -2499,14 +2454,12 @@
   function regenerarPreviewStock(){
     if(!formulaStockSeleccionada) return;
     document.getElementById('compRowsNuevo').innerHTML='';
-    const envases = parseFloat(document.getElementById('pEnvases').value)||0;
     document.getElementById('pForma').value = formulaStockSeleccionada.forma_farmaceutica||'';
     onFormaChange('p');
     document.getElementById('pUnidad').value = formulaStockSeleccionada.unidad||'';
-    document.getElementById('pCantTotal').value = envases>0 ? +(formulaStockSeleccionada.cantidad_base*envases).toFixed(4) : '';
+    document.getElementById('pCantTotal').value = formulaStockSeleccionada.cantidad_base??'';
     (formulasStockComponentes[formulaStockSeleccionada.id]||[]).forEach(c=>{
-      const cant = envases>0 ? escalarCantidadComponente(c.cantidad, c.unidad, envases) : '';
-      agregarCompRow('compRowsNuevo','', c.droga_nombre, c.droga_id, cant??'', c.unidad);
+      agregarCompRow('compRowsNuevo','', c.droga_nombre, c.droga_id, c.cantidad??'', c.unidad);
     });
   }
 
@@ -2846,16 +2799,7 @@
   }
   function poblarSelect(id,opts,conBlanco){const sel=document.getElementById(id);if(!sel)return;const val=sel.value;sel.innerHTML='';if(conBlanco)sel.innerHTML='<option value="">— Sin especificar —</option>';opts.forEach(o=>{const opt=document.createElement('option');opt.value=o;opt.textContent=o;sel.appendChild(opt);});if(val)sel.value=val;}
   function limpiar(obj){const r={};for(const[k,v]of Object.entries(obj))if(v!==null&&v!==undefined)r[k]=v;return r;}
-  // Al escalar un preparado de stock por cantidad de envases, solo se multiplican las
-  // unidades ABSOLUTAS (ml, g, mg, mcg, UI). Las de concentración (%, ‰, mg/ml, g/ml,
-  // mcg/ml, UI/ml) y c.s.p NO se multiplican: son una proporción que ya queda bien
-  // reflejada porque cantidad_total escala solo (calcular_gramos hace cantidad% × cantidad_total).
-  const UNID_CONCENTRACION = ['%','‰','mg/ml','g/ml','mcg/ml','UI/ml','c.s.p'];
-  function escalarCantidadComponente(cantidad, unidad, envases){
-    if(cantidad==null) return null;
-    if(UNID_CONCENTRACION.includes(unidad)) return cantidad;
-    return +(cantidad*envases).toFixed(4);
-  }
+
   function abrirModal(id){document.getElementById(id).classList.add('open');}
   function cerrarModal(id){document.getElementById(id).classList.remove('open');}
   function fmtFecha(iso){if(!iso)return '—';const[y,m,d]=iso.slice(0,10).split('-');return `${d}/${m}/${y}`;}
@@ -3037,37 +2981,31 @@
       const esStock = !!prep.formula_stock_id;
       const envases = prep.cantidad_envases || null;
       const envasesTxt = envases!=null ? (envases+' envase'+(envases===1?'':'s')) : '';
-      // Cantidad de UN envase (nunca el total sumado de todos los envases/unidades):
-      // prep.cantidad_total guarda ese total escalado, que solo usa internamente
-      // el reporte de consumo de drogas y jamás debe llegar a un ticket.
-      const cantMostrada = envases ? +(prep.cantidad_total/envases).toFixed(4) : prep.cantidad_total;
+      const cantMostrada = prep.cantidad_total; // siempre por envase
       const cant = cantMostrada != null ? cantMostrada+(prep.unidad?' '+prep.unidad:'') : '';
       const receta = prep.nro_receta ?? '';
       const precio = prep.precio_venta != null ? '$'+Number(prep.precio_venta).toLocaleString('es-AR') : '';
       const obs = (prep.observaciones ?? '');
 
-      // Componentes resumidos para cliente (cantidad de UN envase; para preparados normales
-      // con varias unidades, prep.componentes guarda el total escalado, así que se reconstruye
-      // con componentePorEnvase. Para stock se usan los de formulasStockComponentes más abajo,
-      // nunca los de prep.componentes)
+      // Componentes resumidos para cliente (por envase, tal cual se guardan. Para stock se
+      // usan los de formulasStockComponentes más abajo)
       const compsCorto = esStock ? '' : (prep.componentes||[]).map(c=>{
         let s = (c.droga_nombre||'');
-        const cantC = componentePorEnvase(c,prep);
+        const cantC = c.cantidad;
         if(cantC!=null) s += ' '+cantC+(c.unidad?' '+unidadImp(c.unidad):'');
         return s;
       }).join(' - ');
 
-      // Componentes detallados para farmacia (ídem: cantidad de UN envase, nunca la escalada)
+      // Componentes detallados para farmacia (por envase)
       const compsLargoData = esStock ? [] : (prep.componentes||[]).map(c=>{
         const nom = (c.droga_nombre||'');
-        const cantC = componentePorEnvase(c,prep);
+        const cantC = c.cantidad;
         const det = cantC!=null ? String(cantC)+(c.unidad?' '+unidadImp(c.unidad):'') : '';
         const linePad = (nom+'                      ').slice(0,22)+det;
         return lineaL(linePad);
       }).flat();
 
-      // Composición ORIGINAL de la fórmula de stock (por envase, sin escalar) para el cupón
-      // de farmacia — nunca los componentes escalados de prep.componentes.
+      // Composición de la fórmula de stock (por envase) para el cupón de farmacia.
       const compsFormulaStockData = esStock ? (formulasStockComponentes[prep.formula_stock_id]||[]).map(c=>{
         const nom = (c.droga_nombre||'');
         const det = c.cantidad!=null ? String(c.cantidad)+(c.unidad?' '+unidadImp(c.unidad):'') : '';
