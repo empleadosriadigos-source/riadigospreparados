@@ -13,10 +13,12 @@
 //   · fórmulas de stock (selector y vista previa en el modal de carga)
 //   · modal de clientes (lista, alta y edición)
 //   · modal "Editar preparado" (index y preparados): HTML, abrir y guardar
+//   · modal "Cancelar preparado" (index y preparados): los preparados nunca se borran
 //
 // Ganchos opcionales que puede definir la página (si existen, se llaman):
 //   alCargarFormulasStock()                 → después de traer las fórmulas
 //   alActualizarCliente(id, nombre, tel)    → después de editar un cliente
+//   alCancelarPreparado(id)                 → después de cancelar un preparado
 // Y una constante que define la página que tiene modal de carga con stock:
 //   MODAL_NUEVO_PREPARADO = 'modalPreparado' | 'modalPedido'
 
@@ -60,8 +62,19 @@ async function abrirSSCliente(pref){ await asegurarClientes().catch(()=>mostrarT
 function filtrarSSCliente(pref){ return abrirSSCliente(pref); }
 function renderSSCliente(dd,fil,pref){
   dd.innerHTML='';
-  fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById(`${pref}ClienteInput`).value=c.nombre;document.getElementById(`${pref}ClienteId`).value=c.id;aplicarTelefonoCliente(pref,c.telefono);dd.classList.remove('open');};dd.appendChild(d);});
+  fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById(`${pref}ClienteInput`).value=c.nombre;document.getElementById(`${pref}ClienteId`).value=c.id;aplicarTelefonoCliente(pref,c.telefono);aplicarSucursalDeCliente(pref,c.nombre);dd.classList.remove('open');};dd.appendChild(d);});
   if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}
+}
+// Si el cliente es el de una sucursal (ej. MRL), se marca esa sucursal en el
+// selector {pref}Sucursal (si el formulario lo tiene).
+function aplicarSucursalDeCliente(pref,nombre){
+  const sel=document.getElementById(`${pref}Sucursal`);
+  const suc=(typeof CLIENTE_DE_SUCURSAL!=='undefined') && CLIENTE_DE_SUCURSAL[nombre];
+  if(sel && suc) sel.value=suc;
+}
+// Opciones del selector "Para sucursal".
+function opcionesSucursalHtml(){
+  return '<option value="">— No (San Martín) —</option>'+(typeof SUCURSALES!=='undefined'?SUCURSALES:[]).map(s=>`<option value="${escHtml(s)}">${escHtml(s)}</option>`).join('');
 }
 function aplicarTelefonoCliente(pref,telefono){
   const telInp=document.getElementById(`${pref}Telefono`);
@@ -386,6 +399,7 @@ function abrirNuevoClienteDesdePrep(pref){
     document.getElementById(`${pref}ClienteInput`).value=cli.nombre;
     document.getElementById(`${pref}ClienteId`).value=cli.id;
     aplicarTelefonoCliente(pref,cli.telefono);
+    aplicarSucursalDeCliente(pref,cli.nombre);
   };
   abrirFormCliente(null);
   abrirModal('modalClientes');
@@ -448,6 +462,10 @@ let prepActual = null;
         <div class="field-group"><label>Precio por unidad (ARS)</label><input type="number" id="ePrecioUnidad" min="0" step="any" oninput="syncPrecioDesdeUnidad('e')"/></div>
         <div class="field-group"><label>Precio total (ARS)</label><input type="number" id="ePrecioTotal" min="0" step="any" oninput="syncPrecioDesdeTotal('e')"/></div>
       </div>
+      <div class="field-row">
+        <div class="field-group"><label>Para sucursal</label><select id="eSucursal">${opcionesSucursalHtml()}</select></div>
+        <div></div>
+      </div>
       <div class="field-group"><label>Observaciones</label><textarea id="eObs" rows="2"></textarea></div>
 
       <div class="modal-sep"></div>
@@ -482,6 +500,14 @@ let prepActual = null;
 
 async function abrirEditarPreparado(p){
   prepActual=p;
+  // La búsqueda de Preparados anteriores (buscar_preparados) no trae estos campos:
+  // se piden acá para no tratar un stock como normal ni perder la sucursal al guardar.
+  if(!('formula_stock_id' in p) || !('origen_sucursal' in p)){
+    try{
+      const r = await sbGet('preparados_completos?id=eq.'+p.id+'&select=formula_stock_id,formula_stock_nombre,origen_sucursal');
+      if(r.length) Object.assign(p, r[0]);
+    }catch(err){ mostrarToast('No se pudo abrir el preparado: '+err.message,'err'); return; }
+  }
   const esStock = !!p.formula_stock_id;
   document.getElementById('editarTitulo').textContent=`Editar preparado ${p.nro_cupon_nuevo!=null?'#'+p.nro_cupon_nuevo:'T'+p.nro_cupon}`;
   document.getElementById('eCupon').value=p.nro_cupon??'';
@@ -490,11 +516,23 @@ async function abrirEditarPreparado(p){
   document.getElementById('eCuponSep').style.display = esCuponNuevo ? 'none' : '';
   document.getElementById('eCupon').readOnly = esCuponNuevo;
   document.getElementById('eFecha').value=p.fecha_recepcion??'';
-  document.getElementById('eEstado').value=p.estado??'';
+  // El combo tiene los estados internos; si el preparado está en otro (ej. Cancelado),
+  // se agrega como opción para no perderlo. Elegir otro estado lo "descancela".
+  const selEstado=document.getElementById('eEstado');
+  selEstado.querySelectorAll('option[data-extra]').forEach(o=>o.remove());
+  if(p.estado && ![...selEstado.options].some(o=>o.value===p.estado)){
+    const o=document.createElement('option'); o.value=p.estado; o.textContent=p.estado; o.dataset.extra='1'; selEstado.appendChild(o);
+  }
+  selEstado.value=p.estado??'';
   const envasesEdit = p.cantidad_envases || 1;
   document.getElementById('ePrecioTotal').value = p.precio_venta??'';
   document.getElementById('ePrecioUnidad').value = p.precio_venta!=null ? +(p.precio_venta/envasesEdit).toFixed(2) : '';
   document.getElementById('eObs').value=p.observaciones??'';
+  const selSuc=document.getElementById('eSucursal');
+  if(p.origen_sucursal && ![...selSuc.options].some(o=>o.value===p.origen_sucursal)){
+    const o=document.createElement('option'); o.value=o.textContent=p.origen_sucursal; selSuc.appendChild(o);
+  }
+  selSuc.value=p.origen_sucursal??'';
   document.getElementById('eClienteInput').value=p.cliente_nombre??'';
   document.getElementById('eClienteId').value=p.cliente_id??'';
   document.getElementById('eTelefono').value=p.cliente_telefono??'';
@@ -562,6 +600,8 @@ async function guardarEdicion(){
       fecha_recepcion:document.getElementById('eFecha').value||null,
       estado:document.getElementById('eEstado').value||null,
     });
+    // Sucursal: se puede poner o sacar (null = de San Martín).
+    patch.origen_sucursal = document.getElementById('eSucursal').value||null;
     if(esStock){
       // En stock siempre se guarda cantidad_envases (aun si es 1) y la cantidad
       // total de UN envase de la fórmula.
@@ -622,4 +662,61 @@ async function guardarEdicion(){
     mostrarToast('✓ Guardado','ok');cerrarModal('modalEditar');await cargarTodo();
   }catch(err){mostrarToast('Error: '+err.message,'err');}
   btn.disabled=false;btn.textContent='Guardar cambios';
+}
+
+// ── Cancelar preparado (index y preparados) ─────────────────────────────────
+// Los preparados nunca se borran: se cancelan (estado 'Cancelado') y quedan en
+// Preparados anteriores. La razón es opcional y se agrega a las observaciones,
+// que se imprimen en los cupones. La página pone <div id="modalCancelarSlot"></div>
+// y define alCancelarPreparado(id) para refrescar su lista.
+const ESTADOS_CANCELADOS = ['Cancelado','Cancelado por sucursal'];
+let prepACancelar = null;
+(function insertarModalCancelar(){
+  const slot=document.getElementById('modalCancelarSlot');
+  if(!slot) return;
+  slot.outerHTML = `
+<div class="modal-overlay" id="modalCancelar">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h2>Cancelar preparado</h2><button class="modal-close" onclick="cerrarModal('modalCancelar')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:14px;margin-bottom:6px;">¿Cancelar el cupón <strong id="cancelarCupon"></strong>?</p>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">No se borra: queda en Preparados anteriores con estado <strong>Cancelado</strong>.</p>
+      <div class="field-group" style="margin-bottom:0;">
+        <label>Razón de la cancelación (opcional)</label>
+        <textarea id="cancelarRazon" rows="3" placeholder="Ej.: el cliente ya no lo necesita"></textarea>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Se agrega a las observaciones del preparado.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalCancelar')">Volver</button>
+      <button class="btn btn-danger" id="btnConfirmarCancelar" onclick="confirmarCancelarPreparado()">Cancelar preparado</button>
+    </div>
+  </div>
+</div>`;
+})();
+function abrirCancelarPreparado(p){
+  prepACancelar = p;
+  document.getElementById('cancelarCupon').innerHTML = fmtCupon(p);
+  document.getElementById('cancelarRazon').value = '';
+  abrirModal('modalCancelar');
+  setTimeout(()=>document.getElementById('cancelarRazon').focus(),100);
+}
+async function confirmarCancelarPreparado(){
+  const p = prepACancelar; if(!p) return;
+  const razon = document.getElementById('cancelarRazon').value.trim();
+  const btn = document.getElementById('btnConfirmarCancelar');
+  btn.disabled=true; btn.textContent='Cancelando…';
+  try{
+    // Se leen las observaciones actuales de la base para no pisar un cambio reciente.
+    const actual = await sbGet('preparados?id=eq.'+p.id+'&select=observaciones,estado');
+    const obsActual = actual.length ? (actual[0].observaciones||'') : (p.observaciones||'');
+    const patch = {estado:'Cancelado'};
+    if(razon) patch.observaciones = (obsActual ? obsActual+'\n' : '') + 'CANCELADO: ' + razon;
+    await sbPatch('preparados', p.id, patch);
+    mostrarToast('✓ Preparado cancelado (queda en Preparados anteriores)','ok');
+    cerrarModal('modalCancelar');
+    prepACancelar = null;
+    if(typeof alCancelarPreparado==='function') await alCancelarPreparado(p.id);
+  }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+  btn.disabled=false; btn.textContent='Cancelar preparado';
 }
