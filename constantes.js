@@ -34,3 +34,12 @@ const FORMA_UNIDAD = {
 };
 const FORMA_UNIDAD_BLOQUEADA = ['Solución','Loción','Spray','Shampoo','Suspensión','Jarabe','Gotas','Cápsulas','Sobres'];
 const FORMA_UNIDAD_OPCIONES = {'Crema':['g','mg','UI'],'Crema de enjuague':['g','mg','UI'],'Ungüento':['g','mg','UI'],'Gel':['g','mg','UI'],'Polvo':['g','mg','UI'],'Oro Base':['g','mg','UI'],'Glóbulos':['g','mg','UI']};
+
+// Sucursales que hacen pedidos (mismo texto que usuarios_autorizados.sucursal y
+// preparados.origen_sucursal). Un preparado con origen_sucursal sale con el tag,
+// se imprime como pedido de sucursal y la sucursal lo ve en su portal, aunque lo
+// haya cargado San Martín.
+const SUCURSALES = ['Constitución'];
+// Cliente que representa a cada sucursal: al elegirlo en "Cargar preparado" se
+// marca solo la sucursal.
+const CLIENTE_DE_SUCURSAL = {'MRL (Sucursal Constitución)': 'Constitución'};

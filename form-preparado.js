@@ -62,8 +62,19 @@ async function abrirSSCliente(pref){ await asegurarClientes().catch(()=>mostrarT
 function filtrarSSCliente(pref){ return abrirSSCliente(pref); }
 function renderSSCliente(dd,fil,pref){
   dd.innerHTML='';
-  fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById(`${pref}ClienteInput`).value=c.nombre;document.getElementById(`${pref}ClienteId`).value=c.id;aplicarTelefonoCliente(pref,c.telefono);dd.classList.remove('open');};dd.appendChild(d);});
+  fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById(`${pref}ClienteInput`).value=c.nombre;document.getElementById(`${pref}ClienteId`).value=c.id;aplicarTelefonoCliente(pref,c.telefono);aplicarSucursalDeCliente(pref,c.nombre);dd.classList.remove('open');};dd.appendChild(d);});
   if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}
+}
+// Si el cliente es el de una sucursal (ej. MRL), se marca esa sucursal en el
+// selector {pref}Sucursal (si el formulario lo tiene).
+function aplicarSucursalDeCliente(pref,nombre){
+  const sel=document.getElementById(`${pref}Sucursal`);
+  const suc=(typeof CLIENTE_DE_SUCURSAL!=='undefined') && CLIENTE_DE_SUCURSAL[nombre];
+  if(sel && suc) sel.value=suc;
+}
+// Opciones del selector "Para sucursal".
+function opcionesSucursalHtml(){
+  return '<option value="">— No (San Martín) —</option>'+(typeof SUCURSALES!=='undefined'?SUCURSALES:[]).map(s=>`<option value="${escHtml(s)}">${escHtml(s)}</option>`).join('');
 }
 function aplicarTelefonoCliente(pref,telefono){
   const telInp=document.getElementById(`${pref}Telefono`);
@@ -388,6 +399,7 @@ function abrirNuevoClienteDesdePrep(pref){
     document.getElementById(`${pref}ClienteInput`).value=cli.nombre;
     document.getElementById(`${pref}ClienteId`).value=cli.id;
     aplicarTelefonoCliente(pref,cli.telefono);
+    aplicarSucursalDeCliente(pref,cli.nombre);
   };
   abrirFormCliente(null);
   abrirModal('modalClientes');
@@ -450,6 +462,10 @@ let prepActual = null;
         <div class="field-group"><label>Precio por unidad (ARS)</label><input type="number" id="ePrecioUnidad" min="0" step="any" oninput="syncPrecioDesdeUnidad('e')"/></div>
         <div class="field-group"><label>Precio total (ARS)</label><input type="number" id="ePrecioTotal" min="0" step="any" oninput="syncPrecioDesdeTotal('e')"/></div>
       </div>
+      <div class="field-row">
+        <div class="field-group"><label>Para sucursal</label><select id="eSucursal">${opcionesSucursalHtml()}</select></div>
+        <div></div>
+      </div>
       <div class="field-group"><label>Observaciones</label><textarea id="eObs" rows="2"></textarea></div>
 
       <div class="modal-sep"></div>
@@ -484,6 +500,14 @@ let prepActual = null;
 
 async function abrirEditarPreparado(p){
   prepActual=p;
+  // La búsqueda de Preparados anteriores (buscar_preparados) no trae estos campos:
+  // se piden acá para no tratar un stock como normal ni perder la sucursal al guardar.
+  if(!('formula_stock_id' in p) || !('origen_sucursal' in p)){
+    try{
+      const r = await sbGet('preparados_completos?id=eq.'+p.id+'&select=formula_stock_id,formula_stock_nombre,origen_sucursal');
+      if(r.length) Object.assign(p, r[0]);
+    }catch(err){ mostrarToast('No se pudo abrir el preparado: '+err.message,'err'); return; }
+  }
   const esStock = !!p.formula_stock_id;
   document.getElementById('editarTitulo').textContent=`Editar preparado ${p.nro_cupon_nuevo!=null?'#'+p.nro_cupon_nuevo:'T'+p.nro_cupon}`;
   document.getElementById('eCupon').value=p.nro_cupon??'';
@@ -504,6 +528,11 @@ async function abrirEditarPreparado(p){
   document.getElementById('ePrecioTotal').value = p.precio_venta??'';
   document.getElementById('ePrecioUnidad').value = p.precio_venta!=null ? +(p.precio_venta/envasesEdit).toFixed(2) : '';
   document.getElementById('eObs').value=p.observaciones??'';
+  const selSuc=document.getElementById('eSucursal');
+  if(p.origen_sucursal && ![...selSuc.options].some(o=>o.value===p.origen_sucursal)){
+    const o=document.createElement('option'); o.value=o.textContent=p.origen_sucursal; selSuc.appendChild(o);
+  }
+  selSuc.value=p.origen_sucursal??'';
   document.getElementById('eClienteInput').value=p.cliente_nombre??'';
   document.getElementById('eClienteId').value=p.cliente_id??'';
   document.getElementById('eTelefono').value=p.cliente_telefono??'';
@@ -571,6 +600,8 @@ async function guardarEdicion(){
       fecha_recepcion:document.getElementById('eFecha').value||null,
       estado:document.getElementById('eEstado').value||null,
     });
+    // Sucursal: se puede poner o sacar (null = de San Martín).
+    patch.origen_sucursal = document.getElementById('eSucursal').value||null;
     if(esStock){
       // En stock siempre se guarda cantidad_envases (aun si es 1) y la cantidad
       // total de UN envase de la fórmula.
