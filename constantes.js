@@ -1,7 +1,7 @@
 // Constantes compartidas de formularios (preparados/componentes).
-// Usado por index.html y preparados.html. Si se agrega o cambia una
+// Usado por index.html, sucursal.html y preparados.html. Si se agrega o cambia una
 // forma farmacéutica, estado o unidad, se edita ACA UNA SOLA VEZ y
-// se refleja en ambas páginas. Debe coincidir con los CHECK de la
+// se refleja en todas. Debe coincidir con los CHECK de la
 // base de datos (tablas preparados y componentes).
 
 const ESTADOS   = ['Sin precio','En laboratorio','Listo para retirar','Entregado'];
