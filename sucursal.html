@@ -423,25 +423,9 @@
 
 <script src="constantes.js"></script>
 <script src="supabase-shared.js?v=5"></script>
+<script src="comun.js"></script>
 <script>
 let SUCURSAL_NOMBRE = null;
-
-// ── Auth ──────────────────────────────────────────────────────────
-function mostrarLogin(){ document.getElementById('loginOverlay').style.display='flex'; document.getElementById('appRoot').style.display='none'; }
-let appIniciada = false;
-function mostrarApp(session){
-  document.getElementById('loginOverlay').style.display='none';
-  document.getElementById('appRoot').style.display='';
-  const u=session.user;
-  document.getElementById('userNombre').textContent = u.user_metadata?.full_name || u.email || '';
-  if(!appIniciada){ appIniciada=true; initApp(); }
-}
-sbAuth.auth.onAuthStateChange((_e,session)=>{
-  if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { SB_TOKEN=null; appIniciada=false; mostrarLogin(); }
-});
-document.addEventListener('DOMContentLoaded', ()=>{
-  document.getElementById('btnGoogleLogin').addEventListener('click', iniciarSesionGoogle);
-});
 
 // ── Estado local ─────────────────────────────────────────────────
 let clientes = [], drogas = [], preparados = [];
@@ -458,12 +442,7 @@ function componentesFormulaHtml(formulaStockId){
     : '<div class="card-droga-row" style="color:var(--muted)">Fórmula fija (sin componentes)</div>';
 }
 
-function mostrarToast(msg,tipo=''){ const t=document.getElementById('toast'); t.textContent=msg; t.className='show '+tipo; setTimeout(()=>t.className='',3500); }
 function limpiar(obj){ const r={}; for(const [k,v] of Object.entries(obj)) if(v!==null&&v!==undefined) r[k]=v; return r; }
-function abrirModal(id){ document.getElementById(id).classList.add('open'); }
-function cerrarModal(id){ document.getElementById(id).classList.remove('open'); }
-function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function fmtFecha(iso){ if(!iso) return '—'; const [y,m,d]=iso.slice(0,10).split('-'); return `${d}/${m}/${y}`; }
 function poblarUnidadGlobal(id){
   const sel=document.getElementById(id); if(!sel) return;
   sel.innerHTML='<option value="">Unidad</option>'+UNID_COMP.map(o=>`<option value="${o}">${o}</option>`).join('');

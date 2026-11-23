@@ -822,28 +822,10 @@
 
 <script src="constantes.js"></script>
 <script src="supabase-shared.js?v=5"></script>
+<script src="comun.js"></script>
 <script>
-  // ── Autenticación (Supabase Auth + Google OAuth) ────────────────────────
-  // SB_URL, SB_KEY, sbAuth, SB_TOKEN, getAuthHeaders, sbGet/sbPost/sbPatch/sbDelete,
-  // iniciarSesionGoogle y cerrarSesion vienen de supabase-shared.js
-  function mostrarLogin(){ document.getElementById('loginOverlay').style.display='flex'; document.getElementById('appRoot').style.display='none'; }
-  let appIniciada = false;
-  function mostrarApp(session){
-    document.getElementById('loginOverlay').style.display='none';
-    document.getElementById('appRoot').style.display='';
-    const u=session.user;
-    const nameEl=document.getElementById('userNombre');
-    if(nameEl) nameEl.textContent=u.user_metadata?.full_name||u.email||'';
-    if(!appIniciada && typeof initApp==='function'){ appIniciada=true; initApp(); }
-  }
-  // onAuthStateChange ya emite el evento INITIAL_SESSION al suscribirse,
-  // asi que no hace falta llamar tambien a getSession() por separado.
-  sbAuth.auth.onAuthStateChange((_event,session)=>{
-    if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { SB_TOKEN=null; appIniciada=false; mostrarLogin(); }
-  });
-  document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('btnGoogleLogin').addEventListener('click', iniciarSesionGoogle);
-  });
+  // Acceso a datos (sbGet/sbPost/…) en supabase-shared.js; login, toasts,
+  // modales y formato (escHtml, fmtFecha, fmtCupon) en comun.js.
 
   const ESTADOS_KANBAN = ['Sin precio','En laboratorio','Listo para retirar'];
   const COL_BODY  = {'Sin precio':'body-asignar','En laboratorio':'body-lab','Listo para retirar':'body-retirar'};
@@ -2751,12 +2733,7 @@
   function poblarSelect(id,opts,conBlanco){const sel=document.getElementById(id);if(!sel)return;const val=sel.value;sel.innerHTML='';if(conBlanco)sel.innerHTML='<option value="">— Sin especificar —</option>';opts.forEach(o=>{const opt=document.createElement('option');opt.value=o;opt.textContent=o;sel.appendChild(opt);});if(val)sel.value=val;}
   function limpiar(obj){const r={};for(const[k,v]of Object.entries(obj))if(v!==null&&v!==undefined)r[k]=v;return r;}
 
-  function abrirModal(id){document.getElementById(id).classList.add('open');}
-  function cerrarModal(id){document.getElementById(id).classList.remove('open');}
-  function fmtFecha(iso){if(!iso)return '—';const[y,m,d]=iso.slice(0,10).split('-');return `${d}/${m}/${y}`;}
-  function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
   function setKanbanStatus(html,esError=false){const el=document.getElementById('kanbanStatus');el.innerHTML=html;el.style.color=esError?'var(--danger)':'var(--muted)';}
-  function mostrarToast(msg,tipo=''){const t=document.getElementById('toast');t.textContent=msg;t.className='show '+tipo;setTimeout(()=>{t.className='';},3500);}
 </script>
   <script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js"></script>
   <script>
@@ -2775,14 +2752,6 @@
   });
 
 
-  // Helper: mostrar número de cupón con estilo según tipo
-  function fmtCupon(p) {
-    if (p.nro_cupon_nuevo != null) {
-      return `<span style="color:#5BA8D4;font-weight:800">#${p.nro_cupon_nuevo}</span>`;
-    } else {
-      return `<span style="color:#B8980A;font-weight:800">T${p.nro_cupon??'—'}</span>`;
-    }
-  }
   let qzConectado = false;
 
   async function imprimirDesdeCard(e, id){
