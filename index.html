@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Laboratorio</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
-  <link rel="stylesheet" href="estilos.css?v=6"/>
-  <link rel="stylesheet" href="form-preparado.css?v=6"/>
+  <link rel="stylesheet" href="estilos.css?v=7"/>
+  <link rel="stylesheet" href="form-preparado.css?v=7"/>
   <style>
     
     .nav-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;text-decoration:none;flex-shrink:0;color:#fff;}
@@ -304,10 +304,6 @@
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
         Etiquetas
       </a>
-      <button class="side-nav-link" onclick="cerrarSideMenu();abrirPapelera()">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-        Papelera
-      </button>
       <button class="side-nav-link" onclick="cerrarSideMenu();abrirModalFormulasStock()">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
         Fórmulas de stock
@@ -349,19 +345,6 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="modalPapelera">
-  <div class="modal">
-    <div class="modal-header">
-      <h2>Papelera</h2>
-      <button class="modal-close" onclick="cerrarModal('modalPapelera')">✕</button>
-    </div>
-    <div class="modal-body">
-      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Los preparados eliminados se guardan acá 30 días antes de borrarse en serio.</p>
-      <div id="papeleraLista" style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto;"></div>
-    </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal('modalPapelera')">Cerrar</button></div>
-  </div>
-</div>
 
 <div class="modal-overlay" id="modalHistorialRechazados">
   <div class="modal">
@@ -648,23 +631,10 @@
   </div>
 </div>
 
-<!-- Modal Borrar -->
-<div class="modal-overlay" id="modalBorrar">
-  <div class="modal modal-sm">
-    <div class="modal-header"><h2>Eliminar preparado</h2><button class="modal-close" onclick="cerrarModal('modalBorrar')">✕</button></div>
-    <div class="modal-body">
-      <p style="font-size:14px;margin-bottom:6px;">¿Eliminar el cupón <strong id="borrarCupon"></strong>?</p>
-      <p style="font-size:12px;color:var(--muted);">Se eliminarán también todos los componentes. No se puede deshacer.</p>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="cerrarModal('modalBorrar')">Cancelar</button>
-      <button class="btn btn-danger" id="btnConfirmarBorrar" onclick="confirmarBorrar()">Eliminar</button>
-    </div>
-  </div>
-</div>
 
 <!-- Modal Editar -->
 <div id="modalEditarSlot" data-nuevo-cliente="1"></div><!-- modal "Editar preparado": lo arma form-preparado.js -->
+<div id="modalCancelarSlot"></div><!-- modal "Cancelar preparado": lo arma form-preparado.js -->
 
 <div class="modal-overlay" id="modalCompletar">
   <div class="modal modal-lg">
@@ -732,11 +702,11 @@
 
 </div><!-- /appRoot -->
 
-<script src="constantes.js?v=6"></script>
-<script src="supabase-shared.js?v=6"></script>
-<script src="comun.js?v=6"></script>
-<script src="form-preparado.js?v=6"></script>
-<script src="chat.js?v=6"></script>
+<script src="constantes.js?v=7"></script>
+<script src="supabase-shared.js?v=7"></script>
+<script src="comun.js?v=7"></script>
+<script src="form-preparado.js?v=7"></script>
+<script src="chat.js?v=7"></script>
 <script>
   // Acceso a datos (sbGet/sbPost/…) en supabase-shared.js; login, toasts,
   // modales y formato (escHtml, fmtFecha, fmtCupon) en comun.js.
@@ -864,7 +834,7 @@
       document.getElementById('kanbanCols').style.display = 'none';
     }
     try {
-      const preps = await sbGet('preparados_completos?estado=neq.Entregado&eliminado_en=is.null&order=orden.desc');
+      const preps = await sbGet('preparados_completos?estado=not.in.(Entregado,Cancelado)&descartado_en=is.null&order=orden.desc');
       // Traer solo componentes y comentarios de los preparados activos
       const compMap = {}, comMap = {};
       if(preps.length > 0){
@@ -1171,7 +1141,7 @@
     const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:'', p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
     const precio = p.precio_venta?`$${Number(p.precio_venta).toLocaleString('es-AR',{minimumFractionDigits:2})}`:'';
     const svgE=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
-    const svgD=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+    const svgD=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg>`;
     const svgPrint=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>`;
     const svgChevronDown=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
     const svgChevronUp=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>`;
@@ -1180,7 +1150,7 @@
         <div class="card-cupon">${fmtCupon(p)}${p.origen_sucursal?`<span class="badge-sucursal">${escHtml(p.origen_sucursal)}</span>`:''}${!!p.formula_stock_id?`<span class="badge-stock">📦 Stock</span>`:''}</div>
         <div class="card-top-actions">
           <button class="icon-btn icon-btn-toggle" onclick="toggleCardView(event,'${p.id}')" title="${colapsada?'Expandir':'Colapsar'}">${colapsada?svgChevronDown:svgChevronUp}</button>
-          <button class="icon-btn icon-btn-delete" onclick="abrirBorrar(event,'${p.id}')" title="Eliminar">${svgD}</button>
+          <button class="icon-btn icon-btn-delete" onclick="abrirCancelar(event,'${p.id}')" title="Cancelar preparado">${svgD}</button>
         </div>
       </div>
       ${p.origen_sucursal?`<div class="sucursal-tag-card">👁 En sucursal se ve: "${escHtml(ESTADO_TAG_SUCURSAL[p.estado]||p.estado)}"</div>`:''}
@@ -1267,7 +1237,8 @@
 
   async function descartarCancelado(id){
     try{
-      await sbPatch('preparados', id, { eliminado_en: new Date().toISOString() });
+      // Solo lo saca del cajón: el pedido sigue en Preparados anteriores.
+      await sbPatch('preparados', id, { descartado_en: new Date().toISOString() });
       cargarTodo();
     }catch(err){ mostrarToast('Error al descartar: '+err.message, 'err'); }
   }
@@ -1547,55 +1518,10 @@
     btn.disabled=false;btn.textContent='✓ Confirmar entrega';
   }
 
-  // ── Borrar ─────────────────────────────────────────────────────────────
-  function abrirBorrar(e,id){e.stopPropagation();prepActual=preparados.find(x=>x.id===id);if(!prepActual)return;document.getElementById('borrarCupon').innerHTML=fmtCupon(prepActual);abrirModal('modalBorrar');}
-  async function confirmarBorrar(){
-    const btn=document.getElementById('btnConfirmarBorrar');
-    btn.disabled=true;btn.textContent='Eliminando…';
-    try{
-      await sbPatch('preparados', prepActual.id, {eliminado_en: new Date().toISOString()});
-      preparados=preparados.filter(x=>x.id!==prepActual.id);renderKanban();renderDrawer();
-      mostrarToast('✓ Movido a la papelera (se puede recuperar)','ok');cerrarModal('modalBorrar');
-    }catch(err){mostrarToast('Error: '+err.message,'err');}
-    btn.disabled=false;btn.textContent='Eliminar';
-  }
+  // ── Cancelar (los preparados nunca se borran; ver form-preparado.js) ──────
+  function abrirCancelar(e,id){ e.stopPropagation(); const p=preparados.find(x=>x.id===id); if(p) abrirCancelarPreparado(p); }
+  function alCancelarPreparado(id){ preparados=preparados.filter(x=>x.id!==id); renderKanban(); renderDrawer(); }
 
-  // ── Papelera (preparados eliminados, recuperables por 30 días) ──────────
-  async function abrirPapelera(){
-    document.getElementById('papeleraLista').innerHTML = '<p style="color:var(--muted);font-size:13px;">Cargando…</p>';
-    abrirModal('modalPapelera');
-    try{
-      const items = await sbGet('preparados_completos?eliminado_en=not.is.null&order=eliminado_en.desc');
-      renderPapelera(items);
-    }catch(err){
-      document.getElementById('papeleraLista').innerHTML = '<p style="color:var(--danger);font-size:13px;">Error: '+err.message+'</p>';
-    }
-  }
-  function renderPapelera(items){
-    const cont = document.getElementById('papeleraLista');
-    if(!items.length){ cont.innerHTML = '<p style="color:var(--muted);font-size:13px;">La papelera está vacía.</p>'; return; }
-    cont.innerHTML = '';
-    items.forEach(p=>{
-      const vence = new Date(new Date(p.eliminado_en).getTime() + 30*86400000);
-      const div = document.createElement('div');
-      div.style.cssText = 'background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;';
-      div.innerHTML = `
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
-          <strong style="font-size:13px;">${fmtCupon(p)} · ${escHtml(p.cliente_nombre || (p.formula_stock_nombre?('📦 '+p.formula_stock_nombre):'—'))}</strong>
-          <button class="btn btn-primary btn-sm" onclick="recuperarPreparado('${p.id}')">↺ Recuperar</button>
-        </div>
-        <div style="font-size:12px;color:var(--muted);">${escHtml(p.forma_farmaceutica||'')} · Eliminado el ${fmtFecha(p.eliminado_en.slice(0,10))} · Se borra definitivo el ${fmtFecha(vence.toISOString().slice(0,10))}</div>`;
-      cont.appendChild(div);
-    });
-  }
-  async function recuperarPreparado(id){
-    try{
-      await sbPatch('preparados', id, {eliminado_en: null});
-      mostrarToast('✓ Recuperado','ok');
-      await abrirPapelera();
-      cargarTodo();
-    }catch(err){ mostrarToast('Error: '+err.message,'err'); }
-  }
 
   // ── Historial de rechazados (todos, aunque ya se hayan descartado del
   // cajón de notificaciones) ──────────────────────────────────────────────

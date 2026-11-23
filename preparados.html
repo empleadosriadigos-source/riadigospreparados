@@ -4,8 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Laboratorio · Preparados anteriores</title>
-  <link rel="stylesheet" href="estilos.css?v=6"/>
-  <link rel="stylesheet" href="form-preparado.css?v=6"/>
+  <link rel="stylesheet" href="estilos.css?v=7"/>
+  <link rel="stylesheet" href="form-preparado.css?v=7"/>
   <style>
     
     .nav-btn:hover{opacity:0.85;}
@@ -31,6 +31,7 @@
     .td-precio{font-weight:700;color:var(--accent);white-space:nowrap;}
     .pill-estado{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
     .pill-asignar{background:#FEF3C7;color:#92400E;}.pill-lab{background:#DBEAFE;color:#1E40AF;}.pill-retirar{background:#D1FAE5;color:#065F46;}.pill-entregado{background:#E5E7EB;color:#374151;}
+    .pill-cancelado{background:#FBEAEA;color:var(--danger);}
     .pill-forma{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;background:#B2D9C8;color:#1A5C3A;white-space:nowrap;}
     .comp-list{display:flex;flex-direction:column;gap:2px;}
     .comp-item{font-size:12px;}.comp-item span{color:var(--muted);}
@@ -126,6 +127,8 @@
       <option value="Sin precio">Sin precio</option>
       <option value="En laboratorio">En laboratorio</option>
       <option value="Listo para retirar">Listo para retirar</option>
+      <option value="Cancelado">Cancelado</option>
+      <option value="Cancelado por sucursal">Cancelado por sucursal</option>
     </select>
     <span class="count" id="countBadge"></span>
   </div>
@@ -156,6 +159,7 @@
 
 <!-- Modal Editar -->
 <div id="modalEditarSlot"></div><!-- modal "Editar preparado": lo arma form-preparado.js -->
+<div id="modalCancelarSlot"></div><!-- modal "Cancelar preparado": lo arma form-preparado.js -->
 
 <!-- Modal Repetir -->
 <div class="modal-overlay" id="modalRepetir">
@@ -219,14 +223,6 @@
   </div>
 </div>
 
-<!-- Modal Borrar -->
-<div class="modal-overlay" id="modalBorrar">
-  <div class="modal modal-sm">
-    <div class="modal-header"><h2>Eliminar preparado</h2><button class="modal-close" onclick="cerrarModal('modalBorrar')">✕</button></div>
-    <div class="modal-body"><p style="font-size:14px;margin-bottom:6px;">¿Eliminar el cupón <strong id="borrarCupon"></strong>?</p><p style="font-size:12px;color:var(--muted);">Se eliminarán también todos los componentes. No se puede deshacer.</p></div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal('modalBorrar')">Cancelar</button><button class="btn btn-danger" id="btnConfirmarBorrar" onclick="confirmarBorrar()">Eliminar</button></div>
-  </div>
-</div>
 
 <!-- Modal Fusionar clientes (herramienta temporal) -->
 <div class="modal-overlay" id="modalFusionar">
@@ -262,10 +258,10 @@
 
 </div><!-- /appRoot -->
 
-<script src="constantes.js?v=6"></script>
-<script src="supabase-shared.js?v=6"></script>
-<script src="comun.js?v=6"></script>
-<script src="form-preparado.js?v=6"></script>
+<script src="constantes.js?v=7"></script>
+<script src="supabase-shared.js?v=7"></script>
+<script src="comun.js?v=7"></script>
+<script src="form-preparado.js?v=7"></script>
 <script>
   // Acceso a datos en supabase-shared.js; login, toasts, modales y formato en comun.js.
 
@@ -383,7 +379,7 @@
   }
 
   function pillEstado(estado){
-    const cls={'Sin precio':'pill-asignar','En laboratorio':'pill-lab','Listo para retirar':'pill-retirar','Entregado':'pill-entregado'}[estado]||'pill-entregado';
+    const cls={'Sin precio':'pill-asignar','En laboratorio':'pill-lab','Listo para retirar':'pill-retirar','Entregado':'pill-entregado','Cancelado':'pill-cancelado','Cancelado por sucursal':'pill-cancelado'}[estado]||'pill-entregado';
     return `<span class="pill-estado ${cls}">${escHtml(estado??'—')}</span>`;
   }
 
@@ -407,7 +403,7 @@
       const svgE=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
       const svgR=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`;
       const svgRec=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 19 9 24"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>`;
-      const svgD=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+      const svgD=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg>`;
       tr.innerHTML=`
         <td class="td-cupon">${fmtCupon(p)}</td>
         <td class="td-cliente">${escHtml(p.cliente_nombre||'—')}</td>
@@ -423,7 +419,7 @@
           <button class="act-btn act-btn-edit" onclick="event.stopPropagation();abrirEditar('${p.id}')">${svgE} Editar</button>
           <button class="act-btn act-btn-repeat" onclick="event.stopPropagation();abrirRepetir('${p.id}')">${svgR} Repetir</button>
           ${esEntregado?`<button class="act-btn act-btn-recover" onclick="event.stopPropagation();recuperar('${p.id}')">${svgRec} Recuperar</button>`:''}
-          <button class="act-btn act-btn-delete" onclick="event.stopPropagation();abrirBorrar('${p.id}')">${svgD} Eliminar</button>
+          ${ESTADOS_CANCELADOS.includes(p.estado)?'':`<button class="act-btn act-btn-delete" onclick="event.stopPropagation();abrirCancelar('${p.id}')">${svgD} Cancelar</button>`}
         </div></td>`;
       tr.addEventListener('click', () => abrirEditar(p.id));
       tbody.appendChild(tr);
@@ -453,6 +449,9 @@
     });
     filtrar();
   }
+
+  function abrirCancelar(id){ const p=resultadosFiltrados.find(x=>x.id===id); if(p) abrirCancelarPreparado(p); }
+  async function alCancelarPreparado(){ await filtrar(false); }
 
   async function recuperar(id){
     const p=resultadosFiltrados.find(x=>x.id===id);if(!p)return;
@@ -554,14 +553,7 @@
     btn.disabled=false;btn.textContent='↺ Crear preparado';
   }
 
-  function abrirBorrar(id){prepActual=resultadosFiltrados.find(x=>x.id===id);if(!prepActual)return;document.getElementById('borrarCupon').innerHTML=fmtCupon(prepActual);abrirModal('modalBorrar');}
 
-  async function confirmarBorrar(){
-    const btn=document.getElementById('btnConfirmarBorrar');btn.disabled=true;btn.textContent='Eliminando…';
-    try{await sbPatch('preparados', prepActual.id, {eliminado_en: new Date().toISOString()});mostrarToast('✓ Movido a la papelera (Papelera en el Kanban)','ok');cerrarModal('modalBorrar');await filtrar();}
-    catch(err){mostrarToast('Error: '+err.message,'err');}
-    btn.disabled=false;btn.textContent='Eliminar';
-  }
 
 
   function abrirNuevoClienteRepetir(){

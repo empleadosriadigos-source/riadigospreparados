@@ -8,6 +8,8 @@ const ESTADOS   = ['Sin precio','En laboratorio','Listo para retirar','Entregado
 // Estados de negociación con sucursal (no aparecen en ESTADOS porque no son parte
 // del combo de edición manual en index.html/preparados.html; se asignan solo por código).
 const ESTADOS_SUCURSAL = ['Pedido nuevo','Precio propuesto','Rechazado','Cancelado por sucursal'];
+// 'Cancelado' (cancelado por San Martín) tampoco está en ESTADOS: se asigna con el botón
+// Cancelar (form-preparado.js). Los preparados nunca se borran.
 // Qué texto ve la sucursal en sucursal.html para cada estado interno (para mostrar
 // el tag "sucursal ve" en index.html). Ver crearTarjeta() en sucursal.html.
 const ESTADO_TAG_SUCURSAL = {

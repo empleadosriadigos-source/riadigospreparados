@@ -13,10 +13,12 @@
 //   · fórmulas de stock (selector y vista previa en el modal de carga)
 //   · modal de clientes (lista, alta y edición)
 //   · modal "Editar preparado" (index y preparados): HTML, abrir y guardar
+//   · modal "Cancelar preparado" (index y preparados): los preparados nunca se borran
 //
 // Ganchos opcionales que puede definir la página (si existen, se llaman):
 //   alCargarFormulasStock()                 → después de traer las fórmulas
 //   alActualizarCliente(id, nombre, tel)    → después de editar un cliente
+//   alCancelarPreparado(id)                 → después de cancelar un preparado
 // Y una constante que define la página que tiene modal de carga con stock:
 //   MODAL_NUEVO_PREPARADO = 'modalPreparado' | 'modalPedido'
 
@@ -490,7 +492,14 @@ async function abrirEditarPreparado(p){
   document.getElementById('eCuponSep').style.display = esCuponNuevo ? 'none' : '';
   document.getElementById('eCupon').readOnly = esCuponNuevo;
   document.getElementById('eFecha').value=p.fecha_recepcion??'';
-  document.getElementById('eEstado').value=p.estado??'';
+  // El combo tiene los estados internos; si el preparado está en otro (ej. Cancelado),
+  // se agrega como opción para no perderlo. Elegir otro estado lo "descancela".
+  const selEstado=document.getElementById('eEstado');
+  selEstado.querySelectorAll('option[data-extra]').forEach(o=>o.remove());
+  if(p.estado && ![...selEstado.options].some(o=>o.value===p.estado)){
+    const o=document.createElement('option'); o.value=p.estado; o.textContent=p.estado; o.dataset.extra='1'; selEstado.appendChild(o);
+  }
+  selEstado.value=p.estado??'';
   const envasesEdit = p.cantidad_envases || 1;
   document.getElementById('ePrecioTotal').value = p.precio_venta??'';
   document.getElementById('ePrecioUnidad').value = p.precio_venta!=null ? +(p.precio_venta/envasesEdit).toFixed(2) : '';
@@ -622,4 +631,61 @@ async function guardarEdicion(){
     mostrarToast('✓ Guardado','ok');cerrarModal('modalEditar');await cargarTodo();
   }catch(err){mostrarToast('Error: '+err.message,'err');}
   btn.disabled=false;btn.textContent='Guardar cambios';
+}
+
+// ── Cancelar preparado (index y preparados) ─────────────────────────────────
+// Los preparados nunca se borran: se cancelan (estado 'Cancelado') y quedan en
+// Preparados anteriores. La razón es opcional y se agrega a las observaciones,
+// que se imprimen en los cupones. La página pone <div id="modalCancelarSlot"></div>
+// y define alCancelarPreparado(id) para refrescar su lista.
+const ESTADOS_CANCELADOS = ['Cancelado','Cancelado por sucursal'];
+let prepACancelar = null;
+(function insertarModalCancelar(){
+  const slot=document.getElementById('modalCancelarSlot');
+  if(!slot) return;
+  slot.outerHTML = `
+<div class="modal-overlay" id="modalCancelar">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h2>Cancelar preparado</h2><button class="modal-close" onclick="cerrarModal('modalCancelar')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:14px;margin-bottom:6px;">¿Cancelar el cupón <strong id="cancelarCupon"></strong>?</p>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">No se borra: queda en Preparados anteriores con estado <strong>Cancelado</strong>.</p>
+      <div class="field-group" style="margin-bottom:0;">
+        <label>Razón de la cancelación (opcional)</label>
+        <textarea id="cancelarRazon" rows="3" placeholder="Ej.: el cliente ya no lo necesita"></textarea>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Se agrega a las observaciones del preparado.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalCancelar')">Volver</button>
+      <button class="btn btn-danger" id="btnConfirmarCancelar" onclick="confirmarCancelarPreparado()">Cancelar preparado</button>
+    </div>
+  </div>
+</div>`;
+})();
+function abrirCancelarPreparado(p){
+  prepACancelar = p;
+  document.getElementById('cancelarCupon').innerHTML = fmtCupon(p);
+  document.getElementById('cancelarRazon').value = '';
+  abrirModal('modalCancelar');
+  setTimeout(()=>document.getElementById('cancelarRazon').focus(),100);
+}
+async function confirmarCancelarPreparado(){
+  const p = prepACancelar; if(!p) return;
+  const razon = document.getElementById('cancelarRazon').value.trim();
+  const btn = document.getElementById('btnConfirmarCancelar');
+  btn.disabled=true; btn.textContent='Cancelando…';
+  try{
+    // Se leen las observaciones actuales de la base para no pisar un cambio reciente.
+    const actual = await sbGet('preparados?id=eq.'+p.id+'&select=observaciones,estado');
+    const obsActual = actual.length ? (actual[0].observaciones||'') : (p.observaciones||'');
+    const patch = {estado:'Cancelado'};
+    if(razon) patch.observaciones = (obsActual ? obsActual+'\n' : '') + 'CANCELADO: ' + razon;
+    await sbPatch('preparados', p.id, patch);
+    mostrarToast('✓ Preparado cancelado (queda en Preparados anteriores)','ok');
+    cerrarModal('modalCancelar');
+    prepACancelar = null;
+    if(typeof alCancelarPreparado==='function') await alCancelarPreparado(p.id);
+  }catch(err){ mostrarToast('Error: '+err.message,'err'); }
+  btn.disabled=false; btn.textContent='Cancelar preparado';
 }
