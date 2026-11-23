@@ -4,15 +4,13 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Laboratorio · Reporte de drogas</title>
+  <link rel="stylesheet" href="estilos.css"/>
   <style>
     :root{--bg:#F0EDE4;--surface:#FAFAF7;--border:#DDD8CC;--accent:#75A63D;--accent2:#68A9CC;--text:#1C2128;--muted:#6B7685;--danger:#C0392B;--radius:8px;--shadow:0 2px 8px rgba(0,0,0,0.09);}
-    *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+    
     .topbar{background:#2C2C2C;padding:0 20px;display:flex;align-items:center;gap:10px;height:52px;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.18);}
-    .topbar-brand{color:#fff;font-size:15px;font-weight:700;white-space:nowrap;}.topbar-brand span{color:var(--accent);}
     .topbar-sep{width:1px;height:24px;background:#444;margin:0 4px;}
-    .nav-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;text-decoration:none;color:#fff;}
-    .nav-btn:hover{opacity:0.85;}.nav-btn-dark{background:#444;}
+    .nav-btn:hover{opacity:0.85;}
     .wrap{padding:24px 20px;max-width:800px;margin:0 auto;}
     .filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:20px;}
     .filter-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px;}
@@ -22,11 +20,10 @@
     input[type="date"]{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);outline:none;}
     input[type="date"]:focus{border-color:var(--accent2);background:#fff;}
     .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 20px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;}
-    .btn:hover:not(:disabled){opacity:0.85;}.btn:disabled{opacity:0.5;cursor:not-allowed;}
+    .btn:hover:not(:disabled){opacity:0.85;}
     .btn-primary{background:var(--accent);color:#fff;width:100%;justify-content:center;padding:11px;font-size:14px;margin-top:4px;}
     .btn-excel{background:#1D6F42;color:#fff;}
     #status{font-size:13px;color:var(--muted);min-height:20px;margin-top:10px;text-align:center;}
-    #status.error{color:var(--danger);font-weight:600;}
     .spinner{display:inline-block;width:15px;height:15px;border:2px solid #ccc;border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
     @keyframes spin{to{transform:rotate(360deg);}}
     #resultado{display:none;}
@@ -45,17 +42,12 @@
     td{padding:10px 16px;}
     td.num{font-variant-numeric:tabular-nums;font-weight:600;color:var(--accent);}
     .td-num-small{font-size:11px;color:var(--muted);}
-    .login-overlay{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;}
     .login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,0.15);padding:40px 36px;max-width:360px;width:100%;text-align:center;}
-    .login-logo{font-size:20px;font-weight:800;color:var(--text);margin-bottom:4px;}
     .login-logo span{color:var(--accent);}
-    .login-sub{font-size:13px;color:var(--muted);margin-bottom:28px;}
     .btn-google{display:inline-flex;align-items:center;gap:10px;justify-content:center;width:100%;padding:11px 16px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;transition:box-shadow 0.15s,border-color 0.15s;}
     .btn-google:hover{box-shadow:0 2px 8px rgba(0,0,0,0.12);border-color:#bbb;}
-    .user-chip{font-size:12px;color:#ccc;white-space:nowrap;}
     .btn-logout{background:none;border:1px solid #555;color:#ccc;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;}
     .btn-logout:hover{background:#444;}
-    .topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
     @media (max-width: 640px) {
       html{font-size:14px;}
       .topbar{overflow-x:auto;-webkit-overflow-scrolling:touch;}
