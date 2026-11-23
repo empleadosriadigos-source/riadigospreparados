@@ -2,21 +2,15 @@
 // IMPORTANTE: este archivo debe cargarse (via <script src="supabase-shared.js">)
 // DESPUES de la libreria supabase-js y ANTES del <script> propio de cada pagina.
 //
-// ⚠️ CACHE: los 6 HTML que lo cargan lo hacen como "supabase-shared.js?v=N".
-// Cada vez que se modifique este archivo hay que subir ese "N" en los 6
-// lugares (clientes.html, etiquetas.html, index.html, preparados.html,
-// reporte.html, sucursal.html) — si no, los navegadores que ya lo tenían en
-// caché van a seguir usando la versión vieja del archivo (aunque el HTML que
-// lo referencia sí se actualice), y funciones nuevas como
-// sbConReintentoDeSesion van a tirar "is not defined" hasta que el usuario
-// haga un hard refresh. grep -rn "supabase-shared.js?v=" *.html para
-// encontrar todos los lugares a actualizar.
+// ⚠️ CACHE: los HTML cargan los .js y .css propios como "archivo?v=N", todos con
+// el mismo N. Cada vez que se modifique un .js o .css compartido hay que correr
+// "sh subir-version.sh" (sube N en todos los HTML de una vez); si no, los
+// navegadores que ya tenían el archivo en caché siguen usando la versión vieja
+// y aparecen errores tipo "… is not defined" hasta un Ctrl+F5.
 //
-// El login con Google (iniciarSesionGoogle/cerrarSesion), mostrar/ocultar la
-// pantalla de login (mostrarApp/mostrarLogin) y el arranque de cada pagina
-// (initApp) se mantienen en cada HTML por separado, porque dependen de los
-// elementos propios de cada pantalla. Este archivo solo centraliza las
-// credenciales y el "como" se pide/guarda/borra un dato en Supabase.
+// Este archivo centraliza las credenciales y el "cómo" se pide/guarda/borra un
+// dato en Supabase. La pantalla de login (mostrarApp/mostrarLogin) está en
+// comun.js; cada página solo define su initApp().
 
 const SB_URL = 'https://zmxkazlpliapedsgbzhb.supabase.co/rest/v1';
 const SB_URL_BASE = 'https://zmxkazlpliapedsgbzhb.supabase.co';
@@ -24,8 +18,7 @@ const SB_KEY = 'sb_publishable_7iSVOhG4YHUC9rFegjdJ4A_1GL4DTlV';
 
 const sbAuth = supabase.createClient(SB_URL_BASE, SB_KEY);
 
-// Token de sesion: cada pagina lo actualiza en su propio listener
-// sbAuth.auth.onAuthStateChange(...) tal como lo hacia antes.
+// Token de sesion: lo actualiza el listener de comun.js (clientes.html tiene el suyo).
 let SB_TOKEN = null;
 
 // redirectTo dinamico: vuelve siempre a la MISMA pagina donde se inicio el login

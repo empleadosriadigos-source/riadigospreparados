@@ -411,14 +411,14 @@
 
 <div id="toast"></div>
 
-<script src="supabase-shared.js?v=5"></script>
+<script src="supabase-shared.js?v=6"></script>
+<script src="comun.js?v=6"></script>
 <script>
   // SB_URL, SB_KEY, sbAuth, SB_TOKEN, getAuthHeaders, sbGet/sbPost/sbPatch/sbDelete
   // vienen de supabase-shared.js. El login de esta pagina (auto-redirect sin
   // pantalla intermedia) es distinto a las demas y se mantiene como estaba.
 
   function limpiar(o){ return Object.fromEntries(Object.entries(o).filter(([,v])=>v!=null&&v!=='')); }
-  function escHtml(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
   function mostrarToast(msg,tipo='ok'){
     const t=document.getElementById('toast');
@@ -426,8 +426,6 @@
     clearTimeout(t._t); t._t=setTimeout(()=>t.className='',2500);
   }
 
-  function abrirModal(id){ document.getElementById(id).classList.add('open'); }
-  function cerrarModal(id){ document.getElementById(id).classList.remove('open'); }
 
   function copiar(btn, texto){
     navigator.clipboard.writeText(texto).then(()=>{
