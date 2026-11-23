@@ -5,23 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Portal de sucursal</title>
 <link rel="stylesheet" href="estilos.css"/>
+  <link rel="stylesheet" href="form-preparado.css"/>
   <style>
-  
   .topbar{background:#2C2C2C;padding:0 20px;display:flex;align-items:center;gap:10px;height:52px;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.18);}
   .topbar-brand{color:#fff;font-size:15px;font-weight:700;}
-  
   .nav-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;color:#fff;}
-  
   .user-chip{font-size:12px;color:#ccc;}
   .btn-logout{background:none;border:1px solid #555;color:#ccc;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;}
   .btn-logout:hover{background:#444;}
-  
   .kanban-cols{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:stretch;}
   @media(max-width:1000px){.kanban-cols{grid-template-columns:repeat(2,1fr);}}
   @media(max-width:560px){.kanban-cols{grid-template-columns:1fr;}}
   .col{background:#E8E4DA;border-radius:var(--radius);border:1px solid var(--border);min-height:200px;display:flex;flex-direction:column;}
   .col-header{padding:12px 14px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:52px;z-index:40;background:#E8E4DA;border-radius:var(--radius) var(--radius) 0 0;}
-  
   .dot-peticion{background:#D97706;}.dot-aceptado{background:#68A9CC;}.dot-prep{background:#2563EB;}.dot-retirar{background:#75A63D;}
   .col-body{padding:10px;display:flex;flex-direction:column;gap:8px;flex:1;min-height:200px;}
   .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow);}
@@ -58,40 +54,25 @@
   .modal-sm{max-width:420px;}
   .modal-header h2{font-size:16px;font-weight:700;}
   
-  
   .field-group label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px;}
   .field-group input,.field-group select,.field-group textarea{width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;}
-  
   @media(max-width:500px){.field-row,.field-row-3{grid-template-columns:1fr;}}
   .field-invalid{border-color:var(--danger)!important;}
   .modal-sep{border-top:1px solid var(--border);margin:20px 0;}
-  .ss-dropdown{display:none;position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.15);z-index:500;max-height:200px;overflow-y:auto;min-width:200px;}
-  .ss-dropdown.open{display:block;}
-  .ss-option{padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);}
-  .ss-option:last-child{border-bottom:none;}
-  .ss-option:hover{background:var(--accent2);color:#fff;}
-  .ss-action{padding:8px 12px;cursor:pointer;font-size:13px;color:var(--accent);font-weight:600;border-top:1px solid var(--border);background:#F0FAF0;}
-  .ss-action:hover{background:var(--accent);color:#fff;}
+  
+  
+  
   .badge-stock{display:inline-block;background:#FCEBD5;color:#9A5B0C;border:1px solid #F0CB98;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:2px 8px;border-radius:20px;white-space:nowrap;}
   .card-cupon .badge-stock,.hist-item-cliente .badge-stock{margin-left:6px;}
-  .stock-picker-btn{border:1px solid var(--border,#ddd);background:var(--surface,#fff);border-radius:10px;padding:14px 10px;font-size:13px;font-weight:600;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;}
-  .stock-picker-btn:hover{border-color:var(--accent);background:var(--accent-bg,#F0F7FF);}
-  .stock-chip-seleccionada{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--accent);background:var(--accent-bg,#F0F7FF);color:var(--accent);border-radius:20px;padding:8px 16px;font-size:14px;font-weight:700;cursor:pointer;}
-  .stock-chip-seleccionada::after{content:'✎ cambiar';font-weight:400;font-size:11px;opacity:.75;margin-left:4px;}
-  .comp-editor{border:1px solid var(--border);border-radius:6px;overflow:visible;margin-bottom:8px;}
+  
+  
   .comp-unidad-global-row select{width:64px;padding:3px 5px;font-size:11px;font-weight:600;text-transform:none;letter-spacing:normal;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);outline:none;cursor:pointer;}
   .comp-unidad-global-row select:focus{border-color:var(--accent2);}
-  .comp-editor-header{display:grid;grid-template-columns:1fr 90px 100px 32px;gap:6px;padding:7px 10px;background:#EDEAE0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);border-bottom:1px solid var(--border);border-radius:6px 6px 0 0;}
-  .comp-row{display:grid;grid-template-columns:1fr 90px 100px 32px;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);align-items:center;}
-  .comp-row:last-child{border-bottom:none;}
-  .comp-row input,.comp-row select{padding:5px 8px;font-size:12px;border:1px solid var(--border);border-radius:5px;background:var(--bg);outline:none;width:100%;}
-  .comp-cant-cell{position:relative;}
-  .csp-opts{display:none;gap:4px;margin-top:3px;}
-  .csp-btn{font-size:10px;padding:2px 6px;border:1px solid var(--border);background:var(--surface);border-radius:4px;cursor:pointer;}
-  .csp-btn.active{background:var(--accent2);color:#fff;}
-  .btn-del-comp{background:none;border:none;color:var(--danger);cursor:pointer;font-size:18px;line-height:1;padding:2px;}
-  .cli-item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);}
-  .cli-item:hover{background:var(--bg);}
+  
+  
+  
+  
+  
   .hist-item{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
   .hist-item-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px;}
   .hist-item-cliente{font-weight:700;font-size:13px;}
@@ -112,14 +93,11 @@
   .chat-bubble.chat-recibido{background:#E8F4FB;border:1px solid #C0DFF0;border-top-left-radius:3px;color:#2C5F73;}
   .chat-bubble.chat-rechazo{background:#FDECEA;border:1px solid #F3C6C0;border-top-left-radius:3px;color:#8A2E22;}
   .chat-bubble.chat-propio{background:#EAF6E4;border:1px solid #CFE9C2;border-top-right-radius:3px;color:#3D5C30;margin-left:auto;}
-  
   .chat-bubble-acciones button{background:none;border:none;padding:0;font-size:11px;line-height:1;cursor:pointer;opacity:.5;}
-  
   .chat-bubble-editando{background:#FFF7DE!important;border-color:#F0DFA0!important;}
   .chat-edit-input{width:100%;box-sizing:border-box;padding:4px 8px;border-radius:8px;border:1px solid var(--border);font-size:12.5px;background:#fff;margin-top:2px;}
   .chat-edit-acciones button{background:none;border:none;font-size:13px;cursor:pointer;padding:2px 4px;}
   .minichat{border:1px solid var(--border);border-radius:8px;margin-top:8px;background:var(--bg);overflow:hidden;position:relative;}
-  
   .minichat-input-row{display:flex;gap:6px;padding:6px;border-top:1px solid var(--border);background:var(--surface);}
   .minichat-input-row input{flex:1;padding:5px 10px;border:1px solid var(--border);border-radius:20px;font-size:12px;background:var(--bg);outline:none;}
   .minichat-input-row button{border-radius:20px;padding:5px 12px;}
@@ -424,13 +402,15 @@
 <script src="constantes.js"></script>
 <script src="supabase-shared.js?v=5"></script>
 <script src="comun.js"></script>
+<script src="form-preparado.js"></script>
 <script>
 let SUCURSAL_NOMBRE = null;
 
 // ── Estado local ─────────────────────────────────────────────────
-let clientes = [], drogas = [], preparados = [];
-let clienteCB = null, cbDrogaIdx = null;
-let formulasStock = [], formulasStockComponentes = {}, formulaStockSeleccionada = null;
+let preparados = [];
+// Para form-preparado.js
+const MODAL_NUEVO_PREPARADO = 'modalPedido';
+function alCargarFormulasStock(){ renderKanban(); }
 // cantidad_total y componentes.cantidad se guardan SIEMPRE por envase (lo que se carga:
 // 100 ml es 100 ml). La cantidad de envases no cambia la fórmula; solo se multiplica en el
 // reporte de consumo de drogas (función SQL reporte_consumo_drogas).
@@ -442,17 +422,6 @@ function componentesFormulaHtml(formulaStockId){
     : '<div class="card-droga-row" style="color:var(--muted)">Fórmula fija (sin componentes)</div>';
 }
 
-function limpiar(obj){ const r={}; for(const [k,v] of Object.entries(obj)) if(v!==null&&v!==undefined) r[k]=v; return r; }
-function poblarUnidadGlobal(id){
-  const sel=document.getElementById(id); if(!sel) return;
-  sel.innerHTML='<option value="">Unidad</option>'+UNID_COMP.map(o=>`<option value="${o}">${o}</option>`).join('');
-}
-function aplicarUnidadGlobal(contId,sel){
-  const valor=sel.value; if(!valor) return;
-  const cont=document.getElementById(contId);
-  if(cont){ cont.querySelectorAll('.comp-unid').forEach(otro=>{ otro.value=valor; }); }
-}
-function poblarSelect(id,opts,conBlanco){ const sel=document.getElementById(id); if(!sel) return; const val=sel.value; sel.innerHTML=''; if(conBlanco) sel.innerHTML='<option value="">— Sin especificar —</option>'; opts.forEach(o=>{const op=document.createElement('option'); op.value=o; op.textContent=o; sel.appendChild(op);}); if(val) sel.value=val; }
 
 async function initApp(){
   poblarSelect('pForma', FORMAS, true);
@@ -473,7 +442,6 @@ async function initApp(){
   cargarTodo();
   suscribirRealtime();
 }
-document.addEventListener('click', e => { if(!e.target.closest('.ss-wrap')) cerrarTodasSS(); });
 
 // ── Cargar y renderizar kanban ──────────────────────────────────
 let estadosConocidos = {}; // id -> estado anterior, para detectar transiciones y disparar el popup sin depender solo de que llegue el evento de realtime
@@ -543,17 +511,6 @@ async function cargarNombresClientes(preps){
   const cs = await sbGet(`clientes?id=in.(${ids.join(',')})&select=id,nombre,telefono`);
   cs.forEach(c=>{ const i=clientes.findIndex(x=>x.id===c.id); if(i>=0) clientes[i]={...clientes[i],...c}; else clientes.push(c); });
 }
-  // Clientes: se piden solo cuando se usa un buscador o el modal, sin límite de filas.
-  let clientesCargados = false, _clientesPromesa = null;
-  function asegurarClientes(){
-    if(clientesCargados) return Promise.resolve();
-    if(!_clientesPromesa){
-      _clientesPromesa = sbGet('clientes?order=nombre.asc&select=id,nombre,telefono,observaciones', true)
-        .then(c=>{ clientes=c; clientesCargados=true; })
-        .finally(()=>{ _clientesPromesa=null; });
-    }
-    return _clientesPromesa;
-  }
 function nombreCliente(id){ const c = clientes.find(x=>x.id===id); return c ? c.nombre : '(cliente)'; }
 function telefonoCliente(id){ const c = clientes.find(x=>x.id===id); return c ? (c.telefono||'') : ''; }
 
@@ -1016,92 +973,11 @@ async function confirmarCancelacionModal(){
 
 // ── Cargar preparado (modal, idéntico en espíritu al de index.html) ─────
 // ── Fórmulas de stock (solo elegir y usar; el alta/edición se hace desde San Martín) ──
-async function cargarFormulasStock(){
-  try{
-    const [formulas, comps] = await Promise.all([
-      sbGet('formulas_stock?order=nombre.asc'),
-      sbGet('formula_stock_componentes?select=*,drogas(nombre)&order=id.asc'),
-    ]);
-    formulasStock = formulas;
-    formulasStockComponentes = {};
-    comps.forEach(c=>{
-      if(!formulasStockComponentes[c.formula_stock_id]) formulasStockComponentes[c.formula_stock_id]=[];
-      formulasStockComponentes[c.formula_stock_id].push({droga_id:c.droga_id, droga_nombre:c.drogas?.nombre||'', cantidad:c.cantidad, unidad:c.unidad});
-    });
-    renderStockPickerGrid();
-    renderKanban();
-  }catch(err){ mostrarToast('Error al cargar fórmulas de stock: '+err.message,'err'); }
-}
-function renderStockPickerGrid(){
-  const grid=document.getElementById('stockPickerGrid');
-  if(!grid) return;
-  const activas = formulasStock.filter(f=>f.activo);
-  grid.innerHTML = activas.map(f=>
-    `<button type="button" class="stock-picker-btn" onclick="seleccionarFormulaStock('${f.id}')">${escHtml(f.nombre)}</button>`
-  ).join('');
-  document.getElementById('stockPickerVacio').style.display = activas.length ? 'none' : '';
-}
 function nombreFormulaStock(id){
   const f = formulasStock.find(x=>x.id===id);
   return f ? f.nombre : 'Fórmula eliminada';
 }
-function abrirStockPicker(){
-  cerrarModal('modalPedido');
-  renderStockPickerGrid();
-  abrirModal('modalStockPicker');
-}
-function cerrarStockPicker(){
-  cerrarModal('modalStockPicker');
-  abrirModal('modalPedido');
-}
-function volverAPickerStock(){
-  abrirStockPicker();
-}
-function seleccionarFormulaStock(id){
-  formulaStockSeleccionada = formulasStock.find(f=>f.id===id) || null;
-  if(!formulaStockSeleccionada) return;
-  document.getElementById('btnFormulaSeleccionadaNombre').textContent = formulaStockSeleccionada.nombre;
-  document.getElementById('pEnvases').value='1';
-  regenerarPreviewStock();
-  cerrarModal('modalStockPicker');
-  abrirModal('modalPedido');
-  mostrarVistaPrep('seleccionada');
-}
-function regenerarPreviewStock(){
-  if(!formulaStockSeleccionada) return;
-  document.getElementById('compRowsNuevo').innerHTML='';
-  document.getElementById('pForma').value = formulaStockSeleccionada.forma_farmaceutica||'';
-  onFormaChange('p');
-  document.getElementById('pUnidad').value = formulaStockSeleccionada.unidad||'';
-  document.getElementById('pCantTotal').value = formulaStockSeleccionada.cantidad_base ?? '';
-  (formulasStockComponentes[formulaStockSeleccionada.id]||[]).forEach(c=>{
-    agregarCompRow('compRowsNuevo', {drogaId:c.droga_id, nombre:c.droga_nombre, cantidad:c.cantidad, unidad:c.unidad});
-  });
-}
 // vistaPrepModal: 'normal' | 'seleccionada' (fórmula elegida + cantidad de envases), dentro de modalPedido
-let vistaPrepModal = 'normal';
-function mostrarVistaPrep(v){
-  vistaPrepModal = v;
-  document.getElementById('seccionPrepNormal').style.display        = v==='normal' ? '' : 'none';
-  document.getElementById('seccionStockSeleccionada').style.display = v==='seleccionada' ? '' : 'none';
-  document.getElementById('btnTogglePreparadosStockLabel').textContent = v==='normal' ? 'Preparados de stock' : 'Preparado normal';
-}
-function togglePreparadosStock(){
-  if(vistaPrepModal==='normal'){
-    abrirStockPicker();
-  } else {
-    volverANormalPrep();
-  }
-}
-function volverANormalPrep(){
-  formulaStockSeleccionada=null;
-  document.getElementById('compRowsNuevo').innerHTML='';
-  document.getElementById('pForma').value='';
-  document.getElementById('pUnidad').value='';
-  document.getElementById('pCantTotal').value='';
-  onFormaChange('p');
-  mostrarVistaPrep('normal');
-}
 
 function abrirModalPedido(){ limpiarFormPedido(); abrirModal('modalPedido'); }
 function limpiarFormPedido(){
@@ -1238,25 +1114,6 @@ async function guardarPedido(){
 }
 
 // ── Forma farmacéutica → unidad (idéntico a index.html) ─────────
-function onFormaChange(pref){
-  const forma=document.getElementById(`${pref}Forma`).value;
-  const sel=document.getElementById(`${pref}Unidad`);
-  if(!sel) return;
-  const bloqueada = FORMA_UNIDAD_BLOQUEADA.includes(forma);
-  const opcionesRestr = FORMA_UNIDAD_OPCIONES[forma];
-  const uniAuto = FORMA_UNIDAD[forma];
-  sel.innerHTML='';
-  if(bloqueada){
-    sel.innerHTML=`<option value="${uniAuto}">${uniAuto}</option>`;
-    sel.disabled=true; sel.value=uniAuto;
-  } else if(opcionesRestr){
-    sel.innerHTML='<option value="">— Sin especificar —</option>'+opcionesRestr.map(o=>`<option value="${o}">${o}</option>`).join('');
-    sel.disabled=false;
-  } else {
-    sel.innerHTML='<option value="">— Sin especificar —</option>'+UNIDADES.map(o=>`<option value="${o}">${o}</option>`).join('');
-    sel.disabled=false;
-  }
-}
 
 // ── Historial / repetir pedido (idéntico en espíritu a preparados.html, acotado a esta sucursal) ─
 let historial = [];
@@ -1360,147 +1217,14 @@ async function repetirDesdeHistorial(id){
   document.getElementById('pCantTotal').value = p.cantidad_total ?? '';
   document.getElementById('pObs').value = p.observaciones||'';
   document.getElementById('compRowsNuevo').innerHTML = '';
-  p.componentes.forEach(c => agregarCompRow('compRowsNuevo', {drogaId:c.droga_id, nombre:c.droga_nombre, cantidad:c.cantidad, unidad:c.unidad}));
+  p.componentes.forEach(c => agregarCompRow('compRowsNuevo', '', c.droga_nombre, c.droga_id, c.cantidad??'', c.unidad));
   mostrarToast('Datos copiados — revisá y enviá a San Martín','ok');
 }
 
 // ── Componentes (idéntico a index.html, sin c.s.p ya que acá no hay cantidad total confirmada) ─
-function agregarCompRow(contId, prefill){
-  const cont=document.getElementById(contId);
-  const idx=Date.now()+Math.random();
-  const div=document.createElement('div');
-  div.className='comp-row';
-  const unidOpts=['<option value="">—</option>',...UNID_COMP.map(o=>`<option value="${o}"${prefill&&prefill.unidad===o?' selected':''}>${o}</option>`)].join('');
-  div.innerHTML=`
-    <div class="ss-wrap">
-      <input type="text" class="ss-input" data-idx="${idx}" placeholder="Buscar droga…" value="${prefill?escHtml(prefill.nombre||''):''}" oninput="filtrarSSComp(this)" onfocus="abrirSSComp(this)" autocomplete="off"/>
-      <div class="ss-dropdown" id="ssComp_${idx}"></div>
-      <input type="hidden" class="comp-drug-id" data-idx="${idx}" value="${prefill&&prefill.drogaId?prefill.drogaId:''}"/>
-    </div>
-    <div class="comp-cant-cell"><input type="number" class="comp-cant" placeholder="Cant." step="any" min="0" value="${prefill&&prefill.cantidad!=null?prefill.cantidad:''}"/></div>
-    <select class="comp-unid">${unidOpts}</select>
-    <button class="btn-del-comp" onclick="this.closest('.comp-row').remove()">×</button>`;
-  cont.appendChild(div);
-}
-function filtrarSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);if(!input.value.trim()){dd.classList.remove('open');return;}renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())).slice(0,50),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
-function abrirSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);if(!input.value.trim()){dd.classList.remove('open');return;}renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
-function renderSSComp(dd,fil,idx,texto){
-  dd.innerHTML='';
-  fil.forEach(d=>{const div=document.createElement('div');div.className='ss-option';div.textContent=d.nombre;div.onmousedown=e=>{e.preventDefault();const inp=document.querySelector(`.ss-input[data-idx="${idx}"]`);const hid=document.querySelector(`.comp-drug-id[data-idx="${idx}"]`);if(inp)inp.value=d.nombre;if(hid)hid.value=d.id;dd.classList.remove('open');};dd.appendChild(div);});
-  if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}
-  const act=document.createElement('div');act.className='ss-action';act.textContent='＋ Crear droga nueva';
-  act.onmousedown=e=>{e.preventDefault();dd.classList.remove('open');cbDrogaIdx=idx;document.getElementById('dNombre').value=texto;abrirModal('modalDroga');};
-  dd.appendChild(act);
-}
-function posicionarDD(input,dd){const rect=input.getBoundingClientRect();const abajo=window.innerHeight-rect.bottom;dd.style.width=rect.width+'px';dd.style.left=rect.left+'px';if(abajo<208&&rect.top>208){dd.style.top='';dd.style.bottom=(window.innerHeight-rect.top+2)+'px';}else{dd.style.bottom='';dd.style.top=(rect.bottom+2)+'px';}}
-function cerrarTodasSS(){document.querySelectorAll('.ss-dropdown').forEach(d=>d.classList.remove('open'));}
 
-async function guardarDroga(){
-  const nombre=document.getElementById('dNombre').value.trim();
-  if(!nombre){mostrarToast('El nombre es obligatorio','err');return;}
-  const btn=document.getElementById('btnGuardarDroga');btn.disabled=true;btn.textContent='Creando…';
-  try{
-    const nuevo=await sbPost('drogas',{nombre});
-    drogas.push({id:nuevo[0].id,nombre});drogas.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
-    if(cbDrogaIdx!==null){
-      const inp=document.querySelector(`.ss-input[data-idx="${cbDrogaIdx}"]`);
-      const hid=document.querySelector(`.comp-drug-id[data-idx="${cbDrogaIdx}"]`);
-      if(inp) inp.value=nombre; if(hid) hid.value=nuevo[0].id; cbDrogaIdx=null;
-    }
-    mostrarToast('✓ Droga creada','ok');cerrarModal('modalDroga');document.getElementById('dNombre').value='';
-  }catch(err){
-    if(/duplicate key|unique constraint/i.test(err.message)) mostrarToast('Ya existe una droga con ese nombre','err');
-    else mostrarToast('Error: '+err.message,'err');
-  }
-  btn.disabled=false;btn.textContent='Crear droga';
-}
 
 // ── Búsqueda de cliente (idéntico a index.html) ──────────────────
-async function filtrarSSCliente(pref){ await asegurarClientes().catch(()=>mostrarToast('Error al cargar clientes','err'));const input=document.getElementById(`${pref}ClienteInput`);const dd=document.getElementById(`ssCliente_${pref}`);renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),pref);posicionarDD(input,dd);dd.classList.add('open');}
-async function abrirSSCliente(pref){ await asegurarClientes().catch(()=>mostrarToast('Error al cargar clientes','err'));const input=document.getElementById(`${pref}ClienteInput`);const dd=document.getElementById(`ssCliente_${pref}`);renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),pref);posicionarDD(input,dd);dd.classList.add('open');}
-function renderSSCliente(dd,fil,pref){
-  dd.innerHTML='';
-  fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById(`${pref}ClienteInput`).value=c.nombre;document.getElementById(`${pref}ClienteId`).value=c.id;aplicarTelefonoCliente(pref,c.telefono);dd.classList.remove('open');};dd.appendChild(d);});
-  if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}
-}
-function aplicarTelefonoCliente(pref,telefono){
-  const telInp=document.getElementById(`${pref}Telefono`);
-  if(!telInp) return;
-  telInp.value=telefono||''; telInp.classList.remove('field-invalid');
-}
-function abrirNuevoClienteDesdePrep(pref){
-  document.getElementById('cNombre').value='';
-  clienteCB=cli=>{
-    document.getElementById(`${pref}ClienteInput`).value=cli.nombre;
-    document.getElementById(`${pref}ClienteId`).value=cli.id;
-    aplicarTelefonoCliente(pref,cli.telefono);
-  };
-  abrirFormCliente(null);
-  abrirModal('modalClientes');
-}
-function abrirModalClientes(){
-  document.getElementById('cliBuscarInput').value='';
-  filtrarClientesModal();
-  document.getElementById('cliVistaLista').style.display='';
-  document.getElementById('cliVistaForm').style.display='none';
-  document.getElementById('btnGuardarCliente').style.display='none';
-  abrirModal('modalClientes');
-}
-async function filtrarClientesModal(){
-  await asegurarClientes().catch(()=>mostrarToast('Error al cargar clientes','err'));
-  const q=document.getElementById('cliBuscarInput').value.toLowerCase();
-  const fil=(q?clientes.filter(c=>c.nombre.toLowerCase().includes(q)):clientes);
-  const cont=document.getElementById('cliResultados');
-  if(!fil.length){cont.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px;">Sin resultados</div>';return;}
-  cont.innerHTML=fil.map(c=>`<div class="cli-item" onclick="abrirFormCliente('${c.id}')"><span>${escHtml(c.nombre)}</span><span style="color:var(--muted);font-size:12px;">${c.telefono||''}</span></div>`).join('');
-}
-function abrirFormCliente(id){
-  document.getElementById('cliVistaLista').style.display='none';
-  document.getElementById('cliVistaForm').style.display='';
-  document.getElementById('btnGuardarCliente').style.display='';
-  document.getElementById('cClienteId').value=id||'';
-  if(id){
-    const cli=clientes.find(c=>c.id===id);
-    document.getElementById('cNombre').value=cli?.nombre||'';
-    document.getElementById('cTelefono').value=cli?.telefono||'';
-    document.getElementById('cObs').value=cli?.observaciones||'';
-    document.getElementById('modalClientesTitulo').textContent='Editar cliente';
-  } else {
-    ['cNombre','cTelefono','cObs'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('modalClientesTitulo').textContent='Nuevo cliente';
-  }
-}
-function volverListaClientes(){
-  document.getElementById('cliVistaLista').style.display='';
-  document.getElementById('cliVistaForm').style.display='none';
-  document.getElementById('btnGuardarCliente').style.display='none';
-  document.getElementById('modalClientesTitulo').textContent='Clientes';
-  filtrarClientesModal();
-}
-async function guardarClienteModal(){
-  const nombre=document.getElementById('cNombre').value.trim();
-  if(!nombre){mostrarToast('El nombre es obligatorio','err');return;}
-  const btn=document.getElementById('btnGuardarCliente');btn.disabled=true;btn.textContent='Guardando…';
-  const id=document.getElementById('cClienteId').value;
-  try{
-    const datos=limpiar({nombre,telefono:document.getElementById('cTelefono').value||null,observaciones:document.getElementById('cObs').value||null});
-    if(id){
-      await sbPatch('clientes',id,datos);
-      const idx=clientes.findIndex(c=>c.id===id);
-      if(idx>=0) clientes[idx]={...clientes[idx],...datos};
-      clientes.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
-      mostrarToast('✓ Cliente actualizado','ok');
-    } else {
-      const nuevo=await sbPost('clientes',{...datos,fecha_alta:new Date().toISOString().slice(0,10)});
-      const cli={id:nuevo[0].id,nombre,telefono:datos.telefono||null,observaciones:datos.observaciones||null};
-      clientes.push(cli);clientes.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
-      if(clienteCB){clienteCB(cli);clienteCB=null;cerrarModal('modalClientes');btn.disabled=false;btn.textContent='Guardar';return;}
-      mostrarToast('✓ Cliente creado','ok');
-    }
-    volverListaClientes();
-  }catch(err){mostrarToast('Error: '+err.message,'err');}
-  btn.disabled=false;btn.textContent='Guardar';
-}
 
 // ── RPC helper (next_cupon_nuevo) ─────────────────────────────────
 async function sbRpc(fn){

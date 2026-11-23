@@ -6,9 +6,8 @@
   <title>Laboratorio</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
   <link rel="stylesheet" href="estilos.css"/>
+  <link rel="stylesheet" href="form-preparado.css"/>
   <style>
-    
-    
     
     .nav-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;text-decoration:none;flex-shrink:0;color:#fff;}
     .nav-btn:hover:not(.nav-btn-disabled){opacity:0.85;}
@@ -53,7 +52,6 @@
     .col{background:#E8E4DA;border-radius:var(--radius);border:1px solid var(--border);min-height:200px;display:flex;flex-direction:column;}
     .col-header{padding:12px 14px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:106px;z-index:40;background:#E8E4DA;border-radius:var(--radius) var(--radius) 0 0;}
     .col-header-left{display:flex;flex-direction:column;gap:4px;}
-    
     .dot-asignar{background:#D97706;}.dot-lab{background:#2563EB;}.dot-retirar{background:var(--accent);}
     .sucursal-tag-card{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:#6B3FA0;background:#F0E6FA;border:1px solid #D9C2ED;border-radius:20px;padding:2px 8px;margin:6px 0 0;white-space:nowrap;width:fit-content;}
     .col-body{padding:10px;display:flex;flex-direction:column;gap:8px;flex:1;min-height:500px;}
@@ -85,9 +83,7 @@
     .icon-btn-print{background:#F0F7EE;border-color:#C3DFB8;color:#5A8A3A;}
     .icon-btn:disabled{background:#EDEDED;border-color:#D5D5D5;color:#9A9A9A;cursor:default;opacity:1;}
     .card-bottom-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:12px;}
-    .cli-item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);}
-    .cli-item:hover{background:var(--bg);}
-    .cli-item:last-child{border-bottom:none;}
+    
     .card-cupon{font-size:22px;font-weight:800;line-height:1;}
     .card-contact{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
     .card-contact-row svg{flex-shrink:0;}
@@ -119,11 +115,9 @@
     @media(max-width:800px){.completar-layout{flex-direction:column;}.completar-receta{position:static;}}
     .modal-header h2{font-size:16px;font-weight:700;}
     
-    
     .field-group label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px;}
     .field-group input,.field-group select,.field-group textarea{width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;}
     .field-group input:focus,.field-group select:focus,.field-group textarea:focus{border-color:var(--accent2);background:#fff;}
-    
     @media(max-width:500px){.field-row{grid-template-columns:1fr;}.field-row-3{grid-template-columns:1fr;}}
     .field-invalid{border-color:var(--danger)!important;}
     .modal-sep{border-top:1px solid var(--border);margin:20px 0;}
@@ -131,27 +125,17 @@
     .cupon-toggle{display:flex;justify-content:center;gap:18px;margin-bottom:10px;}
     .cupon-toggle label{font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--text);text-transform:none;letter-spacing:normal;margin-bottom:0;}
     
-    .ss-dropdown{display:none;position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.15);z-index:500;max-height:200px;overflow-y:auto;min-width:200px;}
-    .ss-dropdown.open{display:block;}
-    .ss-option{padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);}
-    .ss-option:last-child{border-bottom:none;}
-    .ss-option:hover{background:var(--accent2);color:#fff;}
-    .ss-action{padding:8px 12px;cursor:pointer;font-size:13px;color:var(--accent);font-weight:600;border-top:1px solid var(--border);background:#F0FAF0;}
-    .ss-action:hover{background:var(--accent);color:#fff;}
     
-    .comp-editor{border:1px solid var(--border);border-radius:6px;overflow:visible;margin-bottom:8px;}
+    
+    
+    
     .comp-unidad-global-row select{width:64px;padding:3px 5px;font-size:11px;font-weight:600;text-transform:none;letter-spacing:normal;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);outline:none;cursor:pointer;}
     .comp-unidad-global-row select:focus{border-color:var(--accent2);}
-    .comp-editor-header{display:grid;grid-template-columns:1fr 90px 100px 32px;gap:6px;padding:7px 10px;background:#EDEAE0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);border-bottom:1px solid var(--border);border-radius:6px 6px 0 0;}
-    .comp-row{display:grid;grid-template-columns:1fr 90px 100px 32px;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);align-items:center;}
-    .comp-row:last-child{border-bottom:none;}
-    .comp-row input,.comp-row select{padding:5px 8px;font-size:12px;border:1px solid var(--border);border-radius:5px;background:var(--bg);outline:none;width:100%;}
-    .comp-row input:focus,.comp-row select:focus{border-color:var(--accent2);}
-    .btn-del-comp{background:none;border:none;color:var(--danger);cursor:pointer;font-size:18px;line-height:1;padding:2px;}
-    .comp-cant-cell{display:flex;flex-direction:column;gap:3px;}
-    .csp-opts{display:none;gap:3px;}
-    .csp-btn{flex:1;font-size:10px;padding:3px 0;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--muted);cursor:pointer;line-height:1.2;}
-    .csp-btn.active{background:var(--accent2);color:#fff;border-color:var(--accent2);}
+    
+    
+    
+    
+    
     .btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;}
     .btn:hover:not(:disabled){opacity:0.85;}
     .btn-primary{background:var(--accent);color:#fff;}
@@ -168,11 +152,8 @@
     .fs-row-info strong{font-size:13px;}
     .fs-row-info div{font-size:12px;color:var(--muted);margin-top:2px;}
     .fs-row-actions{display:flex;gap:6px;flex-shrink:0;}
-    .stock-picker-btn{border:1px solid var(--border,#ddd);background:var(--surface,#fff);border-radius:10px;padding:14px 10px;font-size:13px;font-weight:600;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;}
-    .stock-picker-btn:hover{border-color:var(--accent);background:var(--accent-bg,#F0F7FF);}
-    .stock-picker-btn-add{border-style:dashed;color:var(--accent);font-weight:700;}
-    .stock-chip-seleccionada{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--accent);background:var(--accent-bg,#F0F7FF);color:var(--accent);border-radius:20px;padding:8px 16px;font-size:14px;font-weight:700;cursor:pointer;}
-    .stock-chip-seleccionada::after{content:'✎ cambiar';font-weight:400;font-size:11px;opacity:.75;margin-left:4px;}
+    
+    
     #eFormulaStockNombre::after{content:none;}
     .bell-wrap{position:relative;display:inline-flex;}
     .bell-btn{background:none;border:1px solid #555;color:#ccc;padding:6px 10px;border-radius:6px;cursor:pointer;display:flex;align-items:center;}
@@ -207,9 +188,7 @@
     .chat-bubble.chat-recibido{background:#E8F4FB;border:1px solid #C0DFF0;border-top-left-radius:3px;color:#2C5F73;}
     .chat-bubble.chat-rechazo{background:#FDECEA;border:1px solid #F3C6C0;border-top-left-radius:3px;color:#8A2E22;}
     .chat-bubble.chat-propio{background:#EAF6E4;border:1px solid #CFE9C2;border-top-right-radius:3px;color:#3D5C30;margin-left:auto;}
-    
     .chat-bubble-acciones button{background:none;border:none;padding:0;font-size:11px;line-height:1;cursor:pointer;opacity:.5;}
-    
     .chat-bubble-editando{background:#FFF7DE!important;border-color:#F0DFA0!important;}
     .chat-edit-input{width:100%;box-sizing:border-box;padding:4px 8px;border-radius:8px;border:1px solid var(--border);font-size:12.5px;background:#fff;margin-top:2px;}
     .chat-edit-acciones button{background:none;border:none;font-size:13px;cursor:pointer;padding:2px 4px;}
@@ -222,7 +201,6 @@
     .minichat-body{border-top:1px solid var(--border);}
     .minichat.minichat-collapsed .minichat-body{display:none;}
     .minichat.minichat-collapsed .minichat-header{border-top:none;}
-    
     .minichat-input-row{display:flex;gap:6px;padding:6px;border-top:1px solid var(--border);background:var(--surface);}
     .minichat-input-row input{flex:1;padding:5px 10px;border:1px solid var(--border);border-radius:20px;font-size:12px;background:var(--bg);outline:none;}
     .minichat-input-row button{border-radius:20px;padding:5px 12px;}
@@ -242,7 +220,6 @@
     @keyframes modalIn{from{opacity:0;transform:translateY(6px) scale(.98);}to{opacity:1;transform:none;}}
     #toast{position:fixed;bottom:24px;left:50%;padding:11px 24px;border-radius:8px;font-size:14px;font-weight:500;color:#fff;opacity:0;pointer-events:none;z-index:999;white-space:nowrap;transition:opacity .25s ease, transform .25s ease;transform:translate(-50%,4px);}
     #toast.show{opacity:1;transform:translate(-50%,0);}
-    
     .login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,0.15);padding:40px 36px;max-width:360px;width:100%;text-align:center;}
     .login-logo span{color:var(--accent);}
     .btn-google{display:inline-flex;align-items:center;gap:10px;justify-content:center;width:100%;padding:11px 16px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;transition:box-shadow 0.15s,border-color 0.15s;}
@@ -687,72 +664,7 @@
 </div>
 
 <!-- Modal Editar -->
-<div class="modal-overlay" id="modalEditar">
-  <div class="modal">
-    <div class="modal-header">
-      <h2 id="editarTitulo">Editar preparado</h2>
-      <button class="modal-close" onclick="cerrarModal('modalEditar')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="cupon-box" id="eCuponBox">
-        <div class="field-group" id="eCuponWrap" style="margin-bottom:0;"><label>Nro Cupón (talonario)</label><input type="number" id="eCupon" class="cupon-input"/></div>
-      </div>
-      <div class="modal-sep" id="eCuponSep"></div>
-      <div class="field-row">
-        <div class="field-group">
-          <label>Cliente</label>
-          <div style="display:flex;gap:6px;">
-            <div class="ss-wrap" style="flex:1;">
-              <input type="text" id="eClienteInput" placeholder="Buscar cliente…" oninput="filtrarSSCliente('e')" onfocus="abrirSSCliente('e')" autocomplete="off"/>
-              <div class="ss-dropdown" id="ssCliente_e"></div>
-              <input type="hidden" id="eClienteId"/>
-            </div>
-            <button type="button" class="btn btn-ghost btn-sm" style="white-space:nowrap;" onclick="abrirNuevoClienteDesdePrep('e')">＋ Nuevo</button>
-          </div>
-        </div>
-        <div class="field-group">
-          <label>Teléfono <span style="color:var(--danger)">*</span></label>
-          <input type="text" id="eTelefono" placeholder="Teléfono del cliente" oninput="this.classList.remove('field-invalid')"/>
-        </div>
-      </div>
-      <div class="field-row">
-        <div class="field-group"><label>Fecha de recepción</label><input type="date" id="eFecha"/></div>
-        <div class="field-group"><label>Estado</label><select id="eEstado"></select></div>
-      </div>
-      <div class="field-row">
-        <div class="field-group"><label>Precio por unidad (ARS)</label><input type="number" id="ePrecioUnidad" min="0" step="any" oninput="syncPrecioDesdeUnidad('e')"/></div>
-        <div class="field-group"><label>Precio total (ARS)</label><input type="number" id="ePrecioTotal" min="0" step="any" oninput="syncPrecioDesdeTotal('e')"/></div>
-      </div>
-      <div class="field-group"><label>Observaciones</label><textarea id="eObs" rows="2"></textarea></div>
-
-      <div class="modal-sep"></div>
-      <div id="eSeccionNormal">
-        <div class="field-group"><label>Nro Receta</label><input type="number" id="eReceta"/></div>
-        <div class="sec-title">Componentes</div>
-        <div class="comp-editor"><div class="comp-editor-header"><div>Droga</div><div>Cantidad</div><div class="comp-unidad-global-row">Unidad<select id="unidadGlobalEditar" onchange="aplicarUnidadGlobal('compRowsEditar',this)"></select></div><div></div></div><div id="compRowsEditar"></div></div>
-        <button class="btn btn-ghost btn-sm" onclick="agregarCompRow('compRowsEditar')">+ Agregar componente</button>
-        <div class="field-row-3" style="margin-top:14px;">
-          <div class="field-group"><label>Forma farmacéutica</label><select id="eForma" onchange="onFormaChange('e')"><option value="">— Sin especificar —</option></select></div>
-          <div class="field-group"><label>Cantidad total</label><input type="number" id="eCantTotal" step="any" min="0"/><div class="unidad-hint" id="eUnidadHint"></div></div>
-          <div class="field-group"><label>Unidad</label><select id="eUnidad"><option value="">— Sin especificar —</option></select></div>
-        </div>
-      </div>
-      <div id="eSeccionStock" style="display:none;">
-        <div class="sec-title">Fórmula de stock</div>
-        <div class="stock-chip-seleccionada" id="eFormulaStockNombre" style="cursor:default;pointer-events:none;"></div>
-      </div>
-      <!-- Cantidad de envases: campo único, compartido entre preparado normal y de stock -->
-      <div class="field-group" style="max-width:220px;">
-        <label>Cantidad de envases</label>
-        <input type="number" id="eEnvases" min="1" step="1" value="1"/>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="cerrarModal('modalEditar')">Cancelar</button>
-      <button class="btn btn-primary" id="btnGuardarEditar" onclick="guardarEdicion()">Guardar cambios</button>
-    </div>
-  </div>
-</div>
+<div id="modalEditarSlot" data-nuevo-cliente="1"></div><!-- modal "Editar preparado": lo arma form-preparado.js -->
 
 <div class="modal-overlay" id="modalCompletar">
   <div class="modal modal-lg">
@@ -823,9 +735,18 @@
 <script src="constantes.js"></script>
 <script src="supabase-shared.js?v=5"></script>
 <script src="comun.js"></script>
+<script src="form-preparado.js"></script>
 <script>
   // Acceso a datos (sbGet/sbPost/…) en supabase-shared.js; login, toasts,
   // modales y formato (escHtml, fmtFecha, fmtCupon) en comun.js.
+
+  // Para form-preparado.js
+  const MODAL_NUEVO_PREPARADO = 'modalPreparado';
+  function alCargarFormulasStock(){ renderListaFormulasStock(); }
+  function alActualizarCliente(id,nombre,telefono){
+    preparados.filter(p=>p.cliente_id===id).forEach(p=>{p.cliente_nombre=nombre;p.cliente_telefono=telefono||p.cliente_telefono;});
+    renderKanban();
+  }
 
   const ESTADOS_KANBAN = ['Sin precio','En laboratorio','Listo para retirar'];
   const COL_BODY  = {'Sin precio':'body-asignar','En laboratorio':'body-lab','Listo para retirar':'body-retirar'};
@@ -846,28 +767,14 @@
       </div>`;
   }
 
-  let preparados = [], drogas = [], clientes = [];
-  let dragId = null, prepActual = null, cbDrogaIdx = null, clienteCB = null;
-  let formulasStock = [], formulasStockComponentes = {}, formulaStockSeleccionada = null;
+  let preparados = [];
+  let dragId = null;
   // cantidad_total y componentes.cantidad se guardan SIEMPRE por envase (lo que carga el
   // usuario: 100 ml es 100 ml). La cantidad de envases nunca cambia la fórmula; solo se
   // multiplica en el reporte de consumo de drogas (función SQL reporte_consumo_drogas).
   // Cantidad de envases actualmente cargada en el modal de carga ('p') o edición ('e')
   // — campo único, compartido entre preparado normal y de stock — para vincular Precio
   // por unidad y Precio total. precio_venta en la base siempre guarda el TOTAL.
-  function envasesActualesPara(prefix){
-    return parseInt(document.getElementById(prefix+'Envases').value)||1;
-  }
-  function syncPrecioDesdeUnidad(prefix){
-    const envases = envasesActualesPara(prefix);
-    const v = parseFloat(document.getElementById(prefix+'PrecioUnidad').value);
-    if(!isNaN(v)) document.getElementById(prefix+'PrecioTotal').value = +(v*envases).toFixed(2);
-  }
-  function syncPrecioDesdeTotal(prefix){
-    const envases = envasesActualesPara(prefix);
-    const v = parseFloat(document.getElementById(prefix+'PrecioTotal').value);
-    if(!isNaN(v)) document.getElementById(prefix+'PrecioUnidad').value = envases>0 ? +(v/envases).toFixed(2) : v;
-  }
   // Componentes de la fórmula de stock original (por envase).
   function componentesFormulaHtml(formulaStockId, termino=''){
     const comps = formulasStockComponentes[formulaStockId] || [];
@@ -908,24 +815,6 @@
   // Se debounce (400ms) porque varios cambios seguidos (ej. aceptar + que la
   // sucursal confirme casi al toque) podian disparar cargarTodo() superpuesto
   // y pisarse las respuestas entre si — eso generaba los errores intermitentes.
-  // Clientes: se piden solo cuando se usa un buscador o el modal, sin límite de filas.
-  let clientesCargados = false, _clientesPromesa = null;
-  function asegurarClientes(){
-    if(clientesCargados) return Promise.resolve();
-    if(!_clientesPromesa){
-      _clientesPromesa = sbGet('clientes?order=nombre.asc&select=id,nombre,telefono,observaciones', true)
-        .then(c=>{ clientes=c; clientesCargados=true; })
-        .finally(()=>{ _clientesPromesa=null; });
-    }
-    return _clientesPromesa;
-  }
-  // Drogas: no cambian seguido, así que se cargan una vez por página (no en cada recarga).
-  let drogasCargadas = false;
-  async function cargarDrogasUnaVez(){
-    if(drogasCargadas) return;
-    try{ drogas = await sbGet('drogas?order=nombre.asc', true); drogasCargadas = true; }
-    catch(err){ mostrarToast('Error al cargar drogas: '+err.message,'err'); }
-  }
 
   let _recargaTimeout = null;
   function solicitarRecarga(){
@@ -954,7 +843,6 @@
       document.addEventListener('visibilitychange', () => { if(!document.hidden) solicitarRecarga(); });
     }
   }
-  document.addEventListener('click', e => { if(!e.target.closest('.ss-wrap')) cerrarTodasSS(); });
 
   // ── Carga ──────────────────────────────────────────────────────────────
   // Actualización sin parpadeo:
@@ -1014,30 +902,6 @@
   }
 
   // ── Fórmulas de stock ────────────────────────────────────────────────
-  async function cargarFormulasStock(){
-    try{
-      const [formulas, comps] = await Promise.all([
-        sbGet('formulas_stock?order=nombre.asc'),
-        sbGet('formula_stock_componentes?select=*,drogas(nombre)&order=id.asc'),
-      ]);
-      formulasStock = formulas;
-      formulasStockComponentes = {};
-      comps.forEach(c=>{
-        if(!formulasStockComponentes[c.formula_stock_id]) formulasStockComponentes[c.formula_stock_id]=[];
-        formulasStockComponentes[c.formula_stock_id].push({droga_id:c.droga_id, droga_nombre:c.drogas?.nombre||'', cantidad:c.cantidad, unidad:c.unidad});
-      });
-      renderStockPickerGrid();
-      renderListaFormulasStock();
-    }catch(err){ mostrarToast('Error al cargar fórmulas de stock: '+err.message,'err'); }
-  }
-  function renderStockPickerGrid(){
-    const grid=document.getElementById('stockPickerGrid');
-    if(!grid) return;
-    const activas = formulasStock.filter(f=>f.activo);
-    grid.innerHTML = activas.map(f=>
-      `<button type="button" class="stock-picker-btn" onclick="seleccionarFormulaStock('${f.id}')">${escHtml(f.nombre)}</button>`
-    ).join('') + `<button type="button" class="stock-picker-btn stock-picker-btn-add" onclick="mostrarNuevaFormulaInline()">＋ Agregar fórmula</button>`;
-  }
 
   async function abrirModalFormulasStock(){
     await cargarFormulasStock();
@@ -1927,182 +1791,13 @@
   }
 
   // ── Editar ─────────────────────────────────────────────────────────────
-  async function abrirEditar(e,id){
-    e.stopPropagation();prepActual=preparados.find(x=>x.id===id);if(!prepActual)return;
-    const p=prepActual;
-    const esStock = !!p.formula_stock_id;
-    document.getElementById('editarTitulo').textContent=`Editar preparado ${p.nro_cupon_nuevo!=null?'#'+p.nro_cupon_nuevo:'T'+p.nro_cupon}`;
-    document.getElementById('eCupon').value=p.nro_cupon??'';
-    const esCuponNuevo = p.nro_cupon_nuevo != null;
-    document.getElementById('eCuponBox').style.display = esCuponNuevo ? 'none' : '';
-    document.getElementById('eCuponSep').style.display = esCuponNuevo ? 'none' : '';
-    document.getElementById('eCupon').readOnly = esCuponNuevo;
-    document.getElementById('eFecha').value=p.fecha_recepcion??'';
-    document.getElementById('eEstado').value=p.estado??'';
-    {
-      const envasesEdit = p.cantidad_envases || 1;
-      document.getElementById('ePrecioTotal').value = p.precio_venta??'';
-      document.getElementById('ePrecioUnidad').value = p.precio_venta!=null ? +(p.precio_venta/envasesEdit).toFixed(2) : '';
-    }
-    document.getElementById('eObs').value=p.observaciones??'';
-    document.getElementById('eClienteInput').value=p.cliente_nombre??'';
-    document.getElementById('eClienteId').value=p.cliente_id??'';
-    document.getElementById('eTelefono').value=p.cliente_telefono??'';
-    document.getElementById('eTelefono').classList.remove('field-invalid');
-    document.getElementById('eSeccionNormal').style.display = esStock ? 'none' : '';
-    document.getElementById('eSeccionStock').style.display = esStock ? '' : 'none';
-    if(esStock){
-      document.getElementById('eFormulaStockNombre').textContent = p.formula_stock_nombre || '(fórmula eliminada)';
-      document.getElementById('eEnvases').value = p.cantidad_envases ?? '';
-      abrirModal('modalEditar');
-      return;
-    }
-    document.getElementById('eReceta').value=p.nro_receta??'';
-    document.getElementById('eEnvases').value=p.cantidad_envases||1;
-    document.getElementById('eForma').value=p.forma_farmaceutica??'';
-    document.getElementById('eCantTotal').value=p.cantidad_total??'';
-    document.getElementById('eUnidad').value=p.unidad??'';
-    document.getElementById('eUnidadHint').textContent='';
-    document.getElementById('unidadGlobalEditar').value='';
-    const cont=document.getElementById('compRowsEditar');cont.innerHTML='<div style="color:var(--muted);padding:8px;font-size:13px;">Cargando componentes…</div>';
-    abrirModal('modalEditar');
-    await cargarComponentes(p);
-    cont.innerHTML='';
-    p.componentes.forEach(c=>{
-      agregarCompRow('compRowsEditar',c.id,c.droga_nombre||'',c.droga_id,c.cantidad??'',c.unidad??'');
-    });
+  function abrirEditar(e,id){
+    e.stopPropagation();
+    const p=preparados.find(x=>x.id===id);
+    if(p) abrirEditarPreparado(p);
   }
 
-  async function cargarComponentes(p){
-    if(p.componentes && p.componentes.length > 0) return;
-    try{
-      const comps = await sbGet('componentes_con_droga?preparado_id=eq.'+p.id);
-      p.componentes = comps;
-    }catch(e){
-      // No cachear como [] acá: eso impediría reintentar la próxima vez
-      // que se pida (ej. al imprimir), quedando "cacheado" como si el
-      // preparado no tuviera droga por un fallo de red transitorio.
-      mostrarToast('No se pudieron cargar los componentes: '+e.message,'err');
-    }
-  }
 
-  async function guardarEdicion(){
-    const cliId=document.getElementById('eClienteId').value;
-    const telInput=document.getElementById('eTelefono');
-    const telVal=telInput.value.trim();
-    if(cliId && !telVal){telInput.classList.add('field-invalid');mostrarToast('Completá el teléfono del cliente','err');return;}
-    telInput.classList.remove('field-invalid');
-    // Chequeo de concurrencia: si sucursal cambió el estado mientras este
-    // modal seguía abierto (ej. confirmó o canceló el pedido), el
-    // formulario todavía tiene el valor viejo en el combo de Estado.
-    // Guardar así lo pisaría en silencio. Se compara contra el estado
-    // actual en la base antes de mandar el PATCH.
-    try{
-      const actual = await sbGet('preparados?id=eq.'+prepActual.id+'&select=estado');
-      if(actual.length && actual[0].estado !== prepActual.estado){
-        mostrarToast(`El estado cambió a "${actual[0].estado}" mientras editabas (probablemente desde sucursal). Cerrá y volvé a abrir para ver los datos actuales.`,'err');
-        return;
-      }
-    }catch(errCheck){ /* si falla el chequeo, se sigue igual: no vale la pena bloquear la edición por esto */ }
-    const esStock = !!prepActual.formula_stock_id;
-    if(esStock){
-      const envases=parseInt(document.getElementById('eEnvases').value);
-      if(!envases||envases<1){mostrarToast('Ingresá una cantidad de envases válida','err');return;}
-    }
-    const btn=document.getElementById('btnGuardarEditar');btn.disabled=true;btn.textContent='Guardando…';
-    try{
-      if(cliId){
-        await asegurarClientes();
-        const cliActual=clientes.find(c=>c.id===cliId);
-        if(cliActual && (cliActual.telefono||'')!==telVal){
-          await sbPatch('clientes',cliId,{telefono:telVal});
-          cliActual.telefono=telVal;
-          preparados.filter(p=>p.cliente_id===cliId).forEach(p=>{p.cliente_telefono=telVal;});
-        }
-      }
-      if(esStock){
-        const envases=parseInt(document.getElementById('eEnvases').value);
-        const f=formulasStock.find(x=>x.id===prepActual.formula_stock_id);
-        const cantTotal = f ? f.cantidad_base : prepActual.cantidad_total; // por envase
-        const patchStock = limpiar({
-          nro_cupon:prepActual.nro_cupon_nuevo==null?(parseInt(document.getElementById('eCupon').value)||null):prepActual.nro_cupon,
-          cliente_id:cliId||null,
-          fecha_recepcion:document.getElementById('eFecha').value||null,
-          estado:document.getElementById('eEstado').value||null,
-        });
-        // Campos opcionales que el usuario puede vaciar a propósito (ej. borrar todas las
-        // observaciones): se mandan aparte de limpiar(), que descarta las claves null y
-        // dejaba pegado el valor viejo en la base cuando se vaciaban a mano.
-        Object.assign(patchStock, {
-          cantidad_envases:envases,
-          cantidad_total:cantTotal,
-          precio_venta:parseFloat(document.getElementById('ePrecioTotal').value)||null,
-          observaciones:document.getElementById('eObs').value||null,
-        });
-        await sbPatch('preparados',prepActual.id,patchStock);
-        // Si cambió la cantidad de envases, los componentes se regeneran desde la receta
-        // original (por envase, sin multiplicar). Insertamos los nuevos primero y recién después borramos los viejos
-        // (por id explícito, no por preparado_id): si algo falla a mitad de
-        // camino, el preparado se queda con los componentes anteriores en
-        // vez de quedar con menos droga de la que corresponde.
-        if(envases !== prepActual.cantidad_envases && f){
-          const idsViejos = prepActual.componentes.map(c=>c.id);
-          const receta = formulasStockComponentes[f.id]||[];
-          for(const c of receta){
-            if(!c.droga_id) continue;
-            await sbPost('componentes',limpiar({preparado_id:prepActual.id,droga_id:c.droga_id,cantidad:c.cantidad,unidad:c.unidad}));
-          }
-          if(idsViejos.length) await sbDelete('componentes?id=in.('+idsViejos.join(',')+')');
-        }
-        mostrarToast('✓ Guardado','ok');cerrarModal('modalEditar');await cargarTodo();
-        btn.disabled=false;btn.textContent='Guardar cambios';
-        return;
-      }
-      // Cantidad total y componentes se guardan tal cual se cargan (por envase).
-      const unidadesEdit = parseInt(document.getElementById('eEnvases').value)||1;
-      const cantidadTotalFinalEdit = parseFloat(document.getElementById('eCantTotal').value)||null;
-      const patchNormal = limpiar({
-        nro_cupon:prepActual.nro_cupon_nuevo==null?(parseInt(document.getElementById('eCupon').value)||null):prepActual.nro_cupon,
-        cliente_id:cliId||null,
-        fecha_recepcion:document.getElementById('eFecha').value||null,
-        estado:document.getElementById('eEstado').value||null,
-      });
-      // Campos opcionales que el usuario puede vaciar a propósito (ej. borrar todas las
-      // observaciones, o dejar sin cantidad de envases): se mandan aparte de limpiar(), que
-      // descarta las claves null y dejaba pegado el valor viejo en la base cuando se
-      // vaciaban a mano en vez de guardar el vacío.
-      Object.assign(patchNormal, {
-        nro_receta:parseInt(document.getElementById('eReceta').value)||null,
-        forma_farmaceutica:document.getElementById('eForma').value||null,
-        cantidad_total:cantidadTotalFinalEdit,
-        cantidad_envases:unidadesEdit>1?unidadesEdit:null,
-        unidad:document.getElementById('eUnidad').value||null,
-        precio_venta:parseFloat(document.getElementById('ePrecioTotal').value)||null,
-        observaciones:document.getElementById('eObs').value||null,
-      });
-      await sbPatch('preparados',prepActual.id,patchNormal);
-      const rows=document.querySelectorAll('#compRowsEditar .comp-row');
-      const viejosIds=prepActual.componentes.map(c=>c.id);
-      const nuevosIds=[];
-      for(const row of rows){
-        const recId=row.dataset.recid||'';
-        const drugId=row.querySelector('.comp-drug-id').value;
-        const unid=row.querySelector('.comp-unid').value||null;
-        const cant=parseFloat(row.querySelector('.comp-cant').value)||null;
-        if(!drugId) continue;
-        // Se arma sin pasar por limpiar(): droga_id ya está garantizado (el continue de
-        // arriba lo exige), y cantidad/unidad son campos que se pueden vaciar a propósito al
-        // editar un componente existente; limpiar() los descartaría y dejaría pegado el valor
-        // viejo en la base en vez de guardar el vaciado.
-        const cf={droga_id:drugId,cantidad:cant,unidad:unid};
-        if(recId){await sbPatch('componentes',recId,cf);nuevosIds.push(recId);}
-        else{const n=await sbPost('componentes',{...cf,preparado_id:prepActual.id});nuevosIds.push(n[0].id);}
-      }
-      for(const id of viejosIds.filter(id=>!nuevosIds.includes(id))){await sbDelete('componentes?id=eq.'+id);}
-      mostrarToast('✓ Guardado','ok');cerrarModal('modalEditar');await cargarTodo();
-    }catch(err){mostrarToast('Error: '+err.message,'err');}
-    btn.disabled=false;btn.textContent='Guardar cambios';
-  }
 
   // ── Modal "Completar datos" (preparados con datos_pendientes=true) ─────
   // A diferencia de "Editar preparado", este modal solo toca los datos
@@ -2359,74 +2054,9 @@
 
   // ── Preparados de stock (cargar) ────────────────────────────────────────
   // vistaPrepModal: 'normal' | 'seleccionada' (fórmula elegida + cantidad de envases), dentro de modalPreparado
-  let vistaPrepModal = 'normal';
-  function mostrarVistaPrep(v){
-    vistaPrepModal = v;
-    document.getElementById('seccionPrepNormal').style.display        = v==='normal' ? '' : 'none';
-    document.getElementById('seccionStockSeleccionada').style.display = v==='seleccionada' ? '' : 'none';
-    document.getElementById('btnTogglePreparadosStockLabel').textContent = v==='normal' ? 'Preparados de stock' : 'Preparado normal';
-    document.getElementById('pClienteReq').style.display = v==='normal' ? '' : 'none';
-    document.getElementById('pTelefonoReq').style.display = v==='normal' ? '' : 'none';
-  }
-  function togglePreparadosStock(){
-    if(vistaPrepModal==='normal'){
-      abrirStockPicker();
-    } else {
-      volverANormalPrep();
-    }
-  }
-  function volverANormalPrep(){
-    formulaStockSeleccionada=null;
-    document.getElementById('compRowsNuevo').innerHTML='';
-    document.getElementById('pForma').value='';
-    document.getElementById('pUnidad').value='';
-    document.getElementById('pCantTotal').value='';
-    onFormaChange('p');
-    mostrarVistaPrep('normal');
-  }
-  function regenerarPreviewStock(){
-    if(!formulaStockSeleccionada) return;
-    document.getElementById('compRowsNuevo').innerHTML='';
-    document.getElementById('pForma').value = formulaStockSeleccionada.forma_farmaceutica||'';
-    onFormaChange('p');
-    document.getElementById('pUnidad').value = formulaStockSeleccionada.unidad||'';
-    document.getElementById('pCantTotal').value = formulaStockSeleccionada.cantidad_base??'';
-    (formulasStockComponentes[formulaStockSeleccionada.id]||[]).forEach(c=>{
-      agregarCompRow('compRowsNuevo','', c.droga_nombre, c.droga_id, c.cantidad??'', c.unidad);
-    });
-  }
 
   // ── Modal aparte: elegir fórmula de stock (modalStockPicker) ────────────
   // vistaPicker: 'grid' (botones de fórmulas) | 'nuevaFormula' (alta rápida)
-  let vistaPicker = 'grid';
-  function mostrarVistaPicker(v){
-    vistaPicker = v;
-    document.getElementById('stockPickerGridWrap').style.display  = v==='grid' ? '' : 'none';
-    document.getElementById('stockPickerNuevaFormula').style.display = v==='nuevaFormula' ? '' : 'none';
-  }
-  function abrirStockPicker(){
-    cerrarModal('modalPreparado');
-    renderStockPickerGrid();
-    mostrarVistaPicker('grid');
-    abrirModal('modalStockPicker');
-  }
-  function cerrarStockPicker(){
-    cerrarModal('modalStockPicker');
-    abrirModal('modalPreparado');
-  }
-  function volverAPickerStock(){
-    abrirStockPicker();
-  }
-  function seleccionarFormulaStock(id){
-    formulaStockSeleccionada = formulasStock.find(f=>f.id===id) || null;
-    if(!formulaStockSeleccionada) return;
-    document.getElementById('btnFormulaSeleccionadaNombre').textContent = formulaStockSeleccionada.nombre;
-    document.getElementById('pEnvases').value='1';
-    regenerarPreviewStock();
-    cerrarModal('modalStockPicker');
-    abrirModal('modalPreparado');
-    mostrarVistaPrep('seleccionada');
-  }
   function mostrarNuevaFormulaInline(){
     document.getElementById('pnfNombre').value='';
     document.getElementById('pnfForma').value='';
@@ -2475,263 +2105,20 @@
   }
 
   // ── Modal clientes unificado ───────────────────────────────────────────
-  function abrirModalClientes(){
-    document.getElementById('cliBuscarInput').value='';
-    filtrarClientesModal();
-    document.getElementById('cliVistaLista').style.display='';
-    document.getElementById('cliVistaForm').style.display='none';
-    document.getElementById('btnGuardarCliente').style.display='none';
-    abrirModal('modalClientes');
-    setTimeout(()=>document.getElementById('cliBuscarInput').focus(),100);
-  }
-  async function filtrarClientesModal(){
-    await asegurarClientes().catch(()=>mostrarToast('Error al cargar clientes','err'));
-    const q=document.getElementById('cliBuscarInput').value.toLowerCase();
-    const todos = q ? clientes.filter(c=>c.nombre.toLowerCase().includes(q)) : clientes;
-    const fil = todos;
-    const cont=document.getElementById('cliResultados');
-    if(!fil.length){cont.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px;">Sin resultados</div>';return;}
-    cont.innerHTML=fil.map(c=>`<div class="cli-item" onclick="abrirFormCliente('${c.id}')">
-      <span>${escHtml(c.nombre)}</span>
-      <span style="color:var(--muted);font-size:12px;">${c.telefono||''}</span>
-    </div>`).join('');
-  }
-  function abrirFormCliente(id){
-    document.getElementById('cliVistaLista').style.display='none';
-    document.getElementById('cliVistaForm').style.display='';
-    document.getElementById('btnGuardarCliente').style.display='';
-    document.getElementById('cClienteId').value=id||'';
-    if(id){
-      const cli=clientes.find(c=>c.id===id);
-      document.getElementById('cNombre').value=cli?.nombre||'';
-      document.getElementById('cTelefono').value=cli?.telefono||'';
-      document.getElementById('cObs').value=cli?.observaciones||'';
-      document.getElementById('modalClientesTitulo').textContent='Editar cliente';
-    } else {
-      ['cNombre','cTelefono','cObs'].forEach(id=>document.getElementById(id).value='');
-      document.getElementById('modalClientesTitulo').textContent='Nuevo cliente';
-    }
-    setTimeout(()=>document.getElementById('cNombre').focus(),100);
-  }
-  function volverListaClientes(){
-    document.getElementById('cliVistaLista').style.display='';
-    document.getElementById('cliVistaForm').style.display='none';
-    document.getElementById('btnGuardarCliente').style.display='none';
-    document.getElementById('modalClientesTitulo').textContent='Clientes';
-    filtrarClientesModal();
-  }
-  async function guardarClienteModal(){
-    const nombre=document.getElementById('cNombre').value.trim();
-    if(!nombre){mostrarToast('El nombre es obligatorio','err');return;}
-    const btn=document.getElementById('btnGuardarCliente');btn.disabled=true;btn.textContent='Guardando…';
-    const id=document.getElementById('cClienteId').value;
-    try{
-      const datos=limpiar({nombre,telefono:document.getElementById('cTelefono').value||null,observaciones:document.getElementById('cObs').value||null});
-      if(id){
-        // Editar
-        await sbPatch('clientes',id,datos);
-        const idx=clientes.findIndex(c=>c.id===id);
-        if(idx>=0) clientes[idx]={...clientes[idx],...datos};
-        clientes.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
-        // Actualizar cards del kanban que tengan este cliente
-        preparados.filter(p=>p.cliente_id===id).forEach(p=>{p.cliente_nombre=nombre;p.cliente_telefono=datos.telefono||p.cliente_telefono;});
-        renderKanban();
-        mostrarToast('✓ Cliente actualizado','ok');
-      } else {
-        // Crear
-        const nuevo=await sbPost('clientes',{...datos,fecha_alta:new Date().toISOString().slice(0,10)});
-        const cli={id:nuevo[0].id,nombre,telefono:datos.telefono||null,observaciones:datos.observaciones||null};
-        clientes.push(cli);clientes.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
-        if(clienteCB){clienteCB(cli);clienteCB=null;cerrarModal('modalClientes');return;}
-        mostrarToast('✓ Cliente creado','ok');
-      }
-      volverListaClientes();
-    }catch(err){mostrarToast('Error: '+err.message,'err');}
-    btn.disabled=false;btn.textContent='Guardar';
-  }
   // Mantener compatibilidad con código que abre modalCliente
   function guardarCliente(){ guardarClienteModal(); }
 
   // ── Guardar droga ──────────────────────────────────────────────────────
-  async function guardarDroga(){
-    const nombre=document.getElementById('dNombre').value.trim();
-    if(!nombre){mostrarToast('El nombre es obligatorio','err');return;}
-    const btn=document.getElementById('btnGuardarDroga');btn.disabled=true;btn.textContent='Creando…';
-    try{
-      const nuevo=await sbPost('drogas',{nombre});
-      drogas.push({id:nuevo[0].id,nombre});drogas.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
-      if(cbDrogaIdx!==null){
-        const inp=document.querySelector(`.ss-input[data-idx="${cbDrogaIdx}"]`);
-        const hid=document.querySelector(`.comp-drug-id[data-idx="${cbDrogaIdx}"]`);
-        if(inp) inp.value=nombre;if(hid) hid.value=nuevo[0].id;cbDrogaIdx=null;
-      }
-      mostrarToast('✓ Droga creada','ok');cerrarModal('modalDroga');document.getElementById('dNombre').value='';
-    }catch(err){
-      if(/duplicate key|unique constraint/i.test(err.message)) mostrarToast('Ya existe una droga con ese nombre','err');
-      else mostrarToast('Error: '+err.message,'err');
-    }
-    btn.disabled=false;btn.textContent='Crear droga';
-  }
 
   // ── Comp rows ──────────────────────────────────────────────────────────
-  function onFormaChange(pref){
-    const forma=document.getElementById(`${pref}Forma`).value;
-    const sel=document.getElementById(`${pref}Unidad`);
-    const hint=document.getElementById(`${pref}UnidadHint`);
-    if(!sel) return;
-    // Reconstruir opciones según la forma
-    const bloqueada = FORMA_UNIDAD_BLOQUEADA.includes(forma);
-    const opcionesRestr = FORMA_UNIDAD_OPCIONES[forma];
-    const uniAuto = FORMA_UNIDAD[forma];
-    sel.innerHTML='';
-    if(bloqueada){
-      // Solo una opción, bloqueada
-      sel.innerHTML=`<option value="${uniAuto}">${uniAuto}</option>`;
-      sel.disabled=true;
-      sel.value=uniAuto;
-      if(hint) hint.textContent='';
-    } else if(opcionesRestr){
-      // Opciones restringidas: g, mg, UI
-      sel.innerHTML='<option value="">— Sin especificar —</option>'+opcionesRestr.map(o=>`<option value="${o}">${o}</option>`).join('');
-      sel.disabled=false;
-      if(hint) hint.textContent='';
-    } else {
-      // Sin forma seleccionada: todas las opciones
-      sel.innerHTML='<option value="">— Sin especificar —</option>'+UNIDADES.map(o=>`<option value="${o}">${o}</option>`).join('');
-      sel.disabled=false;
-      if(hint) hint.textContent='';
-    }
-  }
 
 
-  function actualizarVisualUnidadComp(sel){
-    const row = sel.closest('.comp-row');
-    const cantInput = row.querySelector('.comp-cant');
-    const opts = row.querySelector('.csp-opts');
-    if(sel.value === 'c.s.p'){
-      opts.style.display = 'flex';
-      Array.from(opts.children).forEach(b=>b.classList.remove('active'));
-      cantInput.value = '';
-      cantInput.readOnly = true;
-      cantInput.style.opacity = '0.6';
-    } else {
-      opts.style.display = 'none';
-      Array.from(opts.children).forEach(b=>b.classList.remove('active'));
-      cantInput.readOnly = false;
-      cantInput.style.opacity = '';
-    }
-  }
-  function onUnidadCompChange(sel){
-    actualizarVisualUnidadComp(sel);
-  }
-  function elegirCsp(btn, tipo){
-    const row = btn.closest('.comp-row');
-    const cantInput = row.querySelector('.comp-cant');
-    const opts = row.querySelector('.csp-opts');
-    const contId = row.closest('[id]').id;
-    if(tipo === '100'){
-      cantInput.value = 100;
-    } else {
-      const cantTotal = obtenerCantTotalDeContenedor(contId);
-      cantInput.value = cantTotal;
-    }
-    Array.from(opts.children).forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-  }
-  function agregarCompRow(contId,recId='',dNom='',dId='',cant='',unid=''){
-    const cont=document.getElementById(contId);
-    const idx=Date.now()+Math.random();
-    const div=document.createElement('div');
-    div.className='comp-row';div.dataset.recid=recId;
-    const unidOpts=['<option value="">—</option>',...UNID_COMP.map(o=>`<option value="${o}" ${o===unid?'selected':''}>${o}</option>`)].join('');
-    div.innerHTML=`
-      <div class="ss-wrap">
-        <input type="text" class="ss-input" data-idx="${idx}" placeholder="Buscar droga…" value="${escHtml(dNom)}" oninput="filtrarSSComp(this)" onfocus="abrirSSComp(this)" autocomplete="off"/>
-        <div class="ss-dropdown" id="ssComp_${idx}"></div>
-        <input type="hidden" class="comp-drug-id" data-idx="${idx}" value="${dId}"/>
-      </div>
-      <div class="comp-cant-cell">
-        <input type="number" class="comp-cant" value="${cant}" placeholder="Cant." step="any" min="0"/>
-        <div class="csp-opts">
-          <button type="button" class="csp-btn" onclick="elegirCsp(this,'100')">100</button>
-          <button type="button" class="csp-btn" onclick="elegirCsp(this,'total')">Total</button>
-        </div>
-      </div>
-      <select class="comp-unid" onchange="onUnidadCompChange(this)">${unidOpts}</select>
-      <button class="btn-del-comp" onclick="this.closest('.comp-row').remove()">×</button>`;
-    cont.appendChild(div);
-    if(unid==='c.s.p'){
-      const cantInput=div.querySelector('.comp-cant');
-      const opts=div.querySelector('.csp-opts');
-      opts.style.display='flex';
-      cantInput.readOnly=true;cantInput.style.opacity='0.6';
-      const cantTotal=obtenerCantTotalDeContenedor(contId);
-      const valNum=parseFloat(cant);
-      const btn100=opts.children[0],btnTotal=opts.children[1];
-      if(cantTotal!=='' && valNum===cantTotal){btnTotal.classList.add('active');}
-      else if(valNum===100){btn100.classList.add('active');}
-    }
-  }
-  function obtenerCantTotalDeContenedor(contId){
-    const esNuevo=contId.includes('Nuevo');
-    const el=document.getElementById(esNuevo?'pCantTotal':'eCantTotal');
-    const v=el?parseFloat(el.value):NaN;
-    return isNaN(v)?'':v;
-  }
 
   // ── Searchable selects ─────────────────────────────────────────────────
-  async function filtrarSSCliente(pref){ await asegurarClientes().catch(()=>mostrarToast('Error al cargar clientes','err'));const input=document.getElementById(`${pref}ClienteInput`);const dd=document.getElementById(`ssCliente_${pref}`);renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),pref,input.value);posicionarDD(input,dd);dd.classList.add('open');}
-  async function abrirSSCliente(pref){ await asegurarClientes().catch(()=>mostrarToast('Error al cargar clientes','err'));const input=document.getElementById(`${pref}ClienteInput`);const dd=document.getElementById(`ssCliente_${pref}`);renderSSCliente(dd,clientes.filter(c=>c.nombre.toLowerCase().includes(input.value.toLowerCase())),pref,input.value);posicionarDD(input,dd);dd.classList.add('open');}
-  function renderSSCliente(dd,fil,pref,texto){
-    dd.innerHTML='';
-    fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById(`${pref}ClienteInput`).value=c.nombre;document.getElementById(`${pref}ClienteId`).value=c.id;aplicarTelefonoCliente(pref,c.telefono);dd.classList.remove('open');};dd.appendChild(d);});
-    if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}
-  }
-  function aplicarTelefonoCliente(pref,telefono){
-    const telInp=document.getElementById(`${pref}Telefono`);
-    if(!telInp) return;
-    telInp.value=telefono||'';
-    telInp.classList.remove('field-invalid');
-  }
-  function abrirNuevoClienteDesdePrep(pref){
-    document.getElementById('cNombre').value='';
-    clienteCB=cli=>{
-      document.getElementById(`${pref}ClienteInput`).value=cli.nombre;
-      document.getElementById(`${pref}ClienteId`).value=cli.id;
-      aplicarTelefonoCliente(pref,cli.telefono);
-    };
-    abrirFormCliente(null);
-    abrirModal('modalClientes');
-  }
-  function filtrarSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);if(!input.value.trim()){dd.classList.remove('open');return;}renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())).slice(0,50),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
-  function abrirSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);if(!input.value.trim()){dd.classList.remove('open');return;}renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
-  function renderSSComp(dd,fil,idx,texto){
-    dd.innerHTML='';
-    fil.forEach(d=>{const div=document.createElement('div');div.className='ss-option';div.textContent=d.nombre;div.onmousedown=e=>{e.preventDefault();const inp=document.querySelector(`.ss-input[data-idx="${idx}"]`);const hid=document.querySelector(`.comp-drug-id[data-idx="${idx}"]`);if(inp)inp.value=d.nombre;if(hid)hid.value=d.id;dd.classList.remove('open');};dd.appendChild(div);});
-    if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}
-    const act=document.createElement('div');act.className='ss-action';act.textContent='＋ Crear droga nueva';
-    act.onmousedown=e=>{e.preventDefault();dd.classList.remove('open');cbDrogaIdx=idx;document.getElementById('dNombre').value=texto;abrirModal('modalDroga');};
-    dd.appendChild(act);
-  }
-  function posicionarDD(input,dd){const rect=input.getBoundingClientRect();const abajo=window.innerHeight-rect.bottom;dd.style.width=rect.width+'px';dd.style.left=rect.left+'px';if(abajo<208&&rect.top>208){dd.style.top='';dd.style.bottom=(window.innerHeight-rect.top+2)+'px';}else{dd.style.bottom='';dd.style.top=(rect.bottom+2)+'px';}}
-  function cerrarTodasSS(){document.querySelectorAll('.ss-dropdown').forEach(d=>d.classList.remove('open'));}
 
   // sbGet/sbPost/sbPatch/sbDelete vienen de supabase-shared.js
 
   // ── Helpers ────────────────────────────────────────────────────────────
-  function poblarUnidadGlobal(id){
-    const sel=document.getElementById(id);if(!sel)return;
-    sel.innerHTML='<option value="">Unidad</option>'+UNID_COMP.map(o=>`<option value="${o}">${o}</option>`).join('');
-  }
-  function aplicarUnidadGlobal(contId,sel){
-    const valor=sel.value;if(!valor)return;
-    const cont=document.getElementById(contId);
-    if(cont){
-      cont.querySelectorAll('.comp-unid').forEach(otro=>{ otro.value=valor; actualizarVisualUnidadComp(otro); });
-    }
-  }
-  function poblarSelect(id,opts,conBlanco){const sel=document.getElementById(id);if(!sel)return;const val=sel.value;sel.innerHTML='';if(conBlanco)sel.innerHTML='<option value="">— Sin especificar —</option>';opts.forEach(o=>{const opt=document.createElement('option');opt.value=o;opt.textContent=o;sel.appendChild(opt);});if(val)sel.value=val;}
-  function limpiar(obj){const r={};for(const[k,v]of Object.entries(obj))if(v!==null&&v!==undefined)r[k]=v;return r;}
 
   function setKanbanStatus(html,esError=false){const el=document.getElementById('kanbanStatus');el.innerHTML=html;el.style.color=esError?'var(--danger)':'var(--muted)';}
 </script>
