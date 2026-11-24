@@ -39,12 +39,17 @@ function asegurarClientes(){
   }
   return _clientesPromesa;
 }
-// Drogas: no cambian seguido, así que se cargan una vez por página (no en cada recarga).
-let drogasCargadas = false;
-async function cargarDrogasUnaVez(){
-  if(drogasCargadas) return;
-  try{ drogas = await sbGet('drogas?order=nombre.asc&select=id,nombre', true); drogasCargadas = true; }
-  catch(err){ mostrarToast('Error al cargar drogas: '+err.message,'err'); }
+// Drogas (~90 KB): se piden recién la primera vez que se usa el buscador de drogas.
+let drogasCargadas = false, _drogasPromesa = null;
+function cargarDrogasUnaVez(){
+  if(drogasCargadas) return Promise.resolve();
+  if(!_drogasPromesa){
+    _drogasPromesa = sbGet('drogas?order=nombre.asc&select=id,nombre', true)
+      .then(d=>{ drogas=d; drogasCargadas=true; })
+      .catch(err=>mostrarToast('Error al cargar drogas: '+err.message,'err'))
+      .finally(()=>{ _drogasPromesa=null; });
+  }
+  return _drogasPromesa;
 }
 
 function poblarSelect(id,opts,conBlanco){const sel=document.getElementById(id);if(!sel)return;const val=sel.value;sel.innerHTML='';if(conBlanco)sel.innerHTML='<option value="">— Sin especificar —</option>';opts.forEach(o=>{const opt=document.createElement('option');opt.value=o;opt.textContent=o;sel.appendChild(opt);});if(val)sel.value=val;}
@@ -99,7 +104,7 @@ function aplicarTelefonoCliente(pref,telefono){
 }
 
 // Droga (dentro de una fila de componentes).
-function abrirSSComp(input){const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);if(!input.value.trim()){dd.classList.remove('open');return;}renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())).slice(0,50),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
+async function abrirSSComp(input){if(!drogasCargadas) await cargarDrogasUnaVez();const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);if(!input.value.trim()){dd.classList.remove('open');return;}renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())).slice(0,50),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
 function filtrarSSComp(input){ abrirSSComp(input); }
 function renderSSComp(dd,fil,idx,texto){
   dd.innerHTML='';

@@ -150,7 +150,8 @@ async function sbSubirImagen(bucket, path, blob){
   return sbConReintentoDeSesion(async () => {
     const resp = await fetchConTimeout(`${SB_URL_BASE}/storage/v1/object/${bucket}/${path}`,{
       method:'POST',
-      headers:getAuthHeaders({'Content-Type':blob.type||'image/jpeg'}),
+      // Nombres únicos (nunca se pisan): el navegador puede guardarla 1 año.
+      headers:getAuthHeaders({'Content-Type':blob.type||'image/jpeg','cache-control':'max-age=31536000'}),
       body:blob
     });
     if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
@@ -172,7 +173,23 @@ async function sbEliminarImagen(bucket, path){
 }
 
 // URL firmada temporal (1h por defecto) para ver una imagen del bucket privado.
-async function sbFirmarImagen(bucket, path, expiresIn=3600){
+// Las URLs firmadas se reutilizan (memoria + sessionStorage) mientras les quede
+// más de 1 h: así, al re-dibujar el kanban o el chat, la imagen sale de la caché
+// del navegador y no se vuelve a bajar de Supabase (egress). Antes cada recarga
+// por Realtime firmaba una URL nueva y la bajaba otra vez (~100 KB por imagen).
+const _firmasImagen = {};
+async function sbFirmarImagen(bucket, path, expiresIn=86400){
+  const clave = 'firma:'+bucket+'/'+path, ahora = Date.now();
+  let f = _firmasImagen[clave];
+  if(!f){ try{ f = JSON.parse(sessionStorage.getItem(clave)||'null'); }catch(e){ f = null; } }
+  if(f && f.vence - ahora > 3600*1000){ _firmasImagen[clave] = f; return f.url; }
+  const url = await _sbFirmarImagenNueva(bucket, path, expiresIn);
+  f = {url, vence: ahora + expiresIn*1000};
+  _firmasImagen[clave] = f;
+  try{ sessionStorage.setItem(clave, JSON.stringify(f)); }catch(e){ /* sin storage: queda solo en memoria */ }
+  return url;
+}
+async function _sbFirmarImagenNueva(bucket, path, expiresIn){
   return sbConReintentoDeSesion(async () => {
     const resp = await fetchConTimeout(`${SB_URL_BASE}/storage/v1/object/sign/${bucket}/${path}`,{
       method:'POST',

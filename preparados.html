@@ -4,8 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Laboratorio · Preparados anteriores</title>
-  <link rel="stylesheet" href="estilos.css?v=11"/>
-  <link rel="stylesheet" href="form-preparado.css?v=11"/>
+  <link rel="stylesheet" href="estilos.css?v=12"/>
+  <link rel="stylesheet" href="form-preparado.css?v=12"/>
   <style>
     
     .nav-btn:hover{opacity:0.85;}
@@ -256,10 +256,10 @@
 
 </div><!-- /appRoot -->
 
-<script src="constantes.js?v=11"></script>
-<script src="supabase-shared.js?v=11"></script>
-<script src="comun.js?v=11"></script>
-<script src="form-preparado.js?v=11"></script>
+<script src="constantes.js?v=12"></script>
+<script src="supabase-shared.js?v=12"></script>
+<script src="comun.js?v=12"></script>
+<script src="form-preparado.js?v=12"></script>
 <script>
   // Acceso a datos en supabase-shared.js; login, toasts, modales y formato en comun.js.
 
@@ -269,7 +269,6 @@
     poblarSelect('eEstado',ESTADOS,false);
     poblarSelect('eUnidad',UNIDADES,true);
     poblarUnidadGlobal('unidadGlobalEditar');
-    cargarListasApoyo();
     filtrar();
     sbAuth.channel('preparados-lista')
       .on('postgres_changes', {event:'*', schema:'public', table:'preparados'}, () => {
@@ -283,13 +282,6 @@
   let totalResultados = 0;
   // Cache de la pagina visible actualmente (para editar/repetir/borrar/recuperar sin volver a pedir al servidor)
   let resultadosFiltrados = [];
-
-  // Clientes y drogas se usan para los buscadores de los formularios (crear/editar/fusionar),
-  // no para listar preparados, asi que se cargan una sola vez, aparte de la busqueda paginada.
-  async function cargarListasApoyo(){
-    try{ drogas = await sbGet('drogas?order=nombre.asc&select=id,nombre', true); }
-    catch(err){ mostrarToast('Error al cargar drogas: '+err.message,'err'); }
-  }
 
   // cargarTodo() se mantiene como alias para no romper los lugares que refrescan tras guardar/borrar/fusionar
   async function cargarTodo(){ await filtrar(); }
