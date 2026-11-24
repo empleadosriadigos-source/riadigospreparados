@@ -1,0 +1,20 @@
+/* Buscador con menú de filtros (preparados, etiquetas, historial de sucursal, clientes) */
+.con-filtros{position:relative;flex:1;min-width:240px;}
+.con-filtros .buscador-input{width:100%;box-sizing:border-box;padding:9px 110px 9px 14px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);outline:none;}
+.con-filtros .buscador-input:focus{border-color:var(--accent2,var(--brand));}
+.btn-filtros{position:absolute;right:4px;top:4px;height:28px;box-sizing:border-box;display:flex;align-items:center;gap:6px;min-height:0;padding:5px 10px;border:none;border-left:1px solid var(--border);border-radius:0 4px 4px 0;background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;}
+.btn-filtros:hover,.btn-filtros.abierto{color:var(--text);}
+.btn-filtros.activo{color:var(--accent2,var(--brand));}
+.filtros-badge{display:none;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--accent2,var(--brand));color:#fff;font-size:11px;line-height:18px;text-align:center;}
+.btn-filtros.activo .filtros-badge{display:inline-block;}
+.filtros-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:30;width:300px;max-width:calc(100vw - 24px);box-sizing:border-box;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);flex-direction:column;gap:10px;}
+.filtros-menu.abierto{display:flex;}
+.filtro-campo{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);}
+.filtro-campo select,.filtro-campo input{width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:normal;background:var(--bg);color:var(--text);outline:none;cursor:pointer;}
+.filtro-fechas{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;}
+.filtro-fechas .filtro-campo{min-width:0;}
+.filtro-campo input[type=date]{min-width:0;padding:7px 6px;}
+.btn-limpiar{align-self:flex-end;min-height:0;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:none;color:var(--muted);cursor:pointer;}
+.btn-limpiar:hover{color:var(--text);}
+/* Dentro de un modal el menú se despliega debajo del buscador (no flota, para que no quede cortado) */
+.modal .filtros-menu{position:static;width:auto;max-width:none;margin-top:8px;box-shadow:none;}

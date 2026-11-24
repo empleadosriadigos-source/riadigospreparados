@@ -50,3 +50,52 @@ function iniciarLoginComun(){
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', iniciarLoginComun);
 else iniciarLoginComun();
+
+// ── Buscador con menú de filtros (buscador-filtros.css) ─────────────────────
+// Estructura: <div class="con-filtros" id="X"> input.buscador-input + button.btn-filtros + div.filtros-menu </div>
+// Un campo del menú cuenta como filtro activo si su valor es distinto de data-defecto (o de '').
+function botonFiltrosHtml(){
+  return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg> Filtros<span class="filtros-badge"></span>';
+}
+function completarBotonesFiltros(){
+  document.querySelectorAll('.btn-filtros').forEach(b=>{ if(!b.innerHTML.trim()) b.innerHTML=botonFiltrosHtml(); });
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',completarBotonesFiltros); else completarBotonesFiltros();
+function toggleFiltros(btn,ev){
+  if(ev) ev.stopPropagation();
+  const menu=btn.parentElement.querySelector('.filtros-menu');
+  const abrir=!menu.classList.contains('abierto');
+  cerrarFiltros();
+  menu.classList.toggle('abierto',abrir);
+  btn.classList.toggle('abierto',abrir);
+}
+function cerrarFiltros(){
+  document.querySelectorAll('.filtros-menu.abierto,.btn-filtros.abierto').forEach(el=>el.classList.remove('abierto'));
+}
+document.addEventListener('click',e=>{ if(!e.target.closest('.con-filtros')) cerrarFiltros(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') cerrarFiltros(); });
+function camposFiltro(wrapId){
+  return [...document.querySelectorAll(`#${wrapId} .filtros-menu select, #${wrapId} .filtros-menu input`)];
+}
+function marcarFiltrosActivos(wrapId){
+  const n=camposFiltro(wrapId).filter(el=>el.value!==(el.dataset.defecto??'')).length;
+  const btn=document.querySelector(`#${wrapId} .btn-filtros`);
+  if(!btn) return;
+  btn.classList.toggle('activo',n>0);
+  btn.querySelector('.filtros-badge').textContent=n||'';
+}
+function limpiarFiltros(wrapId){
+  camposFiltro(wrapId).forEach(el=>{ el.value=el.dataset.defecto??''; });
+}
+
+// ── Búsqueda por palabras (igual que buscar_preparados en la base) ──────────
+// Cada palabra tiene que aparecer; "-palabra" excluye; sin distinguir acentos ni mayúsculas.
+function normalizarTexto(t){
+  return String(t??'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+}
+function palabrasBusqueda(q){
+  const incluir=[], excluir=[];
+  normalizarTexto(q).split(/\s+/).map(w=>w.replace(/^[+,;]+|[+,;]+$/g,'')).filter(w=>/[a-z0-9]/.test(w))
+    .forEach(w=>{ if(w[0]==='-') excluir.push(w.slice(1)); else incluir.push(w); });
+  return {incluir, excluir};
+}
