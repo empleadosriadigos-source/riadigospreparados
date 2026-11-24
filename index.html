@@ -6,6 +6,7 @@
   <title>Laboratorio</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
   <link rel="stylesheet" href="estilos.css?v=13"/>
+  <link rel="stylesheet" href="buscador-filtros.css?v=13"/>
   <link rel="stylesheet" href="form-preparado.css?v=13"/>
   <style>
     
@@ -35,17 +36,10 @@
     .drop-zone.drag-active{bottom:0;background:#1A5C3A;border-color:var(--accent);color:#fff;}
     .drop-zone.drag-over{background:var(--accent);border-color:#fff;color:#fff;transform:translateX(-50%) scale(1.05);}
     .kanban-toolbar{position:sticky;top:52px;z-index:45;background:var(--bg,#F4F1EA);margin:0 -20px;padding:10px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--border);box-shadow:0 2px 6px rgba(0,0,0,0.05);}
-    .kanban-search{flex:1;min-width:200px;position:relative;display:flex;align-items:center;}
-    .kanban-search svg{position:absolute;left:11px;pointer-events:none;opacity:0.5;}
-    .kanban-search input{width:100%;padding:9px 12px 9px 34px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface);}
-    .kanban-search input:focus{outline:none;border-color:var(--accent2);}
     .kanban-results-count{font-size:12px;color:var(--muted);white-space:nowrap;}
     .view-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0;}
     .view-toggle button{border:none;background:var(--surface);padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);}
     .view-toggle button.active{background:var(--accent2);color:#fff;}
-    .btn-demorados{border:1px solid var(--border);background:var(--surface);padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);display:flex;align-items:center;gap:6px;flex-shrink:0;}
-    .btn-demorados.active{background:#B91C1C;border-color:#B91C1C;color:#fff;}
-    .btn-demorados .dot-demorado{width:8px;height:8px;border-radius:50%;background:linear-gradient(90deg,#F5C518,#B91C1C);}
     mark.kb-hl{background:#FDE68A;color:inherit;border-radius:2px;padding:0 1px;}
     .kanban-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:stretch;}
     @media(max-width:800px){.kanban-cols{grid-template-columns:1fr;}.kanban-toolbar{position:static;}}
@@ -361,14 +355,38 @@
 <div class="kanban-wrap">
   <div id="kanbanStatus"></div>
   <div class="kanban-toolbar">
-    <div class="kanban-search">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" id="kanbanSearch" placeholder="Buscar por cupón, cliente, teléfono, droga, receta, forma u observaciones..." oninput="renderKanban()">
+    <div class="con-filtros" id="kanbanFiltros">
+      <input type="text" id="kanbanSearch" class="buscador-input" placeholder="Buscar: finasteride minoxidil, #123, -droga…" oninput="renderKanban()" autocomplete="off">
+      <button type="button" class="btn-filtros" onclick="toggleFiltros(this,event)" aria-label="Filtros"></button>
+      <div class="filtros-menu">
+        <label class="filtro-campo">Buscar en
+          <select id="kbBuscarEn" data-defecto="todo" onchange="renderKanban()">
+            <option value="todo">Todo</option>
+            <option value="cupon">Cupón</option>
+            <option value="cliente">Cliente</option>
+            <option value="droga">Droga</option>
+            <option value="telefono">Teléfono</option>
+          </select>
+        </label>
+        <label class="filtro-campo">Demorados
+          <select id="kbDemora" onchange="renderKanban()">
+            <option value="">Todos</option>
+            <option value="3">3 días o más</option>
+            <option value="6">6 días o más</option>
+            <option value="10">10 días o más</option>
+            <option value="15">15 días o más</option>
+          </select>
+        </label>
+        <label class="filtro-campo">Forma
+          <select id="kbForma" onchange="renderKanban()"><option value="">Todas</option></select>
+        </label>
+        <label class="filtro-campo">Sucursal
+          <select id="kbSucursal" onchange="renderKanban()"><option value="">Todas</option></select>
+        </label>
+        <button type="button" class="btn-limpiar" onclick="limpiarFiltros('kanbanFiltros');renderKanban()">✕ Limpiar filtros</button>
+      </div>
     </div>
     <span class="kanban-results-count" id="kanbanResultsCount"></span>
-    <button class="btn-demorados" id="btnDemorados" onclick="toggleDemorados()">
-      <span class="dot-demorado"></span> Demorados
-    </button>
     <div class="view-toggle">
       <button id="btnVistaExpandida" class="active" onclick="setVistaKanban('expandida')">Expandida</button>
       <button id="btnVistaColapsada" onclick="setVistaKanban('colapsada')">Colapsada</button>
@@ -760,6 +778,7 @@
   function initApp() {
     const hoy = new Date().toISOString().slice(0,10);
     document.getElementById('pFecha').value     = hoy;
+    llenarFiltrosKanban();
     poblarSelect('pForma',  FORMAS,   true);
     poblarSelect('eForma',  FORMAS,   true);
     poblarSelect('cForma',  FORMAS,   true);
@@ -1006,7 +1025,6 @@
 
   // ── Búsqueda / vista / antigüedad ────────────────────────────────────
   let vistaKanban = 'expandida';
-  let soloDemorados = false;
   let cardOverrides = {}; // { [id]: 'expandida' | 'colapsada' } — anula la vista global para esa card puntual
 
   function setVistaKanban(v) {
@@ -1024,10 +1042,11 @@
     renderKanban();
   }
 
-  function toggleDemorados() {
-    soloDemorados = !soloDemorados;
-    document.getElementById('btnDemorados').classList.toggle('active', soloDemorados);
-    renderKanban();
+  function llenarFiltrosKanban(){
+    const forma = document.getElementById('kbForma'), suc = document.getElementById('kbSucursal');
+    if(!forma || forma.options.length>1) return;
+    FORMAS.forEach(f=>forma.add(new Option(f,f)));
+    ['San Martín',...SUCURSALES].forEach(x=>suc.add(new Option(x,x)));
   }
 
   // Antigüedad en días desde el último cambio de estado, y clase de color asociada
@@ -1045,27 +1064,47 @@
     return {dias, clase};
   }
 
-  function normalizar(s){ return String(s??'').toLowerCase(); }
-
-  function coincideBusqueda(p, termino) {
-    if(!termino) return true;
-    const t = normalizar(termino);
-    const campos = [
-      p.nro_cupon, p.nro_cupon_nuevo, p.cliente_nombre, p.cliente_telefono,
-      p.nro_receta, p.forma_farmaceutica, p.observaciones, p.formula_stock_nombre
-    ].map(normalizar);
-    if(campos.some(c => c.includes(t))) return true;
-    return (p.componentes||[]).some(c => normalizar(c.droga_nombre).includes(t));
+  // Misma regla que la búsqueda de Preparados anteriores: cada palabra tiene que estar,
+  // sin acentos; "-droga" excluye; "#N" es cupón exacto.
+  function coincideBusqueda(p, termino, modo='todo') {
+    const {incluir, excluir} = palabrasBusqueda(termino);
+    const drogas = (p.componentes||[]).map(c => normalizarTexto(c.droga_nombre));
+    const digitos = t => String(t??'').replace(/\D/g,'');
+    const cupon = w => {
+      if(/^#\d+$/.test(w)) return String(p.nro_cupon_nuevo??'') === w.slice(1);
+      if(/^t\d+$/.test(w)) return String(p.nro_cupon??'') === w.slice(1);
+      if(/^\d+$/.test(w)) return String(p.nro_cupon_nuevo??'') === w || String(p.nro_cupon??'') === w;
+      return false;
+    };
+    const coincide = w => {
+      if(modo === 'cupon') return cupon(w);
+      if(modo === 'cliente') return normalizarTexto(p.cliente_nombre).includes(w);
+      if(modo === 'droga') return drogas.some(d => d.includes(w));
+      if(modo === 'telefono') return digitos(w)!=='' && digitos(p.cliente_telefono).includes(digitos(w));
+      if(w[0] === '#') return cupon(w);
+      if(cupon(w)) return true;
+      return [p.nro_cupon, p.nro_cupon_nuevo, p.cliente_nombre, p.cliente_telefono, p.nro_receta,
+              p.forma_farmaceutica, p.observaciones, p.formula_stock_nombre]
+        .some(c => normalizarTexto(c).includes(w)) || drogas.some(d => d.includes(w));
+    };
+    return incluir.every(coincide) && !excluir.some(x => drogas.some(d => d.includes(x)));
   }
 
+  // Resalta cada palabra buscada (sin distinguir acentos)
   function resaltar(texto, termino) {
     const s = String(texto??'');
-    if(!termino) return escHtml(s);
-    const t = termino.trim();
-    if(!t) return escHtml(s);
-    const idx = normalizar(s).indexOf(normalizar(t));
-    if(idx===-1) return escHtml(s);
-    return escHtml(s.slice(0,idx)) + '<mark class="kb-hl">' + escHtml(s.slice(idx,idx+t.length)) + '</mark>' + escHtml(s.slice(idx+t.length));
+    const palabras = palabrasBusqueda(termino).incluir.filter(w => !/^[#t]?\d+$/.test(w) || /^\d+$/.test(w));
+    const n = normalizarTexto(s);
+    if(!palabras.length || n.length !== s.length) return escHtml(s);
+    const marca = new Array(s.length).fill(false);
+    palabras.forEach(w => { let i = n.indexOf(w); while(i !== -1){ for(let k=i;k<i+w.length;k++) marca[k]=true; i = n.indexOf(w, i+1); } });
+    let out = '', dentro = false;
+    for(let i=0;i<s.length;i++){
+      if(marca[i] && !dentro){ out += '<mark class="kb-hl">'; dentro = true; }
+      if(!marca[i] && dentro){ out += '</mark>'; dentro = false; }
+      out += escHtml(s[i]);
+    }
+    return out + (dentro ? '</mark>' : '');
   }
 
   // ── Render kanban ──────────────────────────────────────────────────────
@@ -1078,6 +1117,10 @@
   function renderKanban() {
     const counts = {'Sin precio':0,'En laboratorio':0,'Listo para retirar':0};
     const termino = document.getElementById('kanbanSearch')?.value.trim() || '';
+    const valor = id => document.getElementById(id)?.value || '';
+    const modo = valor('kbBuscarEn') || 'todo', demora = Number(valor('kbDemora')) || 0;
+    const forma = valor('kbForma'), sucursal = valor('kbSucursal');
+    marcarFiltrosActivos('kanbanFiltros');
     let visibles = 0, total = 0;
     const porColumna = {'Sin precio':[], 'En laboratorio':[], 'Listo para retirar':[]};
 
@@ -1085,8 +1128,10 @@
       if(!ESTADOS_KANBAN.includes(p.estado)) return;
       total++;
       const {dias, clase} = antiguedadInfo(p);
-      if(soloDemorados && dias<3) return;
-      if(!coincideBusqueda(p, termino)) return;
+      if(demora && dias<demora) return;
+      if(forma && p.forma_farmaceutica !== forma) return;
+      if(sucursal && (sucursal === 'San Martín' ? !!p.origen_sucursal : p.origen_sucursal !== sucursal)) return;
+      if(!coincideBusqueda(p, termino, modo)) return;
       visibles++;
       counts[p.estado]++;
       porColumna[p.estado].push({p, dias, clase});
@@ -1119,7 +1164,7 @@
 
     ESTADOS_KANBAN.forEach(e => { document.getElementById(COL_COUNT[e]).textContent=counts[e]; });
     const elCount = document.getElementById('kanbanResultsCount');
-    if(elCount) elCount.textContent = (termino || soloDemorados) ? `${visibles} de ${total}` : '';
+    if(elCount) elCount.textContent = (visibles !== total) ? `${visibles} de ${total}` : '';
     document.getElementById('kanbanCols').style.display='grid';
     initSortable();
     scrollTodosLosChats();
