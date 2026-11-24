@@ -33,7 +33,7 @@ let clientesCargados = false, _clientesPromesa = null;
 function asegurarClientes(){
   if(clientesCargados) return Promise.resolve();
   if(!_clientesPromesa){
-    _clientesPromesa = sbGet('clientes?order=nombre.asc&select=id,nombre,telefono,observaciones', true)
+    _clientesPromesa = sbGet('clientes?order=nombre.asc&select=id,nombre,telefono,observaciones,sucursal', true)
       .then(c=>{ clientes=c; clientesCargados=true; })
       .finally(()=>{ _clientesPromesa=null; });
   }
@@ -62,15 +62,21 @@ async function abrirSSCliente(pref){ await asegurarClientes().catch(()=>mostrarT
 function filtrarSSCliente(pref){ return abrirSSCliente(pref); }
 function renderSSCliente(dd,fil,pref){
   dd.innerHTML='';
-  fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById(`${pref}ClienteInput`).value=c.nombre;document.getElementById(`${pref}ClienteId`).value=c.id;aplicarTelefonoCliente(pref,c.telefono);aplicarSucursalDeCliente(pref,c.nombre);dd.classList.remove('open');};dd.appendChild(d);});
+  fil.forEach(c=>{const d=document.createElement('div');d.className='ss-option';d.textContent=c.nombre;d.onmousedown=e=>{e.preventDefault();document.getElementById(`${pref}ClienteInput`).value=c.nombre;document.getElementById(`${pref}ClienteId`).value=c.id;aplicarTelefonoCliente(pref,c.telefono);aplicarSucursalDeCliente(pref,c);dd.classList.remove('open');};dd.appendChild(d);});
   if(!fil.length){const emp=document.createElement('div');emp.className='ss-empty';emp.textContent='Sin resultados';dd.appendChild(emp);}
 }
-// Si el cliente es el de una sucursal (ej. MRL), se marca esa sucursal en el
-// selector {pref}Sucursal (si el formulario lo tiene).
-function aplicarSucursalDeCliente(pref,nombre){
+// Clientes que son una sucursal (clientes.sucursal, ej. MRL = Constitución): sus
+// preparados llevan SIEMPRE esa sucursal. Lo garantiza la base (trigger
+// trg_asignar_sucursal_por_cliente); acá solo se refleja en el selector
+// {pref}Sucursal, que queda bloqueado. cli = null → se desbloquea.
+function aplicarSucursalDeCliente(pref,cli){
   const sel=document.getElementById(`${pref}Sucursal`);
-  const suc=(typeof CLIENTE_DE_SUCURSAL!=='undefined') && CLIENTE_DE_SUCURSAL[nombre];
-  if(sel && suc) sel.value=suc;
+  if(!sel) return;
+  if(cli && cli.sucursal){
+    if(![...sel.options].some(o=>o.value===cli.sucursal)){ const o=document.createElement('option'); o.value=o.textContent=cli.sucursal; sel.appendChild(o); }
+    sel.value=cli.sucursal; sel.disabled=true;
+    sel.title='Este cliente es la sucursal '+cli.sucursal+': sus preparados siempre llevan ese tag';
+  } else { sel.disabled=false; sel.title=''; }
 }
 // Opciones del selector "Para sucursal".
 function opcionesSucursalHtml(){
@@ -399,7 +405,7 @@ function abrirNuevoClienteDesdePrep(pref){
     document.getElementById(`${pref}ClienteInput`).value=cli.nombre;
     document.getElementById(`${pref}ClienteId`).value=cli.id;
     aplicarTelefonoCliente(pref,cli.telefono);
-    aplicarSucursalDeCliente(pref,cli.nombre);
+    aplicarSucursalDeCliente(pref,cli);
   };
   abrirFormCliente(null);
   abrirModal('modalClientes');
@@ -533,6 +539,8 @@ async function abrirEditarPreparado(p){
     const o=document.createElement('option'); o.value=o.textContent=p.origen_sucursal; selSuc.appendChild(o);
   }
   selSuc.value=p.origen_sucursal??'';
+  aplicarSucursalDeCliente('e', null);
+  if(p.cliente_id) asegurarClientes().then(()=>{ if(prepActual===p) aplicarSucursalDeCliente('e', clientes.find(c=>c.id===p.cliente_id)); }).catch(()=>{});
   document.getElementById('eClienteInput').value=p.cliente_nombre??'';
   document.getElementById('eClienteId').value=p.cliente_id??'';
   document.getElementById('eTelefono').value=p.cliente_telefono??'';

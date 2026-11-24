@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Laboratorio</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
-  <link rel="stylesheet" href="estilos.css?v=8"/>
-  <link rel="stylesheet" href="form-preparado.css?v=8"/>
+  <link rel="stylesheet" href="estilos.css?v=9"/>
+  <link rel="stylesheet" href="form-preparado.css?v=9"/>
   <style>
     
     .nav-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;text-decoration:none;flex-shrink:0;color:#fff;}
@@ -706,11 +706,11 @@
 
 </div><!-- /appRoot -->
 
-<script src="constantes.js?v=8"></script>
-<script src="supabase-shared.js?v=8"></script>
-<script src="comun.js?v=8"></script>
-<script src="form-preparado.js?v=8"></script>
-<script src="chat.js?v=8"></script>
+<script src="constantes.js?v=9"></script>
+<script src="supabase-shared.js?v=9"></script>
+<script src="comun.js?v=9"></script>
+<script src="form-preparado.js?v=9"></script>
+<script src="chat.js?v=9"></script>
 <script>
   // Acceso a datos (sbGet/sbPost/…) en supabase-shared.js; login, toasts,
   // modales y formato (escHtml, fmtFecha, fmtCupon) en comun.js.
@@ -1829,6 +1829,7 @@
     document.getElementById('pFecha').value=new Date().toISOString().slice(0,10);
     document.getElementById('pEstado').value='Sin precio';
     document.getElementById('pSucursal').value='';
+    aplicarSucursalDeCliente('p', null);
     document.getElementById('compRowsNuevo').innerHTML='';
     document.getElementById('unidadGlobalNuevo').value='';
     document.getElementById('tipoCuponNuevo').checked=true;

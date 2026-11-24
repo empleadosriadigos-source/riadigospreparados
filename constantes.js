@@ -40,6 +40,6 @@ const FORMA_UNIDAD_OPCIONES = {'Crema':['g','mg','UI'],'Crema de enjuague':['g',
 // se imprime como pedido de sucursal y la sucursal lo ve en su portal, aunque lo
 // haya cargado San Martín.
 const SUCURSALES = ['Constitución'];
-// Cliente que representa a cada sucursal: al elegirlo en "Cargar preparado" se
-// marca solo la sucursal.
-const CLIENTE_DE_SUCURSAL = {'MRL (Sucursal Constitución)': 'Constitución'};
+// El cliente que representa a cada sucursal se marca en la base (clientes.sucursal,
+// ej. 'MRL (Sucursal Constitución)' → 'Constitución'): sus preparados llevan siempre
+// esa sucursal, lo garantiza el trigger trg_asignar_sucursal_por_cliente.
