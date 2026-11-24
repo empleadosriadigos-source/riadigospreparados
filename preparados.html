@@ -4,9 +4,10 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Laboratorio · Preparados anteriores</title>
-  <link rel="stylesheet" href="estilos.css?v=13"/>
-  <link rel="stylesheet" href="form-preparado.css?v=13"/>
-  <link rel="stylesheet" href="buscador-filtros.css?v=13"/>
+  <link rel="stylesheet" href="estilos.css?v=14"/>
+  <link rel="stylesheet" href="form-preparado.css?v=14"/>
+  <link rel="stylesheet" href="buscador-filtros.css?v=14"/>
+  <link rel="stylesheet" href="teclado.css?v=14"/>
   <style>
     
     .nav-btn:hover{opacity:0.85;}
@@ -271,13 +272,25 @@
 
 </div><!-- /appRoot -->
 
-<script src="constantes.js?v=13"></script>
-<script src="supabase-shared.js?v=13"></script>
-<script src="comun.js?v=13"></script>
-<script src="form-preparado.js?v=13"></script>
+<script src="constantes.js?v=14"></script>
+<script src="supabase-shared.js?v=14"></script>
+<script src="comun.js?v=14"></script>
+<script src="form-preparado.js?v=14"></script>
+<script src="teclado.js?v=14"></script>
 <script>
   // Acceso a datos en supabase-shared.js; login, toasts, modales y formato en comun.js.
 
+
+  // ── Atajos de teclado (teclado.js) ───────────────────────────────────
+  Teclado.navegacion({k:['index.html','Kanban'], e:['etiquetas.html','Etiquetas'], r:['reporte.html','Reporte de drogas']});
+  const botonPagina = txt => [...document.querySelectorAll('#paginacion button')].find(b => b.textContent === txt && !b.disabled);
+  Teclado.atajo({teclas:'pagedown', etiqueta:'AvPág', desc:'Página siguiente de resultados', accion:()=>botonPagina('→')?.click()});
+  Teclado.atajo({teclas:'pageup', etiqueta:'RePág', desc:'Página anterior de resultados', accion:()=>botonPagina('←')?.click()});
+  Teclado.ayuda('En una fila', 'Enter · E', 'Editar');
+  Teclado.ayuda('En una fila', 'R', 'Repetir');
+  Teclado.ayuda('En una fila', 'V', 'Volver al kanban (entregados)');
+  Teclado.ayuda('En una fila', 'Supr', 'Cancelar');
+  Teclado.ayuda('En esta página', 'Enter', 'En un título de columna: ordenar por esa columna');
 
   function initApp(){
     poblarSelect('eForma',FORMAS,true);
@@ -413,7 +426,7 @@
     const ths2 = document.querySelectorAll('thead th');
     colMap2.forEach((c,i) => { if(c === sortCol && ths2[i]){ ths2[i].classList.add(sortDir==='asc'?'sort-asc':'sort-desc'); const a=ths2[i].querySelector('.sort-arrow');if(a)a.textContent=sortDir==='asc'?'↑':'↓'; } });
     preparados.forEach(p=>{
-      const tr=document.createElement('tr');
+      const tr=document.createElement('tr'); tr.dataset.id=p.id;
       const esEntregado=p.estado==='Entregado';
       const compHtml=p.componentes.length?`<div class="comp-list">${p.componentes.map(c=>`<div class="comp-item">${escHtml(c.droga_nombre||'')} <span>· ${c.cantidad??''} ${c.unidad||''}</span></div>`).join('')}</div>`:'<span style="color:var(--muted)">—</span>';
       const precio=p.precio_venta?`$${Number(p.precio_venta).toLocaleString('es-AR',{minimumFractionDigits:2})}`:'—';
@@ -435,10 +448,10 @@
         <td class="td-precio">${precio}</td>
         <td class="td-muted" style="max-width:140px;font-size:12px;">${escHtml(p.observaciones||'—')}</td>
         <td><div class="row-actions">
-          <button class="act-btn act-btn-edit" onclick="event.stopPropagation();abrirEditar('${p.id}')">${svgE} Editar</button>
-          <button class="act-btn act-btn-repeat" onclick="event.stopPropagation();abrirRepetir('${p.id}')">${svgR} Repetir</button>
-          ${esEntregado?`<button class="act-btn act-btn-recover" onclick="event.stopPropagation();recuperar('${p.id}')">${svgRec} Recuperar</button>`:''}
-          ${(ESTADOS_CANCELADOS.includes(p.estado)||p.estado==='Rechazado')?'':`<button class="act-btn act-btn-delete" onclick="event.stopPropagation();abrirCancelar('${p.id}')">${svgD} Cancelar</button>`}
+          <button class="act-btn act-btn-edit" data-tecla="e" onclick="event.stopPropagation();abrirEditar('${p.id}')">${svgE} Editar</button>
+          <button class="act-btn act-btn-repeat" data-tecla="r" onclick="event.stopPropagation();abrirRepetir('${p.id}')">${svgR} Repetir</button>
+          ${esEntregado?`<button class="act-btn act-btn-recover" data-tecla="v" onclick="event.stopPropagation();recuperar('${p.id}')">${svgRec} Recuperar</button>`:''}
+          ${(ESTADOS_CANCELADOS.includes(p.estado)||p.estado==='Rechazado')?'':`<button class="act-btn act-btn-delete" data-tecla="supr" onclick="event.stopPropagation();abrirCancelar('${p.id}')">${svgD} Cancelar</button>`}
         </div></td>`;
       tr.addEventListener('click', () => abrirEditar(p.id));
       tbody.appendChild(tr);

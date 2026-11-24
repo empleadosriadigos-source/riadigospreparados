@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Laboratorio · Clientes</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="buscador-filtros.css?v=13"/>
+<link rel="stylesheet" href="buscador-filtros.css?v=14"/>
+<link rel="stylesheet" href="teclado.css?v=14"/>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
   :root{
@@ -200,7 +201,7 @@
     <button class="btn btn-primary btn-sm" onclick="abrirNuevaOS()">＋ Nueva obra social</button>
   </div>
   <div class="search-bar">
-    <input type="text" id="buscarOS" placeholder="Buscar obra social…" oninput="filtrarOS()"/>
+    <input type="text" id="buscarOS" data-buscador placeholder="Buscar obra social…" oninput="filtrarOS()"/>
   </div>
   <table class="list-table">
     <thead><tr><th>Nombre</th><th>Genérico</th><th>Recetario</th><th>Vencimiento</th><th>Validador</th></tr></thead>
@@ -361,7 +362,7 @@
     <div class="modal-body">
       <div class="field-group">
         <label>Buscar cliente</label>
-        <input type="text" id="fijarBuscar" placeholder="Escribí el nombre…" oninput="filtrarFijar()" autocomplete="off"/>
+        <input type="text" id="fijarBuscar" data-buscador placeholder="Escribí el nombre…" oninput="filtrarFijar()" autocomplete="off"/>
         <div id="fijarResultados" style="max-height:240px;overflow-y:auto;margin-top:8px;border:1px solid var(--border);border-radius:8px;display:none;"></div>
       </div>
     </div>
@@ -429,8 +430,9 @@
 
 <div id="toast"></div>
 
-<script src="supabase-shared.js?v=13"></script>
-<script src="comun.js?v=13"></script>
+<script src="supabase-shared.js?v=14"></script>
+<script src="comun.js?v=14"></script>
+<script src="teclado.js?v=14"></script>
 <script>
   // SB_URL, SB_KEY, sbAuth, SB_TOKEN, getAuthHeaders, sbGet/sbPost/sbPatch/sbDelete
   // vienen de supabase-shared.js. El login de esta pagina (auto-redirect sin
@@ -498,6 +500,21 @@
     }catch(e){ mostrarToast('Error al cargar: '+e.message,'err'); }
   }
 
+  // ── Atajos de teclado (teclado.js) ────────────────────────────────
+  Teclado.atajo({teclas:'1', etiqueta:'1 · 2 · 3', desc:'Inicio / Clientes / Obras sociales', accion:()=>cambiarPagina('inicio')});
+  Teclado.atajo({teclas:'2', accion:()=>cambiarPagina('clientes')});
+  Teclado.atajo({teclas:'3', accion:()=>cambiarPagina('obras')});
+  Teclado.atajo({teclas:'n', desc:'Nuevo (cliente fijado, cliente u obra social, según la pestaña)', accion:()=>{
+    if(paginaActual==='clientes') abrirNuevoCliente();
+    else if(paginaActual==='obras') abrirNuevaOS();
+    else abrirModalFijar();
+  }});
+  Teclado.atajo({teclas:'pagedown', etiqueta:'AvPág · RePág', desc:'Página siguiente / anterior', accion:()=>{
+    const b=document.getElementById(paginaActual==='obras'?'btnNextOS':'btnNextCli'); if(b && !b.disabled && paginaActual!=='inicio') b.click(); }});
+  Teclado.atajo({teclas:'pageup', accion:()=>{
+    const b=document.getElementById(paginaActual==='obras'?'btnPrevOS':'btnPrevCli'); if(b && !b.disabled && paginaActual!=='inicio') b.click(); }});
+  Teclado.ayuda('En esta página', 'Supr', 'En un cliente fijado: desfijarlo');
+
   // ── Navegación ────────────────────────────────────────────────────
   let paginaActual = 'inicio';
   function cambiarPagina(p){
@@ -520,7 +537,7 @@
       <div class="fijado-card" onclick="abrirDetalleCliente('${c.id}')">
         <div class="fijado-card-header">
           <div class="fijado-card-nombre">${escHtml(c.nombre)}</div>
-          <button class="btn-desfijar" onclick="desfijarCliente(event,'${fijados.find(f=>f.cliente_id===c.id)?.id}')" title="Desfijar">×</button>
+          <button class="btn-desfijar" data-tecla="supr" onclick="desfijarCliente(event,'${fijados.find(f=>f.cliente_id===c.id)?.id}')" title="Desfijar">×</button>
         </div>
         ${c.telefono?`<div class="fijado-card-info"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.29 6.29l.95-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>${escHtml(c.telefono)}</div>`:''}
         ${c.dni?`<div class="fijado-card-info"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>${escHtml(c.dni)}</div>`:''}
