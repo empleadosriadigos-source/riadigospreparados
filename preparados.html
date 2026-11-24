@@ -296,7 +296,7 @@
 
   let _filtrarTimeout=null;
   // Preparados anteriores: solo los que ya no están en el kanban
-  const ESTADOS_ANTERIORES=['Entregado','Cancelado','Cancelado por sucursal'];
+  const ESTADOS_ANTERIORES=['Entregado','Cancelado','Cancelado por sucursal','Rechazado'];
 
   function llenarFiltros(){
     const forma=document.getElementById('filtroForma'), suc=document.getElementById('filtroSucursal');
@@ -395,7 +395,7 @@
   }
 
   function pillEstado(estado){
-    const cls={'Sin precio':'pill-asignar','En laboratorio':'pill-lab','Listo para retirar':'pill-retirar','Entregado':'pill-entregado','Cancelado':'pill-cancelado','Cancelado por sucursal':'pill-cancelado'}[estado]||'pill-entregado';
+    const cls={'Sin precio':'pill-asignar','En laboratorio':'pill-lab','Listo para retirar':'pill-retirar','Entregado':'pill-entregado','Cancelado':'pill-cancelado','Cancelado por sucursal':'pill-cancelado','Rechazado':'pill-cancelado'}[estado]||'pill-entregado';
     return `<span class="pill-estado ${cls}">${escHtml(estado??'—')}</span>`;
   }
 
@@ -435,7 +435,7 @@
           <button class="act-btn act-btn-edit" onclick="event.stopPropagation();abrirEditar('${p.id}')">${svgE} Editar</button>
           <button class="act-btn act-btn-repeat" onclick="event.stopPropagation();abrirRepetir('${p.id}')">${svgR} Repetir</button>
           ${esEntregado?`<button class="act-btn act-btn-recover" onclick="event.stopPropagation();recuperar('${p.id}')">${svgRec} Recuperar</button>`:''}
-          ${ESTADOS_CANCELADOS.includes(p.estado)?'':`<button class="act-btn act-btn-delete" onclick="event.stopPropagation();abrirCancelar('${p.id}')">${svgD} Cancelar</button>`}
+          ${(ESTADOS_CANCELADOS.includes(p.estado)||p.estado==='Rechazado')?'':`<button class="act-btn act-btn-delete" onclick="event.stopPropagation();abrirCancelar('${p.id}')">${svgD} Cancelar</button>`}
         </div></td>`;
       tr.addEventListener('click', () => abrirEditar(p.id));
       tbody.appendChild(tr);
