@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Laboratorio · Clientes</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="buscador-filtros.css?v=13"/>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
   :root{
@@ -72,6 +73,7 @@
 
   /* ── Lista clientes/OS ──────────────────────────────────────────── */
   .search-bar{display:flex;gap:10px;margin-bottom:16px;}
+  .search-bar .con-filtros .buscador-input{padding:9px 110px 9px 14px;border-radius:8px;font-size:14px;}
   .search-bar input{flex:1;padding:9px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface);}
   .search-bar input:focus{outline:none;border-color:var(--brand);}
   .list-table{width:100%;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);border-collapse:collapse;overflow:hidden;}
@@ -159,7 +161,24 @@
     <button class="btn btn-primary btn-sm" onclick="abrirNuevoCliente()">＋ Nuevo cliente</button>
   </div>
   <div class="search-bar">
-    <input type="text" id="buscarCliente" placeholder="Buscar por nombre, DNI o teléfono…" oninput="filtrarClientes()"/>
+    <div class="con-filtros" id="cliFiltros">
+      <input type="text" id="buscarCliente" class="buscador-input" placeholder="Buscar por nombre, DNI o teléfono…" oninput="filtrarClientes()"/>
+      <button type="button" class="btn-filtros" onclick="toggleFiltros(this,event)" aria-label="Filtros"></button>
+      <div class="filtros-menu">
+        <label class="filtro-campo">Buscar en
+          <select id="cliBuscarEn" data-defecto="todo" onchange="filtrarClientes()">
+            <option value="todo">Todo</option>
+            <option value="nombre">Nombre</option>
+            <option value="dni">DNI</option>
+            <option value="telefono">Teléfono</option>
+          </select>
+        </label>
+        <label class="filtro-campo">Obra social
+          <select id="cliObraSocial" onchange="filtrarClientes()"><option value="">Todas</option><option value="__sin__">Sin obra social</option></select>
+        </label>
+        <button type="button" class="btn-limpiar" onclick="limpiarFiltros('cliFiltros');filtrarClientes()">✕ Limpiar filtros</button>
+      </div>
+    </div>
   </div>
   <table class="list-table">
     <thead><tr><th>Nombre</th><th>DNI</th><th>Teléfono</th><th>Obras sociales</th></tr></thead>
@@ -410,8 +429,8 @@
 
 <div id="toast"></div>
 
-<script src="supabase-shared.js?v=12"></script>
-<script src="comun.js?v=12"></script>
+<script src="supabase-shared.js?v=13"></script>
+<script src="comun.js?v=13"></script>
 <script>
   // SB_URL, SB_KEY, sbAuth, SB_TOKEN, getAuthHeaders, sbGet/sbPost/sbPatch/sbDelete
   // vienen de supabase-shared.js. El login de esta pagina (auto-redirect sin
@@ -470,6 +489,9 @@
       // Mapa cliente → obras sociales
       clienteOSMap = {};
       cosRows.forEach(r=>{ if(!clienteOSMap[r.cliente_id]) clienteOSMap[r.cliente_id]=[]; clienteOSMap[r.cliente_id].push(r.obras_sociales?.nombre||''); });
+      const selOS = document.getElementById('cliObraSocial');
+      selOS.querySelectorAll('option:not([value=""]):not([value="__sin__"])').forEach(o=>o.remove());
+      [...new Set(Object.values(clienteOSMap).flat().filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es')).forEach(n=>selOS.add(new Option(n,n)));
       renderFijados();
       renderTablaClientes();
       renderTablaOS();
@@ -624,15 +646,26 @@
   let paginaCliActual=0, filtroCliActual='';
   const POR_PAG = 30;
 
-  function filtrarClientes(){ filtroCliActual=document.getElementById('buscarCliente').value.toLowerCase(); paginaCliActual=0; renderTablaClientes(); }
+  function filtrarClientes(){ marcarFiltrosActivos('cliFiltros'); filtroCliActual=document.getElementById('buscarCliente').value; paginaCliActual=0; renderTablaClientes(); }
   function paginaCli(d){ paginaCliActual+=d; renderTablaClientes(); }
 
   function renderTablaClientes(){
-    const fil = clientes.filter(c=>
-      c.nombre.toLowerCase().includes(filtroCliActual)||
-      (c.dni||'').includes(filtroCliActual)||
-      (c.telefono||'').includes(filtroCliActual)
-    );
+    const modo = document.getElementById('cliBuscarEn').value;
+    const os = document.getElementById('cliObraSocial').value;
+    const {incluir} = palabrasBusqueda(filtroCliActual);
+    const digitos = t => String(t||'').replace(/\D/g,'');
+    const coincide = (c,w) => {
+      const nombre = normalizarTexto(c.nombre).includes(w);
+      const dni = digitos(w)!=='' && digitos(c.dni).includes(digitos(w));
+      const tel = digitos(w)!=='' && digitos(c.telefono).includes(digitos(w));
+      return modo==='nombre' ? nombre : modo==='dni' ? dni : modo==='telefono' ? tel : (nombre||dni||tel);
+    };
+    const fil = clientes.filter(c=>{
+      const oss = clienteOSMap[c.id]||[];
+      if(os==='__sin__' && oss.length) return false;
+      if(os && os!=='__sin__' && !oss.includes(os)) return false;
+      return incluir.every(w=>coincide(c,w));
+    });
     const total = fil.length;
     const ini = paginaCliActual*POR_PAG;
     const pag = fil.slice(ini, ini+POR_PAG);

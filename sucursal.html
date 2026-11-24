@@ -4,8 +4,9 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Portal de sucursal</title>
-<link rel="stylesheet" href="estilos.css?v=12"/>
-  <link rel="stylesheet" href="form-preparado.css?v=12"/>
+<link rel="stylesheet" href="estilos.css?v=13"/>
+  <link rel="stylesheet" href="buscador-filtros.css?v=13"/>
+  <link rel="stylesheet" href="form-preparado.css?v=13"/>
   <style>
   .topbar{background:#2C2C2C;padding:0 20px;display:flex;align-items:center;gap:10px;height:52px;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.18);}
   .topbar-brand{color:#fff;font-size:15px;font-weight:700;}
@@ -206,8 +207,30 @@
       <button class="modal-close" onclick="cerrarModal('modalHistorial')">✕</button>
     </div>
     <div class="modal-body">
-      <div class="field-group" style="margin-bottom:10px;">
-        <input type="text" id="histBuscarInput" placeholder="Buscar por cliente, forma, droga, cupón…" oninput="filtrarHistorial()" autocomplete="off"/>
+      <div class="con-filtros" id="histFiltros" style="margin-bottom:10px;">
+        <input type="text" id="histBuscarInput" class="buscador-input" placeholder="Buscar: finasteride minoxidil, #123, -droga…" oninput="filtrarHistorial()" autocomplete="off"/>
+        <button type="button" class="btn-filtros" onclick="toggleFiltros(this,event)" aria-label="Filtros"></button>
+        <div class="filtros-menu">
+          <label class="filtro-campo">Buscar en
+            <select id="histBuscarEn" data-defecto="todo" onchange="filtrarHistorial()">
+              <option value="todo">Todo</option>
+              <option value="cupon">Cupón</option>
+              <option value="cliente">Cliente</option>
+              <option value="droga">Droga</option>
+            </select>
+          </label>
+          <label class="filtro-campo">Estado
+            <select id="histEstado" onchange="filtrarHistorial()"><option value="">Todos</option></select>
+          </label>
+          <label class="filtro-campo">Forma
+            <select id="histForma" onchange="filtrarHistorial()"><option value="">Todas</option></select>
+          </label>
+          <div class="filtro-fechas">
+            <label class="filtro-campo">Desde <input type="date" id="histDesde" onchange="filtrarHistorial()"/></label>
+            <label class="filtro-campo">Hasta <input type="date" id="histHasta" onchange="filtrarHistorial()"/></label>
+          </div>
+          <button type="button" class="btn-limpiar" onclick="limpiarFiltros('histFiltros');filtrarHistorial()">✕ Limpiar filtros</button>
+        </div>
       </div>
       <div id="histResultados" style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto;"></div>
     </div>
@@ -396,11 +419,11 @@
   </div>
 </div>
 
-<script src="constantes.js?v=12"></script>
-<script src="supabase-shared.js?v=12"></script>
-<script src="comun.js?v=12"></script>
-<script src="form-preparado.js?v=12"></script>
-<script src="chat.js?v=12"></script>
+<script src="constantes.js?v=13"></script>
+<script src="supabase-shared.js?v=13"></script>
+<script src="comun.js?v=13"></script>
+<script src="form-preparado.js?v=13"></script>
+<script src="chat.js?v=13"></script>
 <script>
 let SUCURSAL_NOMBRE = null;
 
@@ -979,6 +1002,13 @@ const ESTADO_LABEL_HIST = {
 
 async function abrirModalHistorial(){
   document.getElementById('histBuscarInput').value = '';
+  const selEstado = document.getElementById('histEstado'), selForma = document.getElementById('histForma');
+  if(selEstado.options.length===1){
+    [...new Set(Object.values(ESTADO_LABEL_HIST).map(e=>e.txt))].forEach(t=>selEstado.add(new Option(t,t)));
+    FORMAS.forEach(f=>selForma.add(new Option(f,f)));
+  }
+  limpiarFiltros('histFiltros');
+  marcarFiltrosActivos('histFiltros');
   document.getElementById('histResultados').innerHTML = '<p class="hist-empty">Cargando…</p>';
   abrirModal('modalHistorial');
   try{
@@ -1000,14 +1030,30 @@ async function abrirModalHistorial(){
   }
 }
 function filtrarHistorial(){
-  const q = document.getElementById('histBuscarInput').value.trim().toLowerCase();
-  if(!q){ renderHistorial(historial); return; }
+  marcarFiltrosActivos('histFiltros');
+  const v = id => document.getElementById(id).value;
+  const modo = v('histBuscarEn'), estado = v('histEstado'), forma = v('histForma'), desde = v('histDesde'), hasta = v('histHasta');
+  const {incluir, excluir} = palabrasBusqueda(v('histBuscarInput'));
+  const drogasDe = p => p.componentes.map(c => normalizarTexto(c.droga_nombre));
+  const coincide = (p, w) => {
+    const cupon = /^#?\d+$/.test(w) && String(p.nro_cupon_nuevo ?? '') === w.replace('#','');
+    if(modo === 'cupon') return cupon;
+    if(modo === 'cliente') return normalizarTexto(p.cliente_nombre).includes(w);
+    if(modo === 'droga') return drogasDe(p).some(d => d.includes(w));
+    if(w[0] === '#') return cupon;
+    return cupon || String(p.nro_cupon_nuevo ?? '').includes(w) ||
+      normalizarTexto(p.cliente_nombre).includes(w) ||
+      normalizarTexto(p.forma_farmaceutica).includes(w) ||
+      normalizarTexto(p.observaciones).includes(w) ||
+      drogasDe(p).some(d => d.includes(w));
+  };
   renderHistorial(historial.filter(p =>
-    (p.cliente_nombre||'').toLowerCase().includes(q) ||
-    (p.forma_farmaceutica||'').toLowerCase().includes(q) ||
-    (p.observaciones||'').toLowerCase().includes(q) ||
-    (p.nro_cupon_nuevo!=null && String(p.nro_cupon_nuevo).includes(q)) ||
-    p.componentes.some(c => (c.droga_nombre||'').toLowerCase().includes(q))
+    (!estado || (ESTADO_LABEL_HIST[p.estado]?.txt || p.estado) === estado) &&
+    (!forma || p.forma_farmaceutica === forma) &&
+    (!desde || (p.fecha_recepcion || '') >= desde) &&
+    (!hasta || (p.fecha_recepcion || '') <= hasta) &&
+    incluir.every(w => coincide(p, w)) &&
+    !excluir.some(x => drogasDe(p).some(d => d.includes(x)))
   ));
 }
 function renderHistorial(lista){

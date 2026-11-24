@@ -4,7 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Laboratorio · Etiquetas</title>
-  <link rel="stylesheet" href="estilos.css?v=12"/>
+  <link rel="stylesheet" href="estilos.css?v=13"/>
+  <link rel="stylesheet" href="buscador-filtros.css?v=13"/>
   <style>
     :root{--bg:#F0EDE4;--surface:#FAFAF7;--border:#DDD8CC;--accent:#75A63D;--accent2:#68A9CC;--text:#1C2128;--muted:#6B7685;--danger:#C0392B;--radius:8px;--shadow:0 2px 8px rgba(0,0,0,0.09);}
     
@@ -13,8 +14,6 @@
     .nav-btn:hover{opacity:0.85;}
     .topbar-right{margin-left:auto;}
     .wrap{padding:20px;max-width:1100px;margin:0 auto;}
-    .search-wrap{flex:1;min-width:200px;}
-    .search-wrap input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);outline:none;}
     select{padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);outline:none;cursor:pointer;}
     .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;}
     .btn:hover:not(:disabled){opacity:0.85;}
@@ -113,14 +112,41 @@
 <div class="wrap">
   <div id="paso1">
     <div class="toolbar">
-      <div class="search-wrap"><input type="text" id="buscador" placeholder="Buscar por cliente, cupón o droga…" oninput="filtrar()"/></div>
-      <select id="filtroEstado" onchange="filtrar()">
-        <option value="En laboratorio">En laboratorio</option>
-        <option value="">Todos los estados</option>
-        <option value="Sin precio">Sin precio</option>
-        <option value="Listo para retirar">Listo para retirar</option>
-        <option value="Entregado">Entregado</option>
-      </select>
+      <div class="con-filtros" id="searchWrap">
+        <input type="text" id="buscador" class="buscador-input" placeholder="Buscar: finasteride minoxidil, #123, -droga…" oninput="filtrar()"/>
+        <button type="button" class="btn-filtros" onclick="toggleFiltros(this,event)" aria-label="Filtros"></button>
+        <div class="filtros-menu">
+          <label class="filtro-campo">Estado
+            <select id="filtroEstado" data-defecto="En laboratorio" onchange="filtrar()">
+              <option value="En laboratorio">En laboratorio</option>
+              <option value="">Todos</option>
+              <option value="Sin precio">Sin precio</option>
+              <option value="Listo para retirar">Listo para retirar</option>
+              <option value="Entregado">Entregado</option>
+            </select>
+          </label>
+          <label class="filtro-campo">Buscar en
+            <select id="filtroBuscarEn" data-defecto="todo" onchange="filtrar()">
+              <option value="todo">Todo</option>
+              <option value="cupon">Cupón</option>
+              <option value="cliente">Cliente</option>
+              <option value="droga">Droga</option>
+              <option value="telefono">Teléfono</option>
+            </select>
+          </label>
+          <label class="filtro-campo">Forma
+            <select id="filtroForma" onchange="filtrar()"><option value="">Todas</option></select>
+          </label>
+          <label class="filtro-campo">Sucursal
+            <select id="filtroSucursal" onchange="filtrar()"><option value="">Todas</option></select>
+          </label>
+          <div class="filtro-fechas">
+            <label class="filtro-campo">Desde <input type="date" id="filtroDesde" onchange="filtrar()"/></label>
+            <label class="filtro-campo">Hasta <input type="date" id="filtroHasta" onchange="filtrar()"/></label>
+          </div>
+          <button type="button" class="btn-limpiar" onclick="limpiarFiltros('searchWrap');filtrar()">✕ Limpiar filtros</button>
+        </div>
+      </div>
     </div>
     <div id="status"></div>
     <div class="table-wrap" id="tablaWrap" style="display:none;">
@@ -166,21 +192,27 @@
 
 </div><!-- /appRoot -->
 
-<script src="supabase-shared.js?v=12"></script>
-<script src="comun.js?v=12"></script>
+<script src="constantes.js?v=13"></script>
+<script src="supabase-shared.js?v=13"></script>
+<script src="comun.js?v=13"></script>
 <script>
   // Acceso a datos en supabase-shared.js; login, toasts, modales y formato en comun.js.
 
   let todos=[], seleccion=new Set();
   const TOPE_RESULTADOS = 500; // limite de seguridad para esta pantalla, que no pagina
 
-  function initApp(){ filtrar(); }
+  function initApp(){
+    FORMAS.forEach(f=>document.getElementById('filtroForma').add(new Option(f,f)));
+    ['San Martín',...SUCURSALES].forEach(x=>document.getElementById('filtroSucursal').add(new Option(x,x)));
+    filtrar();
+  }
 
   // Se mantiene como alias para no romper el resto de las llamadas existentes
   async function cargarTodo(){ seleccion.clear();actualizarContador(); await filtrar(); }
 
   let _etFiltrarTimeout=null;
   function filtrar(){
+    marcarFiltrosActivos('searchWrap');
     clearTimeout(_etFiltrarTimeout);
     return new Promise(resolve=>{
       _etFiltrarTimeout=setTimeout(async()=>{ await _filtrarExec(); resolve(); },200);
@@ -194,6 +226,7 @@
   async function _filtrarExec(){
     const q=document.getElementById('buscador').value.trim();
     const estado=document.getElementById('filtroEstado').value;
+    const v=idEl=>document.getElementById(idEl).value;
     const miToken=++_filtroToken;
 
     setStatus('<span class="spinner"></span> Buscando…');
@@ -202,7 +235,9 @@
       const h=getAuthHeaders();h['Content-Type']='application/json';
       const resp=await fetchConTimeout(`${SB_URL}/rpc/buscar_preparados`,{
         method:'POST',headers:h,
-        body:JSON.stringify({termino:q||null,filtro_estado:estado||null,pagina:1,por_pagina:TOPE_RESULTADOS})
+        body:JSON.stringify({termino:q||null,filtro_estado:estado||null,pagina:1,por_pagina:TOPE_RESULTADOS,
+          buscar_en:v('filtroBuscarEn'),fecha_desde:v('filtroDesde')||null,fecha_hasta:v('filtroHasta')||null,
+          filtro_sucursal:v('filtroSucursal')||null,filtro_forma:v('filtroForma')||null})
       });
       if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.message||`HTTP ${resp.status}`);}
       const filas=await resp.json();
