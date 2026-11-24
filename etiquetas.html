@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Laboratorio · Etiquetas</title>
-  <link rel="stylesheet" href="estilos.css?v=10"/>
+  <link rel="stylesheet" href="estilos.css?v=11"/>
   <style>
     :root{--bg:#F0EDE4;--surface:#FAFAF7;--border:#DDD8CC;--accent:#75A63D;--accent2:#68A9CC;--text:#1C2128;--muted:#6B7685;--danger:#C0392B;--radius:8px;--shadow:0 2px 8px rgba(0,0,0,0.09);}
     
@@ -166,8 +166,8 @@
 
 </div><!-- /appRoot -->
 
-<script src="supabase-shared.js?v=10"></script>
-<script src="comun.js?v=10"></script>
+<script src="supabase-shared.js?v=11"></script>
+<script src="comun.js?v=11"></script>
 <script>
   // Acceso a datos en supabase-shared.js; login, toasts, modales y formato en comun.js.
 
@@ -286,7 +286,7 @@
     sel.forEach(p=>{
       const div=document.createElement('div');div.className='config-list-item';div.dataset.id=p.id;div.dataset.uso=usoGlobalActual;
       const env=envasesDe(p);
-      div.innerHTML=`<div><div class="config-cupon">${fmtCupon(p)} · ${escHtml(p.cliente_nombre||'')}</div><div class="config-cliente">${escHtml(p.forma_farmaceutica??'')} ${p.cantidad_total!=null?p.cantidad_total+' '+escHtml(p.unidad??''):''}${env>1?' · '+env+' envases':''}${p.nro_receta?' · Receta: '+p.nro_receta:''}</div></div><div class="config-item-der"><label class="config-item-cant" title="Cuántas etiquetas imprimir de este preparado. Arranca en los envases reales y no modifica el preparado.">Unidades a imprimir <input type="number" class="cfg-cant" min="1" max="99" step="1" value="${env}" data-real="${env}" oninput="actualizarTotalEtiquetas()"/><span class="cant-real">de ${env} env.</span><button type="button" class="btn-cant-reset" title="Volver a los envases del preparado" onclick="resetCantEtiquetas(this)">↺</button></label><input type="text" class="cfg-vto config-item-vto" placeholder="MM/AA" maxlength="5" oninput="fmtVto(this)" onkeydown="vtoKeyDown(event,this)"/></div>`;
+      div.innerHTML=`<div><div class="config-cupon">${fmtCupon(p)} · ${escHtml(p.cliente_nombre||'')}</div><div class="config-cliente">${escHtml(p.forma_farmaceutica??'')} ${p.cantidad_total!=null?p.cantidad_total+' '+escHtml(p.unidad??''):''}${env>1?' · '+env+' envases':''}${p.nro_receta?' · Receta: '+p.nro_receta:''}</div></div><div class="config-item-der"><label class="config-item-cant">Unidades a imprimir <input type="number" class="cfg-cant" min="1" max="99" step="1" value="${env}" data-real="${env}" oninput="actualizarTotalEtiquetas()"/><span class="cant-real">de ${env} env.</span><button type="button" class="btn-cant-reset" title="Volver a los envases del preparado" onclick="resetCantEtiquetas(this)">↺</button></label><input type="text" class="cfg-vto config-item-vto" placeholder="MM/AA" maxlength="5" oninput="fmtVto(this)" onkeydown="vtoKeyDown(event,this)"/></div>`;
       cont.appendChild(div);
     });
     actualizarTotalEtiquetas();

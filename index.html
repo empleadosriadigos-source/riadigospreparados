@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Laboratorio</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
-  <link rel="stylesheet" href="estilos.css?v=10"/>
-  <link rel="stylesheet" href="form-preparado.css?v=10"/>
+  <link rel="stylesheet" href="estilos.css?v=11"/>
+  <link rel="stylesheet" href="form-preparado.css?v=11"/>
   <style>
     
     .nav-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;text-decoration:none;flex-shrink:0;color:#fff;}
@@ -337,7 +337,6 @@
 <div class="modal-overlay" id="modalRechazar">
   <div class="popup">
     <h3>¿Rechazar esta solicitud?</h3>
-    <p style="font-size:13px;color:var(--muted);margin-top:6px;">La sucursal va a ver que la rechazaste. Si querés explicarle por qué, escribile por el chat del preparado.</p>
     <div class="popup-acciones">
       <button class="btn btn-ghost" onclick="cerrarModal('modalRechazar')">Volver</button>
       <button class="btn btn-danger" onclick="confirmarRechazo()">Sí, rechazar</button>
@@ -353,7 +352,6 @@
       <button class="modal-close" onclick="cerrarModal('modalHistorialRechazados')">✕</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Todos los pedidos que rechazaste, con su chat para revisar por qué (los rechazados no se muestran en el cajón de notificaciones, quedan solo acá).</p>
       <div id="historialRechazadosLista" style="display:flex;flex-direction:column;gap:10px;max-height:65vh;overflow-y:auto;"></div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal('modalHistorialRechazados')">Cerrar</button></div>
@@ -451,7 +449,7 @@
       </div>
       <div class="field-row">
         <div class="field-group"><label>Para sucursal</label><select id="pSucursal"></select></div>
-        <div class="unidad-hint" style="align-self:center;">Si es para una sucursal, sale con su tag, se imprime como pedido de sucursal y la sucursal lo ve en su portal.</div>
+        <div></div>
       </div>
       <div class="field-group"><label>Observaciones</label><textarea id="pObs" rows="2"></textarea></div>
 
@@ -610,7 +608,6 @@
   <div class="modal modal-sm">
     <div class="modal-header"><h2>Nueva droga</h2><button class="modal-close" onclick="cerrarModal('modalDroga')">✕</button></div>
     <div class="modal-body">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Revisá el nombre antes de crear.</p>
       <div class="field-group"><label>Nombre <span style="color:var(--danger)">*</span></label><input type="text" id="dNombre"/></div>
     </div>
     <div class="modal-footer">
@@ -626,7 +623,6 @@
     <div class="modal-header"><h2>Confirmar entrega</h2><button class="modal-close" onclick="cerrarModal('modalEntregar')">✕</button></div>
     <div class="modal-body">
       <p style="font-size:14px;margin-bottom:6px;">¿Confirmar entrega del cupón <strong id="entregarCupon"></strong>?</p>
-      <p style="font-size:12px;color:var(--muted);">El preparado pasará al baúl y desaparecerá del kanban.</p>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="cerrarModal('modalEntregar')">Cancelar</button>
@@ -706,11 +702,11 @@
 
 </div><!-- /appRoot -->
 
-<script src="constantes.js?v=10"></script>
-<script src="supabase-shared.js?v=10"></script>
-<script src="comun.js?v=10"></script>
-<script src="form-preparado.js?v=10"></script>
-<script src="chat.js?v=10"></script>
+<script src="constantes.js?v=11"></script>
+<script src="supabase-shared.js?v=11"></script>
+<script src="comun.js?v=11"></script>
+<script src="form-preparado.js?v=11"></script>
+<script src="chat.js?v=11"></script>
 <script>
   // Acceso a datos (sbGet/sbPost/…) en supabase-shared.js; login, toasts,
   // modales y formato (escHtml, fmtFecha, fmtCupon) en comun.js.

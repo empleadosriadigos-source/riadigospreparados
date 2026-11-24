@@ -4,8 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Laboratorio · Preparados anteriores</title>
-  <link rel="stylesheet" href="estilos.css?v=10"/>
-  <link rel="stylesheet" href="form-preparado.css?v=10"/>
+  <link rel="stylesheet" href="estilos.css?v=11"/>
+  <link rel="stylesheet" href="form-preparado.css?v=11"/>
   <style>
     
     .nav-btn:hover{opacity:0.85;}
@@ -111,7 +111,7 @@
     Volver al inicio
   </a>
   <div class="topbar-right">
-    <button class="btn-act" onclick="abrirModalFusionar()" title="Herramienta temporal para corregir clientes duplicados">🔧 Fusionar clientes</button>
+    <button class="btn-act" onclick="abrirModalFusionar()">🔧 Fusionar clientes</button>
     <span class="user-chip" id="userNombre"></span>
     <button class="btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
     <button class="btn-act" onclick="cargarTodo()">↺ Actualizar</button>
@@ -175,7 +175,6 @@
         <input type="number" id="rCuponViejo" class="cupon-input" placeholder="Número de talonario" min="1" style="display:none;"/>
       </div>
       <div class="modal-sep"></div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Se copiará con fecha de hoy.</p>
       <div class="field-group">
         <label>¿Mismo cliente?</label>
         <div style="display:flex;gap:14px;font-size:13px;">
@@ -205,7 +204,7 @@
 <div class="modal-overlay" id="modalDroga">
   <div class="modal modal-sm">
     <div class="modal-header"><h2>Nueva droga</h2><button class="modal-close" onclick="cerrarModal('modalDroga')">✕</button></div>
-    <div class="modal-body"><p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Revisá el nombre antes de crear.</p><div class="field-group"><label>Nombre <span style="color:var(--danger)">*</span></label><input type="text" id="dNombre"/></div></div>
+    <div class="modal-body"><div class="field-group"><label>Nombre <span style="color:var(--danger)">*</span></label><input type="text" id="dNombre"/></div></div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal('modalDroga')">Cancelar</button><button class="btn btn-primary" id="btnGuardarDroga" onclick="guardarDroga()">Crear droga</button></div>
   </div>
 </div>
@@ -229,7 +228,6 @@
   <div class="modal modal-sm">
     <div class="modal-header"><h2>🔧 Fusionar clientes</h2><button class="modal-close" onclick="cerrarModal('modalFusionar')">✕</button></div>
     <div class="modal-body">
-      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Herramienta temporal para corregir clientes duplicados: mueve todos los preparados de un cliente hacia otro y, si querés, elimina al de origen. Ej: "Alicia Bonano" (mal) → "Bonomo Alicia" (bien).</p>
       <div class="field-group ss-wrap">
         <label>Cliente de origen (el que está mal / duplicado)</label>
         <input type="text" id="fusOrigenInput" placeholder="Buscar cliente…" oninput="filtrarSSFusion('origen')" onfocus="abrirSSFusion('origen')" autocomplete="off"/>
@@ -258,10 +256,10 @@
 
 </div><!-- /appRoot -->
 
-<script src="constantes.js?v=10"></script>
-<script src="supabase-shared.js?v=10"></script>
-<script src="comun.js?v=10"></script>
-<script src="form-preparado.js?v=10"></script>
+<script src="constantes.js?v=11"></script>
+<script src="supabase-shared.js?v=11"></script>
+<script src="comun.js?v=11"></script>
+<script src="form-preparado.js?v=11"></script>
 <script>
   // Acceso a datos en supabase-shared.js; login, toasts, modales y formato en comun.js.
 

@@ -78,7 +78,7 @@ function aplicarSucursalDeCliente(pref,cli){
   if(cli && cli.sucursal){
     if(![...sel.options].some(o=>o.value===cli.sucursal)){ const o=document.createElement('option'); o.value=o.textContent=cli.sucursal; sel.appendChild(o); }
     sel.value=cli.sucursal; sel.style.display='none';
-    info.innerHTML=`<span class="badge-sucursal">${escHtml(cli.sucursal)}</span> <span>siempre, por ser el cliente de la sucursal</span>`;
+    info.innerHTML=`<span class="badge-sucursal">${escHtml(cli.sucursal)}</span>`;
     info.style.display='';
   } else { sel.style.display=''; info.style.display='none'; }
   // Teléfono: no es obligatorio para el cliente de una sucursal.
@@ -696,12 +696,10 @@ let prepACancelar = null;
   <div class="modal modal-sm">
     <div class="modal-header"><h2>Cancelar preparado</h2><button class="modal-close" onclick="cerrarModal('modalCancelar')">✕</button></div>
     <div class="modal-body">
-      <p style="font-size:14px;margin-bottom:6px;">¿Cancelar el cupón <strong id="cancelarCupon"></strong>?</p>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">No se borra: queda en Preparados anteriores con estado <strong>Cancelado</strong>.</p>
+      <p style="font-size:14px;margin-bottom:14px;">¿Cancelar el cupón <strong id="cancelarCupon"></strong>?</p>
       <div class="field-group" style="margin-bottom:0;">
         <label>Razón de la cancelación (opcional)</label>
         <textarea id="cancelarRazon" rows="3" placeholder="Ej.: el cliente ya no lo necesita"></textarea>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Se agrega a las observaciones del preparado.</div>
       </div>
     </div>
     <div class="modal-footer">
