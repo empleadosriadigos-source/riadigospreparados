@@ -11,13 +11,23 @@
     .nav-btn:hover{opacity:0.85;}
     .topbar-right{margin-left:auto;}
     .wrap{padding:20px;max-width:1400px;margin:0 auto;}
-    .search-wrap{flex:1;min-width:240px;}
-    .search-wrap input{width:100%;padding:9px 14px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);outline:none;}
+    .search-wrap{flex:1;min-width:240px;position:relative;}
+    .search-wrap #buscador{width:100%;padding:9px 110px 9px 14px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);outline:none;}
+    .btn-filtros{position:absolute;right:4px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:6px;padding:5px 10px;border:none;border-left:1px solid var(--border);border-radius:0 4px 4px 0;background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;}
+    .btn-filtros:hover,.btn-filtros.abierto{color:var(--text);}
+    .btn-filtros.activo{color:var(--accent2);}
+    .filtros-badge{display:none;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--accent2);color:#fff;font-size:11px;line-height:18px;text-align:center;}
+    .btn-filtros.activo .filtros-badge{display:inline-block;}
+    .filtros-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:20;width:300px;max-width:calc(100vw - 24px);padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);flex-direction:column;gap:10px;}
+    .filtros-menu.abierto{display:flex;}
+    .filtro-campo{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);}
+    .filtro-campo select,.filtro-campo input{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:normal;background:var(--bg);color:var(--text);outline:none;}
+    .filtro-fechas{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;}
+    .filtro-fechas .filtro-campo{min-width:0;}
+    .filtro-campo input[type=date]{min-width:0;box-sizing:border-box;padding:7px 6px;}
     select{padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);outline:none;cursor:pointer;}
     .count{font-size:12px;color:var(--muted);}
-    .filtro-fecha{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);}
-    .filtro-fecha input{padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);outline:none;}
-    .btn-limpiar{padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--muted);cursor:pointer;}
+    .btn-limpiar{align-self:flex-end;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:none;color:var(--muted);cursor:pointer;}
     .btn-limpiar:hover{color:var(--text);}
     table{width:100%;border-collapse:collapse;font-size:13px;}
     thead{background:#EDEAE0;}
@@ -124,19 +134,35 @@
 
 <div class="wrap">
   <div class="toolbar">
-    <div class="search-wrap"><input type="text" id="buscador" placeholder="Buscar: finasteride minoxidil, #123, -droga…" oninput="filtrar()"/></div>
-    <select id="filtroBuscarEn" onchange="filtrar()">
-      <option value="todo">Buscar en todo</option>
-      <option value="cupon">Cupón</option>
-      <option value="cliente">Cliente</option>
-      <option value="droga">Droga</option>
-      <option value="telefono">Teléfono</option>
-    </select>
-    <select id="filtroForma" onchange="filtrar()"><option value="">Todas las formas</option></select>
-    <select id="filtroSucursal" onchange="filtrar()"><option value="">Todas las sucursales</option></select>
-    <label class="filtro-fecha">Desde <input type="date" id="filtroDesde" onchange="filtrar()"/></label>
-    <label class="filtro-fecha">Hasta <input type="date" id="filtroHasta" onchange="filtrar()"/></label>
-    <button class="btn-limpiar" id="btnLimpiarFiltros" onclick="limpiarFiltros()">✕ Limpiar</button>
+    <div class="search-wrap" id="searchWrap">
+      <input type="text" id="buscador" placeholder="Buscar: finasteride minoxidil, #123, -droga…" oninput="filtrar()"/>
+      <button type="button" class="btn-filtros" id="btnFiltros" onclick="toggleFiltros(event)" aria-label="Filtros">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
+        Filtros<span class="filtros-badge" id="filtrosBadge"></span>
+      </button>
+      <div class="filtros-menu" id="filtrosMenu">
+        <label class="filtro-campo">Buscar en
+          <select id="filtroBuscarEn" onchange="filtrar()">
+            <option value="todo">Todo</option>
+            <option value="cupon">Cupón</option>
+            <option value="cliente">Cliente</option>
+            <option value="droga">Droga</option>
+            <option value="telefono">Teléfono</option>
+          </select>
+        </label>
+        <label class="filtro-campo">Forma
+          <select id="filtroForma" onchange="filtrar()"><option value="">Todas</option></select>
+        </label>
+        <label class="filtro-campo">Sucursal
+          <select id="filtroSucursal" onchange="filtrar()"><option value="">Todas</option></select>
+        </label>
+        <div class="filtro-fechas">
+          <label class="filtro-campo">Desde <input type="date" id="filtroDesde" onchange="filtrar()"/></label>
+          <label class="filtro-campo">Hasta <input type="date" id="filtroHasta" onchange="filtrar()"/></label>
+        </div>
+        <button type="button" class="btn-limpiar" id="btnLimpiarFiltros" onclick="limpiarFiltros()">✕ Limpiar filtros</button>
+      </div>
+    </div>
     <span class="count" id="countBadge"></span>
   </div>
   <div id="banderaNovedades" style="display:none;background:#FDF3D8;color:#966B0B;border:1px solid #F0D999;border-radius:6px;padding:8px 12px;font-size:13px;margin-bottom:10px;align-items:center;justify-content:space-between;gap:10px;">
@@ -311,7 +337,27 @@
     filtrar();
   }
 
+  function toggleFiltros(ev){
+    ev.stopPropagation();
+    const abierto=document.getElementById('filtrosMenu').classList.toggle('abierto');
+    document.getElementById('btnFiltros').classList.toggle('abierto',abierto);
+  }
+  function cerrarFiltros(){
+    document.getElementById('filtrosMenu').classList.remove('abierto');
+    document.getElementById('btnFiltros').classList.remove('abierto');
+  }
+  document.addEventListener('click',e=>{ if(!document.getElementById('searchWrap')?.contains(e.target)) cerrarFiltros(); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') cerrarFiltros(); });
+
+  function marcarFiltrosActivos(){
+    const n=['filtroForma','filtroSucursal','filtroDesde','filtroHasta'].filter(i=>document.getElementById(i).value).length
+      + (document.getElementById('filtroBuscarEn').value!=='todo'?1:0);
+    document.getElementById('btnFiltros').classList.toggle('activo',n>0);
+    document.getElementById('filtrosBadge').textContent=n||'';
+  }
+
   function filtrar(resetPagina=true){
+    marcarFiltrosActivos();
     clearTimeout(_filtrarTimeout);
     if(resetPagina) paginaActual=1;
     return new Promise(resolve=>{
