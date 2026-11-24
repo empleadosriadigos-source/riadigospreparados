@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Laboratorio</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
-  <link rel="stylesheet" href="estilos.css?v=8"/>
-  <link rel="stylesheet" href="form-preparado.css?v=8"/>
+  <link rel="stylesheet" href="estilos.css?v=10"/>
+  <link rel="stylesheet" href="form-preparado.css?v=10"/>
   <style>
     
     .nav-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;text-decoration:none;flex-shrink:0;color:#fff;}
@@ -706,11 +706,11 @@
 
 </div><!-- /appRoot -->
 
-<script src="constantes.js?v=8"></script>
-<script src="supabase-shared.js?v=8"></script>
-<script src="comun.js?v=8"></script>
-<script src="form-preparado.js?v=8"></script>
-<script src="chat.js?v=8"></script>
+<script src="constantes.js?v=10"></script>
+<script src="supabase-shared.js?v=10"></script>
+<script src="comun.js?v=10"></script>
+<script src="form-preparado.js?v=10"></script>
+<script src="chat.js?v=10"></script>
 <script>
   // Acceso a datos (sbGet/sbPost/…) en supabase-shared.js; login, toasts,
   // modales y formato (escHtml, fmtFecha, fmtCupon) en comun.js.
@@ -1755,7 +1755,7 @@
     if(!modoStock && !cliId){mostrarToast('Seleccioná un cliente','err');return;}
     const telInput=document.getElementById('pTelefono');
     const telVal=telInput.value.trim();
-    if(cliId && !telVal){telInput.classList.add('field-invalid');mostrarToast('Completá el teléfono del cliente','err');return;}
+    if(cliId && !telVal && !clienteEsSucursal(cliId)){telInput.classList.add('field-invalid');mostrarToast('Completá el teléfono del cliente','err');return;}
     telInput.classList.remove('field-invalid');
     // Cantidad de envases: campo único, compartido entre preparado normal y de stock. No
     // modifica la fórmula: cantidad total y componentes se guardan por envase.
@@ -1765,7 +1765,7 @@
       if(cliId){
         await asegurarClientes();
         const cliActual=clientes.find(c=>c.id===cliId);
-        if(cliActual && (cliActual.telefono||'')!==telVal){
+        if(cliActual && telVal && (cliActual.telefono||'')!==telVal){
           await sbPatch('clientes',cliId,{telefono:telVal});
           cliActual.telefono=telVal;
           preparados.filter(p=>p.cliente_id===cliId).forEach(p=>{p.cliente_telefono=telVal;});
@@ -1829,6 +1829,7 @@
     document.getElementById('pFecha').value=new Date().toISOString().slice(0,10);
     document.getElementById('pEstado').value='Sin precio';
     document.getElementById('pSucursal').value='';
+    aplicarSucursalDeCliente('p', null);
     document.getElementById('compRowsNuevo').innerHTML='';
     document.getElementById('unidadGlobalNuevo').value='';
     document.getElementById('tipoCuponNuevo').checked=true;
