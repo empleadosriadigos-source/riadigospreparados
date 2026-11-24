@@ -39,7 +39,7 @@ const FORMA_UNIDAD_OPCIONES = {'Crema':['g','mg','UI'],'Crema de enjuague':['g',
 // preparados.origen_sucursal). Un preparado con origen_sucursal sale con el tag,
 // se imprime como pedido de sucursal y la sucursal lo ve en su portal, aunque lo
 // haya cargado San Martín.
-const SUCURSALES = ['Constitución'];
+const SUCURSALES = ['Constitución','Alem','Güemes'];
 // El cliente que representa a cada sucursal se marca en la base (clientes.sucursal,
-// ej. 'MRL (Sucursal Constitución)' → 'Constitución'): sus preparados llevan siempre
+// 'MRL (Sucursal Constitución)' → Constitución, 'Sucursal Alem' → Alem, 'Sucursal Güemes' → Güemes): sus preparados llevan siempre
 // esa sucursal, lo garantiza el trigger trg_asignar_sucursal_por_cliente.

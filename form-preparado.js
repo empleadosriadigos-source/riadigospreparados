@@ -72,12 +72,21 @@ function renderSSCliente(dd,fil,pref){
 function aplicarSucursalDeCliente(pref,cli){
   const sel=document.getElementById(`${pref}Sucursal`);
   if(!sel) return;
+  // Texto fijo que reemplaza al selector cuando el cliente es una sucursal.
+  let info=document.getElementById(`${pref}SucursalFija`);
+  if(!info){ info=document.createElement('div'); info.id=`${pref}SucursalFija`; info.className='sucursal-fija'; sel.insertAdjacentElement('afterend',info); }
   if(cli && cli.sucursal){
     if(![...sel.options].some(o=>o.value===cli.sucursal)){ const o=document.createElement('option'); o.value=o.textContent=cli.sucursal; sel.appendChild(o); }
-    sel.value=cli.sucursal; sel.disabled=true;
-    sel.title='Este cliente es la sucursal '+cli.sucursal+': sus preparados siempre llevan ese tag';
-  } else { sel.disabled=false; sel.title=''; }
+    sel.value=cli.sucursal; sel.style.display='none';
+    info.innerHTML=`<span class="badge-sucursal">${escHtml(cli.sucursal)}</span> <span>siempre, por ser el cliente de la sucursal</span>`;
+    info.style.display='';
+  } else { sel.style.display=''; info.style.display='none'; }
+  // Teléfono: no es obligatorio para el cliente de una sucursal.
+  const req=document.getElementById(`${pref}TelefonoReq`);
+  if(req) req.style.visibility = (cli && cli.sucursal) ? 'hidden' : '';
 }
+// ¿El cliente elegido en el formulario {pref} es una sucursal?
+function clienteEsSucursal(cliId){ const c=cliId && clientes.find(x=>x.id===cliId); return !!(c && c.sucursal); }
 // Opciones del selector "Para sucursal".
 function opcionesSucursalHtml(){
   return '<option value="">— No (San Martín) —</option>'+(typeof SUCURSALES!=='undefined'?SUCURSALES:[]).map(s=>`<option value="${escHtml(s)}">${escHtml(s)}</option>`).join('');
@@ -456,7 +465,7 @@ let prepActual = null;
           </div>
         </div>
         <div class="field-group">
-          <label>Teléfono <span style="color:var(--danger)">*</span></label>
+          <label>Teléfono <span style="color:var(--danger)" id="eTelefonoReq">*</span></label>
           <input type="text" id="eTelefono" placeholder="Teléfono del cliente" oninput="this.classList.remove('field-invalid')"/>
         </div>
       </div>
@@ -573,7 +582,7 @@ async function guardarEdicion(){
   const cliId=document.getElementById('eClienteId').value;
   const telInput=document.getElementById('eTelefono');
   const telVal=telInput.value.trim();
-  if(cliId && !telVal){telInput.classList.add('field-invalid');mostrarToast('Completá el teléfono del cliente','err');return;}
+  if(cliId && !telVal && !clienteEsSucursal(cliId)){telInput.classList.add('field-invalid');mostrarToast('Completá el teléfono del cliente','err');return;}
   telInput.classList.remove('field-invalid');
   // Chequeo de concurrencia: si sucursal cambió el estado mientras este
   // modal seguía abierto (ej. confirmó o canceló el pedido), el
@@ -597,7 +606,7 @@ async function guardarEdicion(){
     if(cliId){
       await asegurarClientes();
       const cliActual=clientes.find(c=>c.id===cliId);
-      if(cliActual && (cliActual.telefono||'')!==telVal){
+      if(cliActual && telVal && (cliActual.telefono||'')!==telVal){
         await sbPatch('clientes',cliId,{telefono:telVal});
         cliActual.telefono=telVal;
       }

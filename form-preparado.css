@@ -27,3 +27,5 @@
 .stock-chip-seleccionada{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--accent);background:var(--accent-bg,#F0F7FF);color:var(--accent);border-radius:20px;padding:8px 16px;font-size:14px;font-weight:700;cursor:pointer;}
 .stock-chip-seleccionada::after{content:'✎ cambiar';font-weight:400;font-size:11px;opacity:.75;margin-left:4px;}
 #eFormulaStockNombre::after{content:none;}
+.sucursal-fija{display:flex;align-items:center;gap:8px;min-height:38px;font-size:12px;color:var(--muted);}
+.sucursal-fija .badge-sucursal{display:inline-block;background:#F0E6FA;color:#6B3FA0;border:1px solid #D9C2ED;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:2px 8px;border-radius:20px;white-space:nowrap;margin-left:6px;}
