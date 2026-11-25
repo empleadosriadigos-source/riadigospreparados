@@ -245,12 +245,14 @@ const Teclado = (() => {
     const dd = w ? w.querySelector('.ss-dropdown') : (input.nextElementSibling?.classList.contains('ss-dropdown') ? input.nextElementSibling : null);
     return dd;
   }
-  function moverOpcion(dd, d){
+  function moverOpcion(dd, d, sinVuelta = false){
     const ops = [...dd.querySelectorAll(SEL_OPCION)];
     if(!ops.length) return;
     let i = ops.findIndex(o => o.classList.contains('ss-activa'));
     ops.forEach(o => o.classList.remove('ss-activa'));
-    i = i < 0 ? (d > 0 ? 0 : ops.length - 1) : (i + d + ops.length) % ops.length;
+    if(i < 0) i = d > 0 ? 0 : ops.length - 1;
+    else if(sinVuelta) i = Math.max(0, Math.min(ops.length - 1, i + d));
+    else i = (i + d + ops.length) % ops.length;
     ops[i].classList.add('ss-activa');
     ops[i].scrollIntoView({block:'nearest'});
   }
@@ -269,8 +271,18 @@ const Teclado = (() => {
     const abierto = dd.classList.contains('open');
     if(c === 'arrowdown' || c === 'arrowup'){
       e.preventDefault();
-      if(!abierto){ input.dispatchEvent(new Event('input', {bubbles:true})); return true; }
+      if(!abierto){
+        // La droga vacía no abre la lista al escribir; con ↓ muestra las primeras.
+        if(input.classList.contains('ss-input') && !input.value.trim() && typeof abrirSSComp === 'function') abrirSSComp(input, true);
+        else input.dispatchEvent(new Event('input', {bubbles:true}));
+        return true;
+      }
       moverOpcion(dd, c === 'arrowdown' ? 1 : -1);
+      return true;
+    }
+    if(abierto && (c === 'pagedown' || c === 'pageup')){
+      e.preventDefault();
+      for(let i = 0; i < 5; i++) moverOpcion(dd, c === 'pagedown' ? 1 : -1, true);
       return true;
     }
     if(!abierto) return false;
@@ -279,6 +291,7 @@ const Teclado = (() => {
       dd.classList.remove('open');
       return true;
     }
+    if(c === 'shift+tab'){ dd.classList.remove('open'); return false; }
     if(c === 'enter' || c === 'tab'){
       const act = dd.querySelector('.ss-activa') || (c === 'enter' ? dd.querySelector('.ss-option') : null);
       if(!act){
@@ -336,7 +349,8 @@ const Teclado = (() => {
     ['Ventanas y formularios', [
       ['Ctrl+Enter · Ctrl+S', 'Guardar o confirmar la ventana abierta'],
       ['Esc', 'Cerrar (si hay cambios, pide apretar Esc otra vez)'],
-      ['↑ ↓ y Enter', 'Elegir en la lista de clientes o drogas'],
+      ['↑ ↓ y Enter', 'Elegir en una lista desplegable (clientes, drogas…); Tab o Esc la cierran'],
+      ['← →', 'Moverse entre botones de un mismo grupo (fórmulas de stock, uso, vencimiento)'],
       ['Enter', 'En un componente: cantidad → unidad → droga siguiente (agrega una fila al final)'],
     ]],
   ];
@@ -450,7 +464,7 @@ const Teclado = (() => {
     }
 
     // Desplegables de cliente y droga
-    if(campo && t.tagName === 'INPUT' && ['arrowdown','arrowup','enter','tab'].includes(c)){
+    if(campo && t.tagName === 'INPUT' && ['arrowdown','arrowup','pagedown','pageup','enter','tab','shift+tab'].includes(c)){
       if(teclaEnDesplegable(e, t, c)) return;
     }
     // Componentes del formulario
@@ -487,6 +501,24 @@ const Teclado = (() => {
     // Elementos clicables que no son botones
     if(!campo && (c === 'enter' || c === 'espacio') && t.matches?.(SEL_CLICK)){
       e.preventDefault(); t.click(); return;
+    }
+
+    // Grupos de botones (fórmulas de stock, uso, vencimiento, vista…): ← → (y ↑ ↓) entre ellos
+    if(t.tagName === 'BUTTON' && !item && /^arrow(left|right|up|down)$/.test(c)){
+      const grupo = [...t.parentElement.children].filter(n => n.tagName === 'BUTTON' && visible(n) && !n.disabled);
+      const vertical = c === 'arrowup' || c === 'arrowdown';
+      if(grupo.length >= 2 && (!vertical || t.parentElement.matches('.stock-picker-grid'))){
+        e.preventDefault();
+        const i = grupo.indexOf(t), d = (c === 'arrowright' || c === 'arrowdown') ? 1 : -1;
+        let j = i + d;
+        if(vertical){ // misma columna de la grilla
+          const x = t.getBoundingClientRect().left;
+          const cand = grupo.filter(n => Math.abs(n.getBoundingClientRect().left - x) < 4);
+          j = grupo.indexOf(cand[cand.indexOf(t) + d]);
+        }
+        if(j >= 0 && grupo[j]) enfocar(grupo[j]);
+        return;
+      }
     }
 
     // Atajos de la página
@@ -578,10 +610,27 @@ const Teclado = (() => {
   document.addEventListener('mousedown', e => { if(!itemDe(e.target)) ultimoItemId = null; }, true);
   document.addEventListener('input', e => { const ov = e.target.closest?.(SEL_OVERLAY); if(ov && ov !== document.getElementById('atajosOverlay') && !e.target.matches(SEL_BUSCADOR)) ov._sucio = true; }, true);
   // Pasar el mouse por una opción del desplegable la marca, para que Enter elija la misma.
-  document.addEventListener('mouseover', e => {
+  document.addEventListener('mousemove', e => {
     const op = e.target.closest?.(SEL_OPCION); if(!op) return;
     op.parentElement.querySelectorAll('.ss-activa').forEach(o => o.classList.remove('ss-activa'));
     op.classList.add('ss-activa');
+  });
+  // Una lista desplegable o el menú de filtros se cierran cuando el foco se va a otro lado
+  // (Tab, Shift+Tab, clic, o un atajo que enfoca otra cosa).
+  document.addEventListener('focusout', e => {
+    const el = e.target;
+    setTimeout(() => {
+      const ahora = document.activeElement;
+      if(el.tagName === 'INPUT'){
+        const dd = desplegableDe(el);
+        if(dd && dd.classList.contains('open') && ahora !== el && !dd.contains(ahora)) dd.classList.remove('open');
+      }
+      const wrap = el.closest?.('.con-filtros');
+      const menu = wrap?.querySelector('.filtros-menu.abierto');
+      if(menu && ahora && ahora !== document.body && !wrap.contains(ahora)){
+        if(typeof cerrarFiltros === 'function') cerrarFiltros(); else menu.classList.remove('abierto');
+      }
+    }, 0);
   });
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
 
