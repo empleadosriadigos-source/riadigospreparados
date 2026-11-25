@@ -4,7 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Laboratorio · Reporte de drogas</title>
-  <link rel="stylesheet" href="estilos.css?v=13"/>
+  <link rel="stylesheet" href="estilos.css?v=15"/>
+  <link rel="stylesheet" href="teclado.css?v=15"/>
   <style>
     :root{--bg:#F0EDE4;--surface:#FAFAF7;--border:#DDD8CC;--accent:#75A63D;--accent2:#68A9CC;--text:#1C2128;--muted:#6B7685;--danger:#C0392B;--radius:8px;--shadow:0 2px 8px rgba(0,0,0,0.09);}
     
@@ -132,12 +133,20 @@
 
 </div><!-- /appRoot -->
 
-<script src="supabase-shared.js?v=13"></script>
-<script src="comun.js?v=13"></script>
+<script src="supabase-shared.js?v=15"></script>
+<script src="comun.js?v=15"></script>
+<script src="teclado.js?v=15"></script>
 <script>
   // Acceso a datos en supabase-shared.js; login, toasts, modales y formato en comun.js.
 
   let _datos=[];
+
+  // ── Atajos de teclado (teclado.js) ───────────────────────────────────
+  Teclado.navegacion({k:['index.html','Kanban'], p:['preparados.html','Preparados anteriores'], e:['etiquetas.html','Etiquetas']});
+  Teclado.atajo({teclas:['ctrl+enter','enter'], etiqueta:'Ctrl+Enter', desc:'Generar el reporte', enCampo:true,
+    cuando:()=>!document.activeElement || document.activeElement===document.body || document.activeElement.type==='date' || document.activeElement.tagName==='INPUT',
+    accion:()=>document.getElementById('btnGenerar').click()});
+  Teclado.atajo({teclas:'x', desc:'Descargar Excel', cuando:()=>{ const r=document.getElementById('resultado'); return !!r && r.offsetParent!==null; }, accion:()=>descargarExcel()});
 
   function initApp(){
     const hoy=new Date();const ini=new Date(hoy.getFullYear(),hoy.getMonth(),1);

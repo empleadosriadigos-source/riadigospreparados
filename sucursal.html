@@ -4,9 +4,10 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Portal de sucursal</title>
-<link rel="stylesheet" href="estilos.css?v=13"/>
-  <link rel="stylesheet" href="buscador-filtros.css?v=13"/>
-  <link rel="stylesheet" href="form-preparado.css?v=13"/>
+<link rel="stylesheet" href="estilos.css?v=15"/>
+  <link rel="stylesheet" href="buscador-filtros.css?v=15"/>
+  <link rel="stylesheet" href="form-preparado.css?v=15"/>
+  <link rel="stylesheet" href="teclado.css?v=15"/>
   <style>
   .topbar{background:#2C2C2C;padding:0 20px;display:flex;align-items:center;gap:10px;height:52px;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.18);}
   .topbar-brand{color:#fff;font-size:15px;font-weight:700;}
@@ -354,7 +355,7 @@
     <div class="modal-body">
       <div id="cliVistaLista">
         <div class="field-group" style="margin-bottom:10px;">
-          <input type="text" id="cliBuscarInput" placeholder="Buscar cliente…" oninput="filtrarClientesModal()" autocomplete="off"/>
+          <input type="text" id="cliBuscarInput" data-buscador placeholder="Buscar cliente…" oninput="filtrarClientesModal()" autocomplete="off"/>
         </div>
         <div id="cliResultados" style="max-height:260px;overflow-y:auto;"></div>
         <div style="margin-top:12px;">
@@ -419,13 +420,22 @@
   </div>
 </div>
 
-<script src="constantes.js?v=13"></script>
-<script src="supabase-shared.js?v=13"></script>
-<script src="comun.js?v=13"></script>
-<script src="form-preparado.js?v=13"></script>
-<script src="chat.js?v=13"></script>
+<script src="constantes.js?v=15"></script>
+<script src="supabase-shared.js?v=15"></script>
+<script src="comun.js?v=15"></script>
+<script src="form-preparado.js?v=15"></script>
+<script src="chat.js?v=15"></script>
+<script src="teclado.js?v=15"></script>
 <script>
 let SUCURSAL_NOMBRE = null;
+
+// ── Atajos de teclado (teclado.js) ───────────────────────────────
+Teclado.atajo({teclas:'n', desc:'Nuevo pedido', accion:()=>abrirModalPedido()});
+Teclado.atajo({teclas:'h', desc:'Pedidos anteriores', accion:()=>abrirModalHistorial()});
+Teclado.ayuda('En esta página', '1 · 2 · 3 · 4', 'Ir a la columna Petición / Aceptado / En preparación / Para retirar');
+Teclado.ayuda('En un pedido', 'C', 'Confirmar el precio propuesto');
+Teclado.ayuda('En un pedido', 'Supr', 'Cancelar el pedido');
+Teclado.ayuda('En Pedidos anteriores', 'R · Enter', 'Repetir el pedido');
 
 // ── Estado local ─────────────────────────────────────────────────
 let preparados = [];
@@ -792,8 +802,8 @@ function crearTarjeta(p){
     cuerpo += `<span class="badge badge-precio">Precio propuesto</span>`;
     cuerpo += `<div class="card-precio">${p.precio_venta!=null?'$'+p.precio_venta:'A confirmar'}</div>`;
     cuerpo += `<div class="card-acciones">
-      <button class="btn btn-ghost btn-sm" onclick="pedirCancelarPedido('${p.id}')">Cancelar</button>
-      <button class="btn btn-primary btn-sm" onclick="confirmarPedido('${p.id}','${p.precio_venta!=null}')">Confirmar</button>
+      <button class="btn btn-ghost btn-sm" data-tecla="supr" onclick="pedirCancelarPedido('${p.id}')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" data-tecla="c" onclick="confirmarPedido('${p.id}','${p.precio_venta!=null}')">Confirmar</button>
     </div>`;
   } else if(p.estado==='Cancelado por sucursal'){
     cuerpo += `<span class="badge badge-cancel">Cancelado</span>`;
@@ -1064,7 +1074,7 @@ function renderHistorial(lista){
     const info = ESTADO_LABEL_HIST[p.estado] || {txt:p.estado, cls:'badge-cancel'};
     const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:'', p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
     const div = document.createElement('div');
-    div.className = 'hist-item';
+    div.className = 'hist-item'; div.dataset.id = p.id;
     let extra = p.observaciones ? `<div style="font-size:12px;color:var(--muted);background:var(--surface);border-radius:6px;padding:6px 8px;margin-top:8px;"><strong>Observación:</strong> ${escHtml(p.observaciones)}</div>` : '';
     if(p.precio_venta!=null) extra += `<div style="font-size:13px;font-weight:700;color:var(--accent);margin-top:6px;">$${p.precio_venta}</div>`;
     if(p.nro_receta) extra += `<div class="hist-item-meta" style="margin-top:2px;">Receta #${p.nro_receta}</div>`;
@@ -1077,7 +1087,7 @@ function renderHistorial(lista){
       <div class="card-drogas">${drogasHtml(p)}</div>
       ${extra}
       ${renderMiniChat(p)}
-      <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="repetirDesdeHistorial('${p.id}')">↺ Repetir este pedido</button>`;
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px;" data-tecla="r enter" onclick="repetirDesdeHistorial('${p.id}')">↺ Repetir este pedido</button>`;
     cargarImagenesPendientes(div);
     cont.appendChild(div);
   });

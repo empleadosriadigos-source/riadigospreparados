@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Laboratorio</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
-  <link rel="stylesheet" href="estilos.css?v=13"/>
-  <link rel="stylesheet" href="buscador-filtros.css?v=13"/>
-  <link rel="stylesheet" href="form-preparado.css?v=13"/>
+  <link rel="stylesheet" href="estilos.css?v=15"/>
+  <link rel="stylesheet" href="buscador-filtros.css?v=15"/>
+  <link rel="stylesheet" href="form-preparado.css?v=15"/>
+  <link rel="stylesheet" href="teclado.css?v=15"/>
   <style>
     
     .nav-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap;text-decoration:none;flex-shrink:0;color:#fff;}
@@ -598,7 +599,7 @@
       <!-- Vista: buscar/listar -->
       <div id="cliVistaLista">
         <div class="field-group" style="margin-bottom:10px;">
-          <input type="text" id="cliBuscarInput" placeholder="Buscar cliente…" oninput="filtrarClientesModal()" autocomplete="off"/>
+          <input type="text" id="cliBuscarInput" data-buscador placeholder="Buscar cliente…" oninput="filtrarClientesModal()" autocomplete="off"/>
         </div>
         <div id="cliResultados" style="max-height:260px;overflow-y:auto;"></div>
         <div style="margin-top:12px;">
@@ -720,11 +721,12 @@
 
 </div><!-- /appRoot -->
 
-<script src="constantes.js?v=13"></script>
-<script src="supabase-shared.js?v=13"></script>
-<script src="comun.js?v=13"></script>
-<script src="form-preparado.js?v=13"></script>
-<script src="chat.js?v=13"></script>
+<script src="constantes.js?v=15"></script>
+<script src="supabase-shared.js?v=15"></script>
+<script src="comun.js?v=15"></script>
+<script src="form-preparado.js?v=15"></script>
+<script src="chat.js?v=15"></script>
+<script src="teclado.js?v=15"></script>
 <script>
   // Acceso a datos (sbGet/sbPost/…) en supabase-shared.js; login, toasts,
   // modales y formato (escHtml, fmtFecha, fmtCupon) en comun.js.
@@ -738,6 +740,24 @@
     preparados.filter(p=>p.cliente_id===id).forEach(p=>{p.cliente_nombre=nombre;p.cliente_telefono=telefono||p.cliente_telefono;});
     renderKanban();
   }
+
+  // ── Atajos de teclado (teclado.js) ─────────────────────────────────────
+  Teclado.navegacion({p:['preparados.html','Preparados anteriores'], e:['etiquetas.html','Etiquetas'], r:['reporte.html','Reporte de drogas']});
+  Teclado.atajo({teclas:'n', desc:'Cargar preparado', accion:()=>abrirModalPreparado()});
+  Teclado.atajo({teclas:'s', desc:'Solicitudes de sucursal', accion:()=>{ toggleDrawer(); }});
+  Teclado.atajo({teclas:'m', desc:'Menú (reporte, etiquetas, fórmulas de stock)', accion:()=>toggleSideMenu()});
+  Teclado.atajo({teclas:'v', desc:'Alternar vista expandida / colapsada', accion:()=>setVistaKanban(vistaKanban==='expandida'?'colapsada':'expandida')});
+  Teclado.atajo({teclas:'1', etiqueta:'1 · 2 · 3', desc:'Ir a la columna Sin precio / En laboratorio / Listo', accion:null});
+  Teclado.ayuda('En una tarjeta', 'Enter · E', 'Editar');
+  Teclado.ayuda('En una tarjeta', 'P', 'Imprimir cupón');
+  Teclado.ayuda('En una tarjeta', 'Supr', 'Cancelar el preparado');
+  Teclado.ayuda('En una tarjeta', 'Espacio', 'Expandir / colapsar');
+  Teclado.ayuda('En una tarjeta', 'D', 'Completar datos pendientes');
+  Teclado.ayuda('En una tarjeta', 'Shift+← · Shift+→', 'Pasar a la columna anterior / siguiente (→ en Listo: entregar)');
+  Teclado.ayuda('En una tarjeta', 'Shift+↑ · Shift+↓', 'Subirla / bajarla en la columna');
+  Teclado.ayuda('En una solicitud (cajón)', 'A · Enter', 'Aceptar (Enter también desde el precio)');
+  Teclado.ayuda('En una solicitud (cajón)', 'Supr', 'Rechazar o descartar');
+  Teclado.alMover = moverTarjetaTeclado;
 
   const ESTADOS_KANBAN = ['Sin precio','En laboratorio','Listo para retirar'];
   const COL_BODY  = {'Sin precio':'body-asignar','En laboratorio':'body-lab','Listo para retirar':'body-retirar'};
@@ -1194,12 +1214,12 @@
       <div class="card-top">
         <div class="card-cupon">${fmtCupon(p)}${p.origen_sucursal?`<span class="badge-sucursal">${escHtml(p.origen_sucursal)}</span>`:''}${!!p.formula_stock_id?`<span class="badge-stock">📦 Stock</span>`:''}</div>
         <div class="card-top-actions">
-          <button class="icon-btn icon-btn-toggle" onclick="toggleCardView(event,'${p.id}')" title="${colapsada?'Expandir':'Colapsar'}">${colapsada?svgChevronDown:svgChevronUp}</button>
-          <button class="icon-btn icon-btn-delete" onclick="abrirCancelar(event,'${p.id}')" title="Cancelar preparado">${svgD}</button>
+          <button class="icon-btn icon-btn-toggle" data-tecla="espacio" onclick="toggleCardView(event,'${p.id}')" title="${colapsada?'Expandir':'Colapsar'}">${colapsada?svgChevronDown:svgChevronUp}</button>
+          <button class="icon-btn icon-btn-delete" data-tecla="supr" onclick="abrirCancelar(event,'${p.id}')" title="Cancelar preparado">${svgD}</button>
         </div>
       </div>
       ${p.origen_sucursal?`<div class="sucursal-tag-card">👁 En sucursal se ve: "${escHtml(ESTADO_TAG_SUCURSAL[p.estado]||p.estado)}"</div>`:''}
-      ${p.datos_pendientes?`<button type="button" class="btn-completar-datos" onclick="abrirCompletarDatos(event,'${p.id}')">⚠ Completar datos pendientes${p.receta_imagen_url?' (con receta adjunta)':''}</button>`:''}
+      ${p.datos_pendientes?`<button type="button" class="btn-completar-datos" data-tecla="d" onclick="abrirCompletarDatos(event,'${p.id}')">⚠ Completar datos pendientes${p.receta_imagen_url?' (con receta adjunta)':''}</button>`:''}
       ${datosContactoHtml(p, termino)}
       <hr class="card-divider"/>
       ${p.nro_receta?`<div class="card-receta-header"><span class="card-receta-label">Receta</span><span class="card-receta-num"># ${resaltar(p.nro_receta,termino)}</span></div>`:''}
@@ -1210,8 +1230,8 @@
         <div class="card-precio">${precio}</div>
       </div>
       <div class="card-bottom-actions">
-        <button class="icon-btn icon-btn-edit" onclick="abrirEditar(event,'${p.id}')" title="Editar">${svgE}</button>
-        <button class="icon-btn icon-btn-print" onclick="imprimirDesdeCard(event,'${p.id}')" title="Imprimir cupón">${svgPrint}</button>
+        <button class="icon-btn icon-btn-edit" data-tecla="enter e" onclick="abrirEditar(event,'${p.id}')" title="Editar">${svgE}</button>
+        <button class="icon-btn icon-btn-print" data-tecla="p" onclick="imprimirDesdeCard(event,'${p.id}')" title="Imprimir cupón">${svgPrint}</button>
       </div>
       ${p.origen_sucursal?renderMiniChat(p):''}`;
     cargarImagenesPendientes(div);
@@ -1269,14 +1289,14 @@
 
   function crearDrawerCardCancelada(p){
     const div = document.createElement('div');
-    div.className = 'drawer-cancel-card';
+    div.className = 'drawer-cancel-card'; div.dataset.id = p.id;
     div.innerHTML = `
       <div class="txt">
         <div class="card-cupon" style="font-size:14px;">${fmtCupon(p)}<span class="badge-sucursal">${escHtml(p.origen_sucursal||'Sucursal')}</span></div>
         <div class="card-contact-row">${SVG_PERSONA}<span>${escHtml(p.cliente_nombre||'—')}</span></div>
         ${p.cliente_telefono?`<div class="card-contact-row">${SVG_TELEFONO}<span>${escHtml(p.cliente_telefono)}</span></div>`:''}
       </div>
-      <button class="drawer-cancel-dismiss" title="Descartar" onclick="descartarCancelado('${p.id}')">✕</button>`;
+      <button class="drawer-cancel-dismiss" title="Descartar" data-tecla="supr" onclick="descartarCancelado('${p.id}')">✕</button>`;
     return div;
   }
 
@@ -1342,11 +1362,11 @@
 
   function crearDrawerCardNueva(p){
     const div = document.createElement('div');
-    div.className = 'drawer-card';
+    div.className = 'drawer-card'; div.dataset.id = p.id;
     const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:'', p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
     div.innerHTML = `
       <div class="card-cupon">${fmtCupon(p)}<span class="badge-sucursal">${escHtml(p.origen_sucursal||'')}</span>${!!p.formula_stock_id?`<span class="badge-stock">📦 Stock</span>`:''}</div>
-      ${p.datos_pendientes?`<button type="button" class="btn-completar-datos" onclick="abrirCompletarDatos(event,'${p.id}')">⚠ Completar datos pendientes${p.receta_imagen_url?' (con receta adjunta)':''}</button>`:''}
+      ${p.datos_pendientes?`<button type="button" class="btn-completar-datos" data-tecla="d" onclick="abrirCompletarDatos(event,'${p.id}')">⚠ Completar datos pendientes${p.receta_imagen_url?' (con receta adjunta)':''}</button>`:''}
       ${datosContactoHtml(p)}
       <hr class="card-divider"/>
       ${p.nro_receta?`<div class="card-receta-header"><span class="card-receta-label">Receta</span><span class="card-receta-num"># ${escHtml(p.nro_receta)}</span></div>`:''}
@@ -1358,8 +1378,8 @@
         <input type="number" min="0" step="any" id="precio-nueva-${p.id}" placeholder="Podés dejarlo vacío por ahora">
       </div>
       <div class="drawer-card-actions">
-        <button class="btn btn-danger btn-sm" onclick="rechazarSolicitud('${p.id}')">Rechazar</button>
-        <button class="btn btn-primary btn-sm" onclick="aceptarSolicitud('${p.id}')">Aceptar</button>
+        <button class="btn btn-danger btn-sm" data-tecla="supr" onclick="rechazarSolicitud('${p.id}')">Rechazar</button>
+        <button class="btn btn-primary btn-sm" data-tecla="a enter" onclick="aceptarSolicitud('${p.id}')">Aceptar</button>
       </div>
       ${renderMiniChat(p)}`;
     cargarImagenesPendientes(div);
@@ -1368,7 +1388,7 @@
 
   function crearDrawerCardEsperando(p){
     const div = document.createElement('div');
-    div.className = 'drawer-card';
+    div.className = 'drawer-card'; div.dataset.id = p.id;
     const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:'', p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
     div.innerHTML = `
       <div class="card-cupon">${fmtCupon(p)}<span class="badge-sucursal">${escHtml(p.origen_sucursal||'')}</span>${!!p.formula_stock_id?`<span class="badge-stock">📦 Stock</span>`:''}</div>
@@ -1382,7 +1402,7 @@
         <label>Precio</label>
         <input type="number" min="0" step="any" id="precio-esperando-${p.id}" value="${p.precio_venta ?? ''}">
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="guardarPrecioEsperando('${p.id}')">Guardar precio</button>
+      <button class="btn btn-ghost btn-sm" data-tecla="enter" onclick="guardarPrecioEsperando('${p.id}')">Guardar precio</button>
       ${renderMiniChat(p)}`;
     cargarImagenesPendientes(div);
     return div;
@@ -1405,11 +1425,11 @@
   // desde acá (queda de todos modos accesible, de solo lectura, en "Historial").
   function crearDrawerCardRechazada(p){
     const div = document.createElement('div');
-    div.className = 'drawer-card';
+    div.className = 'drawer-card'; div.dataset.id = p.id;
     const partes = [p.forma_farmaceutica, p.cantidad_total!=null?`${p.cantidad_total}${p.unidad?' '+p.unidad:''}`:'', p.cantidad_envases!=null?`${p.cantidad_envases} envase${p.cantidad_envases===1?'':'s'}`:''].filter(Boolean);
     div.innerHTML = `
       <div class="card-cupon">${fmtCupon(p)}<span class="badge-sucursal">${escHtml(p.origen_sucursal||'')}</span>${!!p.formula_stock_id?`<span class="badge-stock">📦 Stock</span>`:''}<span class="badge-rechazo">Rechazado</span></div>
-      ${p.datos_pendientes?`<button type="button" class="btn-completar-datos" onclick="abrirCompletarDatos(event,'${p.id}')">⚠ Completar datos pendientes${p.receta_imagen_url?' (con receta adjunta)':''}</button>`:''}
+      ${p.datos_pendientes?`<button type="button" class="btn-completar-datos" data-tecla="d" onclick="abrirCompletarDatos(event,'${p.id}')">⚠ Completar datos pendientes${p.receta_imagen_url?' (con receta adjunta)':''}</button>`:''}
       ${datosContactoHtml(p)}
       <hr class="card-divider"/>
       ${p.nro_receta?`<div class="card-receta-header"><span class="card-receta-label">Receta</span><span class="card-receta-num"># ${escHtml(p.nro_receta)}</span></div>`:''}
@@ -1421,7 +1441,7 @@
         <input type="number" min="0" step="any" id="precio-rechazada-${p.id}" placeholder="Podés dejarlo vacío por ahora">
       </div>
       <div class="drawer-card-actions">
-        <button class="btn btn-primary btn-sm" onclick="aceptarDesdeRechazado('${p.id}')">Cambiar a Aceptado</button>
+        <button class="btn btn-primary btn-sm" data-tecla="a enter" onclick="aceptarDesdeRechazado('${p.id}')">Cambiar a Aceptado</button>
       </div>
       ${renderMiniChat(p)}`;
     cargarImagenesPendientes(div);
@@ -1509,20 +1529,7 @@
             else if (pAbajo) nuevoOrden = pAbajo.orden + 1000;
             else nuevoOrden = Date.now();
 
-            const cambioEstado = p.estado !== nuevoEstado;
-            const patch = { orden: nuevoOrden };
-            if (cambioEstado) patch.estado = nuevoEstado;
-
-            try {
-              await sbPatch('preparados', id, patch);
-              p.orden = nuevoOrden;
-              if (cambioEstado) { p.estado = nuevoEstado; p.fecha_cambio_estado = new Date().toISOString(); mostrarToast(`✓ Movido a ${nuevoEstado}`, 'ok'); }
-              renderKanban();
-            } catch(err) {
-              mostrarToast('Error: ' + err.message, 'err');
-              // Revertir visualmente
-              renderKanban();
-            }
+            await guardarMovimiento(p, nuevoEstado, nuevoOrden);
           } finally {
             arrastrando = false;
           }
@@ -1546,6 +1553,61 @@
       document.getElementById('entregarCupon').innerHTML = fmtCupon(prepActual);
       abrirModal('modalEntregar');
     });
+  }
+
+  // Guarda la posición nueva de una tarjeta (arrastrada o movida con Shift + flechas).
+  async function guardarMovimiento(p, nuevoEstado, nuevoOrden){
+    const cambioEstado = p.estado !== nuevoEstado;
+    const patch = { orden: nuevoOrden };
+    if (cambioEstado) patch.estado = nuevoEstado;
+    try {
+      await sbPatch('preparados', p.id, patch);
+      p.orden = nuevoOrden;
+      if (cambioEstado) { p.estado = nuevoEstado; p.fecha_cambio_estado = new Date().toISOString(); mostrarToast(`✓ Movido a ${nuevoEstado}`, 'ok'); }
+      renderKanban();
+    } catch(err) {
+      mostrarToast('Error: ' + err.message, 'err');
+      renderKanban(); // revertir visualmente
+    }
+  }
+
+  // Shift + flechas sobre una tarjeta (teclado.js): ← → cambia de columna
+  // (→ en "Listo para retirar" abre la entrega), ↑ ↓ la sube o la baja.
+  async function moverTarjetaTeclado(card, dir){
+    const p = preparados.find(x => x.id === card.dataset.id);
+    if(!p || arrastrando) return;
+    const ordenDe = n => preparados.find(x => x.id === n.dataset.id)?.orden || 0;
+    const i = ESTADOS_KANBAN.indexOf(p.estado);
+    let nuevoEstado = p.estado, nuevoOrden;
+    if(dir === 'izq' || dir === 'der'){
+      if(dir === 'der' && i === ESTADOS_KANBAN.length - 1){
+        prepActual = p;
+        document.getElementById('entregarCupon').innerHTML = fmtCupon(p);
+        abrirModal('modalEntregar');
+        return;
+      }
+      const j = i + (dir === 'der' ? 1 : -1);
+      if(j < 0 || j >= ESTADOS_KANBAN.length) return;
+      nuevoEstado = ESTADOS_KANBAN[j];
+      // Arriba de todo en la columna nueva (mayor orden = más arriba).
+      const primera = document.getElementById(COL_BODY[nuevoEstado]).querySelector(':scope > .card');
+      nuevoOrden = primera ? ordenDe(primera) + 1000 : Date.now();
+    } else {
+      const hermanos = [...card.parentElement.querySelectorAll(':scope > .card')];
+      const k = hermanos.indexOf(card);
+      if(dir === 'arriba'){
+        if(k <= 0) return;
+        const a = hermanos[k-1], a2 = hermanos[k-2];
+        nuevoOrden = a2 ? (ordenDe(a) + ordenDe(a2)) / 2 : ordenDe(a) + 1000;
+      } else {
+        if(k < 0 || k >= hermanos.length - 1) return;
+        const b = hermanos[k+1], b2 = hermanos[k+2];
+        nuevoOrden = b2 ? (ordenDe(b) + ordenDe(b2)) / 2 : ordenDe(b) - 1000;
+      }
+    }
+    arrastrando = true;
+    try { await guardarMovimiento(p, nuevoEstado, nuevoOrden); }
+    finally { arrastrando = false; }
   }
 
   // Guardar el id del elemento al empezar a arrastrar

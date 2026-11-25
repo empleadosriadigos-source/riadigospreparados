@@ -4,8 +4,9 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Laboratorio · Etiquetas</title>
-  <link rel="stylesheet" href="estilos.css?v=13"/>
-  <link rel="stylesheet" href="buscador-filtros.css?v=13"/>
+  <link rel="stylesheet" href="estilos.css?v=15"/>
+  <link rel="stylesheet" href="buscador-filtros.css?v=15"/>
+  <link rel="stylesheet" href="teclado.css?v=15"/>
   <style>
     :root{--bg:#F0EDE4;--surface:#FAFAF7;--border:#DDD8CC;--accent:#75A63D;--accent2:#68A9CC;--text:#1C2128;--muted:#6B7685;--danger:#C0392B;--radius:8px;--shadow:0 2px 8px rgba(0,0,0,0.09);}
     
@@ -192,14 +193,40 @@
 
 </div><!-- /appRoot -->
 
-<script src="constantes.js?v=13"></script>
-<script src="supabase-shared.js?v=13"></script>
-<script src="comun.js?v=13"></script>
+<script src="constantes.js?v=15"></script>
+<script src="supabase-shared.js?v=15"></script>
+<script src="comun.js?v=15"></script>
+<script src="teclado.js?v=15"></script>
 <script>
   // Acceso a datos en supabase-shared.js; login, toasts, modales y formato en comun.js.
 
   let todos=[], seleccion=new Set();
   const TOPE_RESULTADOS = 500; // limite de seguridad para esta pantalla, que no pagina
+
+  // ── Atajos de teclado (teclado.js) ───────────────────────────────────
+  const enPaso2 = () => document.getElementById('paso2').style.display === 'block';
+  Teclado.navegacion({k:['index.html','Kanban'], p:['preparados.html','Preparados anteriores'], r:['reporte.html','Reporte de drogas']});
+  Teclado.atajo({teclas:'ctrl+enter', etiqueta:'Ctrl+Enter', desc:'Siguiente → / Generar etiquetas', enCampo:true, accion:()=>{
+    const b = document.getElementById(enPaso2() ? 'btnGenerar' : 'btnSiguiente');
+    if(b && !b.disabled) b.click();
+  }});
+  Teclado.atajo({teclas:'a', desc:'Seleccionar o quitar todos', cuando:()=>!enPaso2(), accion:()=>{
+    const chk = document.getElementById('chkTodos'); chk.checked = !chk.checked; toggleTodos(chk);
+  }});
+  Teclado.atajo({teclas:'i', desc:'Uso interno (paso 2)', cuando:enPaso2, accion:()=>setUsoGlobal('USO INTERNO')});
+  Teclado.atajo({teclas:'e', desc:'Uso externo (paso 2)', cuando:enPaso2, accion:()=>setUsoGlobal('USO EXTERNO')});
+  // Enter en un vencimiento o en "Unidades a imprimir" pasa al campo del mismo tipo de la etiqueta siguiente.
+  Teclado.atajo({teclas:'enter', enCampo:true, cuando:()=>enPaso2() && document.activeElement?.matches('#vtoGlobal, .cfg-vto, .cfg-cant'), accion:()=>{
+    const a = document.activeElement;
+    const sel = a.id === 'vtoGlobal' ? '.cfg-vto' : (a.classList.contains('cfg-vto') ? '.cfg-vto' : '.cfg-cant');
+    const lista = [...document.querySelectorAll('#configCards ' + sel)];
+    const sig = a.id === 'vtoGlobal' ? lista[0] : lista[lista.indexOf(a) + 1];
+    if(sig) Teclado.enfocar(sig, {seleccionar:true}); else document.getElementById('btnGenerar')?.focus();
+  }});
+  Teclado.ayuda('En esta página', 'Espacio · Enter', 'Marcar o desmarcar la fila');
+  Teclado.ayuda('En esta página', 'Enter', 'Paso 2: pasar al vencimiento de la etiqueta siguiente');
+  Teclado.ayuda('En esta página', 'Esc', 'Paso 2: volver al paso 1');
+  Teclado.alEscape = () => { if(!enPaso2()) return false; irPaso1(); };
 
   function initApp(){
     FORMAS.forEach(f=>document.getElementById('filtroForma').add(new Option(f,f)));

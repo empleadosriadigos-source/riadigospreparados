@@ -104,7 +104,7 @@ function aplicarTelefonoCliente(pref,telefono){
 }
 
 // Droga (dentro de una fila de componentes).
-async function abrirSSComp(input){if(!drogasCargadas) await cargarDrogasUnaVez();const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);if(!input.value.trim()){dd.classList.remove('open');return;}renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())).slice(0,50),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
+async function abrirSSComp(input,todas=false){if(!drogasCargadas) await cargarDrogasUnaVez();const idx=input.dataset.idx;const dd=document.getElementById(`ssComp_${idx}`);if(!input.value.trim()&&!todas){dd.classList.remove('open');return;}renderSSComp(dd,drogas.filter(d=>d.nombre.toLowerCase().includes(input.value.toLowerCase())).slice(0,50),idx,input.value);posicionarDD(input,dd);dd.classList.add('open');}
 function filtrarSSComp(input){ abrirSSComp(input); }
 function renderSSComp(dd,fil,idx,texto){
   dd.innerHTML='';
