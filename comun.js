@@ -36,13 +36,23 @@ function mostrarApp(session){
   const u=session.user;
   const nameEl=document.getElementById('userNombre');
   if(nameEl) nameEl.textContent=u.user_metadata?.full_name||u.email||'';
-  if(!appIniciada && typeof initApp==='function'){ appIniciada=true; initApp(); }
+  if(!appIniciada && typeof initApp==='function'){
+    appIniciada=true;
+    // Un error al arrancar la página no tiene que salir de acá: supabase-js toma
+    // cualquier error del callback de onAuthStateChange como "sin sesión" y
+    // volvía a pedir el login (pasaba al cambiar de página con la sesión guardada).
+    try{
+      const r=initApp();
+      if(r && typeof r.catch==='function') r.catch(err=>{ console.error(err); mostrarToast('Error al cargar la página: '+err.message,'err'); });
+    }catch(err){ console.error(err); mostrarToast('Error al cargar la página: '+err.message,'err'); }
+  }
 }
 // Se engancha recién en DOMContentLoaded, cuando ya corrieron todos los <script>
 // de la página: así initApp ya existe cuando llega la sesión. onAuthStateChange
 // emite INITIAL_SESSION al suscribirse, así que no hace falta getSession().
 function iniciarLoginComun(){
   if(!document.getElementById('loginOverlay')) return;
+  completarBotonesFiltros(); // antes de initApp, que marca los filtros activos
   sbAuth.auth.onAuthStateChange((_event,session)=>{
     if(session){ SB_TOKEN=session.access_token; mostrarApp(session); } else { SB_TOKEN=null; appIniciada=false; mostrarLogin(); }
   });
@@ -82,6 +92,7 @@ function marcarFiltrosActivos(wrapId){
   const btn=document.querySelector(`#${wrapId} .btn-filtros`);
   if(!btn) return;
   btn.classList.toggle('activo',n>0);
+  if(!btn.querySelector('.filtros-badge')) btn.innerHTML=botonFiltrosHtml();
   btn.querySelector('.filtros-badge').textContent=n||'';
 }
 function limpiarFiltros(wrapId){
