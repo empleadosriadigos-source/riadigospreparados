@@ -144,7 +144,7 @@ function agregarCompRow(contId,recId='',dNom='',dId='',cant='',unid=''){
   const unidOpts=['<option value="">—</option>',...UNID_COMP.map(o=>`<option value="${o}" ${o===unid?'selected':''}>${o}</option>`)].join('');
   div.innerHTML=`
     <div class="ss-wrap">
-      <input type="text" class="ss-input" data-idx="${idx}" placeholder="Buscar droga…" value="${escHtml(dNom)}" oninput="filtrarSSComp(this)" onfocus="abrirSSComp(this)" autocomplete="off"/>
+      <input type="text" class="ss-input" data-idx="${idx}" placeholder="Buscar droga…" value="${escHtml(dNom)}" oninput="filtrarSSComp(this)" autocomplete="off"/>
       <div class="ss-dropdown" id="ssComp_${idx}"></div>
       <input type="hidden" class="comp-drug-id" data-idx="${idx}" value="${dId}"/>
     </div>

@@ -271,6 +271,7 @@ const Teclado = (() => {
     const abierto = dd.classList.contains('open');
     if(c === 'arrowdown' || c === 'arrowup'){
       e.preventDefault();
+      if(!abierto && input.closest('.comp-row') && (c === 'arrowup' || input.value.trim())) return false;
       if(!abierto){
         // La droga vacía no abre la lista al escribir; con ↓ muestra las primeras.
         if(input.classList.contains('ss-input') && !input.value.trim() && typeof abrirSSComp === 'function') abrirSSComp(input, true);
@@ -313,18 +314,69 @@ const Teclado = (() => {
     return false;
   }
   // Enter dentro de una fila de componentes: cantidad → unidad → droga siguiente (o una fila nueva).
+  // Tabla de componentes, como una planilla:
+  //   Enter: droga → cantidad → unidad → droga de la fila siguiente (al final agrega una fila)
+  //   ↑ ↓: misma columna en la fila de arriba / abajo (en la unidad, ↑ ↓ eligen la unidad)
+  //   ← →: columna anterior / siguiente (en la droga, solo desde el borde del texto)
+  //   Ctrl+Supr: borrar la fila
+  const COLS_COMP = ['.ss-input', '.comp-cant', '.comp-unid'];
+  function filasComp(fila){ return [...fila.parentElement.querySelectorAll(':scope > .comp-row')]; }
+  function columnaComp(el){ return COLS_COMP.findIndex(sel => el.matches(sel)); }
+  function agregarFilaComp(cont){
+    if(typeof agregarCompRow !== 'function' || !cont?.id) return;
+    agregarCompRow(cont.id);
+    enfocar(cont.lastElementChild?.querySelector('.ss-input'));
+  }
   function teclaEnComponente(e, el, c){
-    if(c !== 'enter') return false;
     const fila = el.closest('.comp-row'); if(!fila) return false;
-    e.preventDefault();
-    if(el.classList.contains('comp-cant')){ enfocar(fila.querySelector('.comp-unid')); return true; }
-    const sigFila = [...fila.parentElement.querySelectorAll(':scope > .comp-row')][[...fila.parentElement.querySelectorAll(':scope > .comp-row')].indexOf(fila) + 1];
-    if(sigFila){ enfocar(sigFila.querySelector('.ss-input')); return true; }
-    if(typeof agregarCompRow === 'function' && fila.parentElement.id){
-      agregarCompRow(fila.parentElement.id);
-      const nueva = fila.parentElement.lastElementChild;
-      enfocar(nueva?.querySelector('.ss-input'));
+    const col = columnaComp(el); if(col < 0) return false;
+    const filas = filasComp(fila), i = filas.indexOf(fila);
+    const ir = (f, k) => { const x = f?.querySelector(COLS_COMP[k]); if(x && visible(x)){ enfocar(x, {seleccionar: k < 2}); return true; } return false; };
+    if(c === 'enter'){
+      e.preventDefault();
+      if(col < 2){ ir(fila, col + 1); return true; }
+      if(filas[i + 1]) ir(filas[i + 1], 0); else agregarFilaComp(fila.parentElement);
+      return true;
     }
+    if((c === 'arrowup' || c === 'arrowdown') && col < 2){
+      e.preventDefault();
+      const otra = filas[i + (c === 'arrowdown' ? 1 : -1)];
+      if(otra) ir(otra, col);
+      return true;
+    }
+    if(c === 'arrowleft' || c === 'arrowright'){
+      const d = c === 'arrowright' ? 1 : -1;
+      if(col === 0){
+        const fin = el.selectionStart === el.value.length && el.selectionEnd === el.value.length;
+        if(d > 0 ? !fin : !(el.selectionStart === 0 && el.selectionEnd === 0)) return false;
+      }
+      const k = col + d; if(k < 0 || k > 2) return false;
+      e.preventDefault(); ir(fila, k); return true;
+    }
+    if(c === 'ctrl+supr'){
+      e.preventDefault();
+      const destino = filas[i + 1] || filas[i - 1];
+      const cont = fila.parentElement;
+      fila.remove();
+      if(destino) ir(destino, col); else enfocar([...document.querySelectorAll('button[onclick]')].find(b => visible(b) && b.getAttribute('onclick').includes(`agregarCompRow('${cont.id}')`)));
+      return true;
+    }
+    return false;
+  }
+
+  // Enter en un campo común de una ventana pasa al campo siguiente (como Tab);
+  // desde el último va al botón de guardar. Ctrl+Enter guarda directo.
+  function enterComoTab(e, el, ov){
+    if(!ov.matches('.modal-overlay') || el.tagName === 'TEXTAREA' || el.hasAttribute('onkeydown') || el.matches(SEL_BUSCADOR)) return false;
+    const it = itemDe(el); if(it && botonTecla(it, 'enter')) return false;
+    if(el.tagName === 'INPUT' && ['file','checkbox','radio'].includes(el.type)) return false;
+    const raiz = el.closest('.modal, .popup') || ov;
+    const lista = enfocables(raiz).filter(x => !x.classList.contains('modal-close'));
+    const resto = lista.slice(lista.indexOf(el) + 1);
+    const sig = resto.find(x => esCampo(x) && !x.readOnly && !x.closest('.modal-footer'));
+    e.preventDefault();
+    if(sig) enfocar(sig, {seleccionar: sig.tagName === 'INPUT'});
+    else { const b = botonPrincipal(ov); if(b) enfocar(b); }
     return true;
   }
 
@@ -351,7 +403,10 @@ const Teclado = (() => {
       ['Esc', 'Cerrar (si hay cambios, pide apretar Esc otra vez)'],
       ['↑ ↓ y Enter', 'Elegir en una lista desplegable (clientes, drogas…); Tab o Esc la cierran'],
       ['← →', 'Moverse entre botones de un mismo grupo (fórmulas de stock, uso, vencimiento)'],
-      ['Enter', 'En un componente: cantidad → unidad → droga siguiente (agrega una fila al final)'],
+      ['Enter', 'Pasar al campo siguiente; desde el último, al botón de guardar'],
+      ['Enter', 'En los componentes: droga → cantidad → unidad → fila siguiente (al final agrega una)'],
+      ['↑ ↓ · ← →', 'En los componentes: moverse entre filas y columnas'],
+      ['Ctrl+Supr', 'En los componentes: borrar la fila'],
     ]],
   ];
   function etiquetaHtml(et){
@@ -469,6 +524,7 @@ const Teclado = (() => {
     }
     // Componentes del formulario
     if(campo && t.closest('.comp-row') && teclaEnComponente(e, t, c)) return;
+    if(campo && ov && c === 'enter' && ov.contains(t) && enterComoTab(e, t, ov)) return;
 
     // Guardar / confirmar la ventana abierta
     if(ov && (c === 'ctrl+enter' || c === 'ctrl+s')){
@@ -614,6 +670,12 @@ const Teclado = (() => {
     const op = e.target.closest?.(SEL_OPCION); if(!op) return;
     op.parentElement.querySelectorAll('.ss-activa').forEach(o => o.classList.remove('ss-activa'));
     op.classList.add('ss-activa');
+  });
+  // "+ Agregar componente": el cursor va a la droga de la fila nueva.
+  document.addEventListener('click', e => {
+    const b = e.target.closest?.('button[onclick*="agregarCompRow("]'); if(!b) return;
+    const id = (b.getAttribute('onclick').match(/agregarCompRow\('([^']+)'/) || [])[1];
+    setTimeout(() => { const cont = document.getElementById(id); enfocar(cont?.lastElementChild?.querySelector('.ss-input')); }, 0);
   });
   // Una lista desplegable o el menú de filtros se cierran cuando el foco se va a otro lado
   // (Tab, Shift+Tab, clic, o un atajo que enfoca otra cosa).
